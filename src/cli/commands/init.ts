@@ -4,11 +4,8 @@ import chalk from "chalk";
 
 import { frameworkAdapters } from "../../framework/index.js";
 import { inquirerPrompter, isPromptExit } from "../../init/prompter.js";
-import {
-  FrameworkNotDetectedError,
-  runInit,
-  type InitResult,
-} from "../../init/run-init.js";
+import { FrameworkNotDetectedError } from "../../framework/detect.js";
+import { runInit, type InitResult } from "../../init/run-init.js";
 import { selectableProviders } from "../../schema/providers/index.js";
 
 export async function initCommand(targetPath: string): Promise<void> {

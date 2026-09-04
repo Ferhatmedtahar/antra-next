@@ -1,6 +1,6 @@
 # Epic 02: Boundary Detection Engine
 
-**Status: not started.**
+**Status: done.** `scan` now loads a real project and classifies every file (client boundary / server action / route handler). No taint tracking or rules yet — that's Epics 03–04.
 
 Lives in `src/ast/` (renamed from `src/analyzer/` to match the settled folder structure: `project.ts` wraps the ts-morph `Project`, `boundary-classifier.ts` does what's below, `render-graph.ts` is taint propagation and lands in Epic 04 alongside the rules that consume it).
 

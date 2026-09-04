@@ -6,10 +6,8 @@ import { boundaryGuardConfigSchema } from "../../../src/config/types.js";
 import { configPath, snapshotPath } from "../../../src/config/write.js";
 import { frameworkAdapters } from "../../../src/framework/index.js";
 import type { CheckboxChoice, Prompter } from "../../../src/init/prompter.js";
-import {
-  FrameworkNotDetectedError,
-  runInit,
-} from "../../../src/init/run-init.js";
+import { FrameworkNotDetectedError } from "../../../src/framework/detect.js";
+import { runInit } from "../../../src/init/run-init.js";
 import { selectableProviders } from "../../../src/schema/providers/index.js";
 import {
   makeTempProject,
@@ -93,12 +91,15 @@ describe("runInit", () => {
   it("falls through to zero-schema when nothing is detected and nothing is chosen", async () => {
     project = makeTempProject(NEXT_APP_FILES);
 
-    const { result, seen } = run(project.dir);
+    const { result, seen } = run(project.dir, { confirm: true });
     const outcome = await result;
 
     expect(outcome.status).toBe("completed");
     if (outcome.status !== "completed") return;
     expect(outcome.frameworkAdapter).toBe("nextjs-app-router");
+    expect(seen.confirms).toEqual([
+      "Nothing selected. Continue with zero-schema heuristics only?",
+    ]);
     expect(outcome.config.providers).toEqual([]);
     expect(outcome.snapshot.sources).toEqual([]);
     expect(outcome.skipped).toEqual([]);
@@ -144,12 +145,33 @@ describe("runInit", () => {
       }),
     });
 
-    const { result, seen } = run(project.dir);
+    const { result, seen } = run(project.dir, { confirm: true });
     await result;
 
     const supabase = seen.choices.find((choice) => choice.value === "supabase");
     expect(supabase?.checked).toBe(false);
     expect(supabase?.name).toContain("dependency found");
+  });
+
+  it("re-prompts on an empty submit until something is chosen or the user explicitly continues", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+    let attempts = 0;
+
+    const { result, seen } = run(project.dir, {
+      confirm: false,
+      choose: () => (attempts++ === 0 ? [] : ["prisma"]),
+    });
+    const outcome = await result;
+
+    expect(attempts).toBe(2);
+    expect(seen.confirms).toEqual([
+      "Nothing selected. Continue with zero-schema heuristics only?",
+    ]);
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.config.providers.map((provider) => provider.id)).toEqual([
+      "prisma",
+    ]);
   });
 
   it("lets the user enable an undetected provider and type its config", async () => {

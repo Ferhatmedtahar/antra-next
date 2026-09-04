@@ -14,22 +14,12 @@ import {
   writeConfig,
   writeSnapshot,
 } from "../config/write.js";
+import { requireFramework } from "../framework/detect.js";
 import type { FrameworkAdapter } from "../framework/types.js";
 import { NotImplementedError } from "../schema/errors.js";
 import type { SchemaProvider, TaintSource } from "../schema/types.js";
 import { hasDependency, readPackageJson } from "../utils/package-json.js";
 import type { Prompter } from "./prompter.js";
-
-export class FrameworkNotDetectedError extends Error {
-  constructor(rootDir: string) {
-    super(
-      `${rootDir} doesn't look like a Next.js App Router project ` +
-        "(expected next.config.*, an app/ or src/app/ directory, and next in package.json). " +
-        "boundary-guard v1 supports nothing else.",
-    );
-    this.name = "FrameworkNotDetectedError";
-  }
-}
 
 export interface InitOptions {
   rootDir: string;
@@ -72,8 +62,7 @@ export type InitResult =
 export async function runInit(options: InitOptions): Promise<InitResult> {
   const { rootDir, prompter, adapters, providers } = options;
 
-  const adapter = await detectFramework(adapters, rootDir);
-  if (!adapter) throw new FrameworkNotDetectedError(rootDir);
+  const adapter = await requireFramework(rootDir, adapters);
 
   if (configExists(rootDir)) {
     const overwrite = await prompter.confirm(
@@ -87,14 +76,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
 
   const detections = await detectProviders(providers, rootDir);
 
-  const chosenIds = await prompter.checkbox(
-    "Which data sources should boundary-guard trust as taint origins? (zero-schema heuristics are always on)",
-    detections.map((detection) => ({
-      name: describeDetection(detection),
-      value: detection.provider.id,
-      checked: detection.detected,
-    })),
-  );
+  const chosenIds = await chooseProviders(detections, prompter);
   const enabled = detections
     .filter((detection) => chosenIds.includes(detection.provider.id))
     .map((detection) => detection.provider);
@@ -141,16 +123,6 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
   };
 }
 
-async function detectFramework(
-  adapters: readonly FrameworkAdapter[],
-  rootDir: string,
-): Promise<FrameworkAdapter | null> {
-  for (const adapter of adapters) {
-    if (await adapter.detect(rootDir)) return adapter;
-  }
-  return null;
-}
-
 async function detectProviders(
   providers: readonly SchemaProvider[],
   rootDir: string,
@@ -168,6 +140,35 @@ async function detectProviders(
     });
   }
   return detections;
+}
+
+/**
+ * Multi-select, re-prompting on an empty submit. Inquirer's checkbox needs
+ * Space to toggle and Enter to submit, so a bare Enter silently selects
+ * nothing — the most common way to "pick Supabase" and end up with only
+ * zero-schema. Continuing with nothing requires an explicit yes.
+ */
+async function chooseProviders(
+  detections: readonly ProviderDetection[],
+  prompter: Prompter,
+): Promise<string[]> {
+  const choices = detections.map((detection) => ({
+    name: describeDetection(detection),
+    value: detection.provider.id,
+    checked: detection.detected,
+  }));
+  for (;;) {
+    const chosen = await prompter.checkbox(
+      "Which data sources should boundary-guard trust as taint origins? (Space toggles, Enter submits; zero-schema heuristics are always on)",
+      choices,
+    );
+    if (chosen.length > 0) return chosen;
+    const proceed = await prompter.confirm(
+      "Nothing selected. Continue with zero-schema heuristics only?",
+      false,
+    );
+    if (proceed) return [];
+  }
 }
 
 function describeDetection(detection: ProviderDetection): string {

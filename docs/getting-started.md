@@ -76,7 +76,7 @@ node /home/ferhat/Desktop/boundary-guard/bin/boundary-guard.js scan .
 
 No linking, no install, works from anywhere. Best for a one-off check; Option A is nicer if you're testing repeatedly since `boundary-guard scan .` is shorter than the full path every time.
 
-Either way, right now every command just confirms flags were parsed correctly — `scan` won't find anything because the AST engine (Milestone 1+) doesn't exist yet.
+Either way, `scan` currently loads the target project and classifies every file (client boundaries, server actions, route handlers — `--format json` for the raw records); it reports no findings yet because the rules engine (Epic 04) isn't wired in. Every other command besides `init`/`scan` just confirms its flags were parsed.
 
 ## Running the test suite
 
@@ -106,4 +106,4 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build
 
 ## What's next
 
-`init` ([Epic 01](./tasks/01-init-config-setup/)) is next up — it doesn't scan anything, it just decides and persists which framework/schema-provider strategy applies. `scan` starts doing real work once [Epic 02](./tasks/02-boundary-detection/) lands (`isClientBoundary`, `isServerAction`, `isRouteHandler` in `src/ast/boundary-classifier.ts`). Until then, this walking skeleton is the whole product — every later epic plugs into the CLI layer and `engine.ts` sequencing described in `docs/c4/` without touching what's documented here.
+[Epic 01](./tasks/01-init-config-setup/) (`init`) and [Epic 02](./tasks/02-boundary-detection/) (`src/ast/boundary-classifier.ts`, `src/engine.ts`) are done. Next is [Epic 03](./tasks/03-schema-taint-sources/): real `extract()` bodies for the schema providers plus the zero-schema heuristics, so the snapshot stops being empty and `scan` has taint sources to work with. Everything later plugs into `engine.ts`'s `runScan()` without touching what's documented here.
