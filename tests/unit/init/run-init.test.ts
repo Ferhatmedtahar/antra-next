@@ -101,6 +101,10 @@ describe("runInit", () => {
       "Nothing selected. Continue with zero-schema heuristics only?",
     ]);
     expect(outcome.config.providers).toEqual([]);
+    expect(outcome.config.sensitiveFields).toEqual({
+      include: [],
+      exclude: [],
+    });
     expect(outcome.snapshot.sources).toEqual([]);
     expect(outcome.skipped).toEqual([]);
     expect(seen.choices.every((choice) => choice.checked === false)).toBe(true);
@@ -113,7 +117,7 @@ describe("runInit", () => {
     expect(fs.existsSync(snapshotPath(project.dir))).toBe(true);
   });
 
-  it("pre-checks a detected Prisma schema, records its path, and reports extract() as skipped", async () => {
+  it("pre-checks a detected Prisma schema, records its path, and extracts its fields", async () => {
     project = makeTempProject({
       ...NEXT_APP_FILES,
       "prisma/schema.prisma": "model User { password_hash String }\n",
@@ -133,8 +137,15 @@ describe("runInit", () => {
     expect(outcome.config.providers).toEqual([
       { id: "prisma", schemaPath: "prisma/schema.prisma" },
     ]);
-    expect(outcome.skipped.map((entry) => entry.id)).toEqual(["prisma"]);
-    expect(outcome.snapshot.sources).toEqual([]);
+    expect(outcome.skipped).toEqual([]);
+    expect(outcome.snapshot.sources).toEqual([
+      { field: "password_hash", origin: "prisma:User.password_hash" },
+    ]);
+    // The config file shows the flagged list, seeded from the keywords.
+    expect(outcome.config.sensitiveFields).toEqual({
+      include: ["prisma:User.password_hash"],
+      exclude: [],
+    });
   });
 
   it("nudges when a provider's dependency is present but its file is missing", async () => {
@@ -154,7 +165,10 @@ describe("runInit", () => {
   });
 
   it("re-prompts on an empty submit until something is chosen or the user explicitly continues", async () => {
-    project = makeTempProject(NEXT_APP_FILES);
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      "prisma/schema.prisma": "model User { id String @id }\n",
+    });
     let attempts = 0;
 
     const { result, seen } = run(project.dir, {
@@ -174,22 +188,35 @@ describe("runInit", () => {
     ]);
   });
 
-  it("lets the user enable an undetected provider and type its config", async () => {
-    project = makeTempProject(NEXT_APP_FILES);
+  it("lets the user enable an undetected provider, type its config, and extracts from it", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      // Non-conventional name on purpose: must NOT be auto-detected.
+      "specs/backend.json": JSON.stringify({
+        openapi: "3.0.0",
+        components: {
+          schemas: { User: { properties: { api_key: { type: "string" } } } },
+        },
+      }),
+    });
 
-    const { result } = run(project.dir, {
+    const { result, seen } = run(project.dir, {
       choose: () => ["openapi"],
       input: (message) =>
-        message.includes("OpenAPI")
-          ? "https://api.example.com/openapi.json"
-          : "",
+        message.includes("OpenAPI") ? "specs/backend.json" : "",
     });
     const outcome = await result;
 
+    expect(
+      seen.choices.find((choice) => choice.value === "openapi")?.checked,
+    ).toBe(false);
     expect(outcome.status).toBe("completed");
     if (outcome.status !== "completed") return;
     expect(outcome.config.providers).toEqual([
-      { id: "openapi", spec: "https://api.example.com/openapi.json" },
+      { id: "openapi", spec: "specs/backend.json" },
+    ]);
+    expect(outcome.snapshot.sources).toEqual([
+      { field: "api_key", origin: "openapi:User.api_key" },
     ]);
   });
 

@@ -23,6 +23,22 @@ export function makeTempProject(
   };
 }
 
+/** Copies `tests/fixtures/<name>` into a throwaway directory. */
+export function copyFixture(name: string): TempProject {
+  const source = path.join(
+    path.dirname(new URL(import.meta.url).pathname),
+    "..",
+    "fixtures",
+    name,
+  );
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `boundary-guard-${name}-`));
+  fs.cpSync(source, dir, { recursive: true });
+  return {
+    dir,
+    cleanup: () => fs.rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
 /** Minimal Next.js App Router project, plain `app/` layout. */
 export const NEXT_APP_FILES: Record<string, string> = {
   "package.json": JSON.stringify({ dependencies: { next: "^15.0.0" } }),

@@ -1,0 +1,12 @@
+swagger: "2.0"
+info:
+  title: PostgREST API
+  version: "14.5"
+definitions:
+  accounts:
+    type: object
+    properties:
+      id:
+        type: string
+      stripe_customer_id:
+        type: string

@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "fixture", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Base": { "type": "object", "properties": { "id": { "type": "string" } } },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "apiKey": { "type": "string" },
+          "profile": {
+            "type": "object",
+            "properties": { "ssn": { "type": "string" } }
+          }
+        }
+      },
+      "Token": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Base" },
+          { "properties": { "access_token": { "type": "string" } } }
+        ]
+      }
+    }
+  }
+}

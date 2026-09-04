@@ -1,3 +1,4 @@
+import { classifySources } from "../classification/classify.js";
 import {
   DEFAULT_KEYWORDS,
   DEFAULT_RULES,
@@ -8,6 +9,7 @@ import type {
   ContractSnapshot,
   ProviderConfig,
 } from "../config/types.js";
+import { ensureGitignore, type GitignoreStatus } from "../config/gitignore.js";
 import {
   CONFIG_FILENAME,
   configExists,
@@ -16,10 +18,12 @@ import {
 } from "../config/write.js";
 import { requireFramework } from "../framework/detect.js";
 import type { FrameworkAdapter } from "../framework/types.js";
-import { NotImplementedError } from "../schema/errors.js";
-import type { SchemaProvider, TaintSource } from "../schema/types.js";
+import { extractSources, type SkippedProvider } from "../schema/extract.js";
+import type { SchemaProvider } from "../schema/types.js";
 import { hasDependency, readPackageJson } from "../utils/package-json.js";
 import type { Prompter } from "./prompter.js";
+
+export type { SkippedProvider } from "../schema/extract.js";
 
 export interface InitOptions {
   rootDir: string;
@@ -36,11 +40,6 @@ export interface ProviderDetection {
   dependencyFound: boolean;
 }
 
-export interface SkippedProvider {
-  id: string;
-  reason: string;
-}
-
 export type InitResult =
   | { status: "aborted"; reason: string }
   | {
@@ -50,6 +49,7 @@ export type InitResult =
       snapshot: ContractSnapshot;
       configPath: string;
       snapshotPath: string;
+      gitignore: GitignoreStatus;
       detections: ProviderDetection[];
       skipped: SkippedProvider[];
     };
@@ -75,7 +75,6 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
   }
 
   const detections = await detectProviders(providers, rootDir);
-
   const chosenIds = await chooseProviders(detections, prompter);
   const enabled = detections
     .filter((detection) => chosenIds.includes(detection.provider.id))
@@ -87,19 +86,28 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     prompter,
   );
 
-  const { sources, skipped } = await extractAll(
-    enabled,
-    providerConfigs,
+  const { sources, skipped } = await extractSources(
     rootDir,
+    providerConfigs,
+    (id) => providers.find((provider) => provider.id === id),
   );
+
+  // Seed sensitiveFields.include with what the default keywords flagged,
+  // so the config file *shows* the sensitive list and the user edits that
+  // list directly. sync never rewrites it; keywords keep applying on top
+  // at scan time, so columns added later are still caught.
+  const seeded = classifySources(sources, {
+    keywords: DEFAULT_KEYWORDS,
+    pinned: [],
+    ignored: [],
+  }).map((source) => source.origin);
 
   const config: BoundaryGuardConfig = {
     version: 1,
     frameworkAdapter: adapter.id,
-    providers: providerConfigs.map(
-      ({ config: providerConfig }) => providerConfig,
-    ),
-    keywords: { include: [...DEFAULT_KEYWORDS], exclude: [] },
+    providers: providerConfigs,
+    keywords: { include: [...DEFAULT_KEYWORDS] },
+    sensitiveFields: { include: seeded, exclude: [] },
     sanitizers: [...DEFAULT_SANITIZERS],
     rules: { ...DEFAULT_RULES },
   };
@@ -110,6 +118,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
 
   const configPath = await writeConfig(rootDir, config, { overwrite: true });
   const snapshotPath = await writeSnapshot(rootDir, snapshot);
+  const gitignore = await ensureGitignore(rootDir);
 
   return {
     status: "completed",
@@ -118,6 +127,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     snapshot,
     configPath,
     snapshotPath,
+    gitignore: gitignore.status,
     detections,
     skipped,
   };
@@ -180,17 +190,12 @@ function describeDetection(detection: ProviderDetection): string {
   return provider.label;
 }
 
-interface ConfiguredProvider {
-  provider: SchemaProvider;
-  config: ProviderConfig;
-}
-
 async function collectProviderConfigs(
   enabled: readonly SchemaProvider[],
   rootDir: string,
   prompter: Prompter,
-): Promise<ConfiguredProvider[]> {
-  const configured: ConfiguredProvider[] = [];
+): Promise<ProviderConfig[]> {
+  const configs: ProviderConfig[] = [];
   for (const provider of enabled) {
     const config: ProviderConfig = { id: provider.id };
     for (const field of await provider.configFields(rootDir)) {
@@ -199,29 +204,7 @@ async function collectProviderConfigs(
         field.defaultValue,
       );
     }
-    configured.push({ provider, config });
+    configs.push(config);
   }
-  return configured;
-}
-
-async function extractAll(
-  enabled: readonly SchemaProvider[],
-  configured: readonly ConfiguredProvider[],
-  rootDir: string,
-): Promise<{ sources: TaintSource[]; skipped: SkippedProvider[] }> {
-  const sources: TaintSource[] = [];
-  const skipped: SkippedProvider[] = [];
-  for (const { provider, config } of configured) {
-    if (!enabled.includes(provider)) continue;
-    try {
-      sources.push(...(await provider.extract(rootDir, config)));
-    } catch (error) {
-      if (error instanceof NotImplementedError) {
-        skipped.push({ id: provider.id, reason: error.message });
-        continue;
-      }
-      throw error;
-    }
-  }
-  return { sources, skipped };
+  return configs;
 }

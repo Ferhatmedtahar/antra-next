@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-import { Project, ts, type SourceFile } from "ts-morph";
+import { Project, type SourceFile } from "ts-morph";
+
+import { SYNTAX_COMPILER_OPTIONS } from "../utils/ts-project.js";
 
 export interface LoadedProject {
   project: Project;
@@ -16,15 +18,6 @@ const IGNORED_DIRS = [
   "out",
   "coverage",
 ] as const;
-
-const DEFAULT_COMPILER_OPTIONS = {
-  jsx: ts.JsxEmit.Preserve,
-  allowJs: true,
-  target: ts.ScriptTarget.ES2022,
-  module: ts.ModuleKind.ESNext,
-  moduleResolution: ts.ModuleResolutionKind.Bundler,
-  skipLibCheck: true,
-};
 
 /**
  * Loads every .ts/.tsx/.js/.jsx file under rootDir into one ts-morph
@@ -55,5 +48,5 @@ function createProject(rootDir: string): Project {
       // than refuse to scan.
     }
   }
-  return new Project({ compilerOptions: DEFAULT_COMPILER_OPTIONS });
+  return new Project({ compilerOptions: SYNTAX_COMPILER_OPTIONS });
 }
