@@ -1,0 +1,12 @@
+# Epic 01 Tasks — in order
+
+- [ ] **TASK-018:** Define `FrameworkAdapter` interface in `src/framework/types.ts` — `id`, `detect(rootDir): Promise<boolean>`, `findSourceRoot(rootDir): string`.
+- [ ] **TASK-019:** Implement `src/framework/nextjs.ts` — `NextAppRouterAdapter`. `detect()` checks for `next.config.{js,ts,mjs}` + an `app/` directory.
+- [ ] **TASK-020:** Extend `src/schema/types.ts` (the `SchemaProvider` interface, already stubbed in Epic 03) with the two methods `init` needs: `detect(rootDir): Promise<boolean>` (cheap filesystem presence check) and `extract(rootDir, config): Promise<TaintSource[]>` (real ingestion — implemented per-provider in Epic 03). One shared contract, so `init`'s wiring doesn't change when Epic 03 fills in real `extract()` bodies.
+- [ ] **TASK-021:** Implement the provider set `init` can offer today:
+  - `src/schema/providers/zero-schema.ts` — `detect()` always `true`, `extract()` returns `[]`. The always-available floor, fully working now.
+  - `src/schema/providers/prisma.ts`, `openapi.ts`, `zod.ts` — `detect()` does the real file-presence check (so `init` can honestly say "found a `schema.prisma`"); `extract()` throws a clear `NotImplementedError` until Epic 03 lands. `init` must not call `extract()` on a provider whose `detect()` it didn't run first.
+- [ ] **TASK-022:** Define `BoundaryGuardConfig` in `src/config/types.ts` (Zod schema, matching FR-INIT-6): `frameworkAdapter`, `providers: ProviderConfig[]`, `keywords.include/exclude`, `sanitizers`, `rules` toggles.
+- [ ] **TASK-023:** Implement `src/config/write.ts` — writes `boundary-guard.config.json` + `.boundary-guard/contract-snapshot.json`. Refuses to overwrite an existing config without explicit confirmation (FR-INIT-7).
+- [ ] **TASK-024:** Implement the real `src/cli/commands/init.ts`, replacing the placeholder: run `NextAppRouterAdapter.detect()` (exit with a clear error if false), run every registered provider's `detect()` and show what was found, prompt (multi-select) which to enable, prompt for provider-specific config, call `extract()` per enabled provider, write both output files via `config/write.ts`.
+- [ ] **TASK-025:** Vitest tests against fixture projects: a bare Next.js App Router fixture with no schema files (expect zero-schema fallback offered and written), and one with a `schema.prisma` present (expect Prisma offered as a detected candidate). Tests verify the detection/prompt/write plumbing, not parsing correctness — that's Epic 03's test surface.

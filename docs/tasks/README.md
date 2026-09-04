@@ -1,11 +1,12 @@
 # Tasks
 
-Working backlog for `boundary-guard`, broken into milestones. Check items off as they land; keep each task scoped to one PR where possible.
+Working backlog for `boundary-guard`, broken into epics — one folder each, in build order. Each epic folder has a `README.md` (story, scope, functional requirements) and a `tasks.md` (ordered checklist). Work one task at a time, one branch per task — see [`docs/process/git-workflow.md`](../process/git-workflow.md) for the branching/commit/merge conventions.
 
-- [milestone-0-scaffolding.md](./milestone-0-scaffolding.md) — repo scaffolding & walking skeleton (current)
-- [milestone-1-boundary-detection.md](./milestone-1-boundary-detection.md) — boundary detection engine
-- [milestone-2-schema-taint-sources.md](./milestone-2-schema-taint-sources.md) — schema & taint sources
-- [milestone-3-rules.md](./milestone-3-rules.md) — rule implementation & detection
-- [milestone-4-storage-reporting-ci.md](./milestone-4-storage-reporting-ci.md) — storage, reporting & CI
+- [00-scaffolding/](./00-scaffolding/) — repo scaffolding & walking skeleton — **done**
+- [01-init-config-setup/](./01-init-config-setup/) — `init`: framework + schema-provider detection, config/snapshot files — **next**
+- [02-boundary-detection/](./02-boundary-detection/) — AST boundary classification (Server/Client/Action/Route)
+- [03-schema-taint-sources/](./03-schema-taint-sources/) — real schema provider implementations + zero-schema heuristics
+- [04-rules-engine/](./04-rules-engine/) — BG-001–004 rules, sanitizers, suppressions
+- [05-storage-reporting-ci/](./05-storage-reporting-ci/) — SQLite storage, terminal/SARIF reporters
 
 See [`docs/adr/`](../adr/) for accepted architectural decisions and [`docs/c4/`](../c4/) for the settled system diagram.
