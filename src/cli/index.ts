@@ -25,6 +25,7 @@ program
 program
   .command("init")
   .description("Initialize config, introspect DB, and generate schema snapshot")
+  .argument("[path]", "Next.js app root to configure", ".")
   .action(initCommand);
 
 program
@@ -88,5 +89,8 @@ const isMainModule =
   import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMainModule) {
-  program.parse();
+  program.parseAsync().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

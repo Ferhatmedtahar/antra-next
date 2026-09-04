@@ -1,6 +1,6 @@
 # Epic 01: `init` — Interactive Config Setup
 
-**Status: not started. This is next.**
+**Status: done.** `init` runs end to end. Provider `extract()` bodies (real Prisma/Supabase/OpenAPI/Zod parsing) are deliberately still stubs — that's Epic 03; until then `init` reports them as skipped and writes an empty snapshot.
 
 ## Story
 
