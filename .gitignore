@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.boundary-guard/
+*.sqlite
+*.sqlite-journal
+coverage/
+.DS_Store

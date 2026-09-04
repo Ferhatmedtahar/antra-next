@@ -1,0 +1,15 @@
+# dependencies
+node_modules
+
+# build output
+dist
+
+# lockfiles
+pnpm-lock.yaml
+
+# auto-generated
+*.tsbuildinfo
+coverage
+
+# fixtures are intentionally unformatted test input
+tests/fixtures

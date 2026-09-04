@@ -1,0 +1,10 @@
+# Milestone 3: Rule Implementation & Detection
+
+Per [ADR-002](../adr/0002-schema-optional-ingestion-and-trust-tiers.md), taint propagation (`ast/render-graph.ts`) is a separate pass from boundary classification — rules query the render graph, they don't walk the AST themselves. Suppressions (`E1` in `docs/c4/system-context.md`) land in this milestone, not later — BG-003 in particular is unusable noise without them.
+
+- [ ] **TASK-012:** Implement Rule `BG-001` (`server-to-client-leak`): Detect when a prop passed to an imported Client Component references a sensitive schema column. Must handle both `JsxAttribute` initializers and `JsxExpression` children (`<Client>{taintedValue}</Client>` is a leak the same as a named prop).
+- [ ] **TASK-013:** Implement Rule `BG-002` (`unvalidated-action`): Detect when an exported `"use server"` function accepts parameters without calling an approved validator (e.g., Zod).
+- [ ] **TASK-013a:** Implement Rule `BG-003` (`opaque-object-pass`): Detect a bare (non-destructured) identifier, traced back to a server-ingress call, passed directly as a prop to a Client Component — the primary rule for zero-schema/BFF mode, since it needs no field-level sensitivity classification at all.
+- [ ] **TASK-013b:** Implement Rule `BG-004` (`secret-in-markup`): Detect a tainted value interpolated directly into JSX text/attribute content anywhere in the tree — distinct from BG-001, which only cares about values crossing into client-side JS as structured prop data. A value can be server-only and never cross the Flight boundary as data, yet still leak by being rendered into HTML.
+- [ ] **TASK-014:** Implement sanitizer recognition (FR7): Ensure calls to configured validators break the taint chain.
+- [ ] **TASK-014a:** Implement suppressions (`src/suppressions/suppressions.ts`): inline `// boundary-guard-disable-next-line BG-00X reason="..."` comments, applied to raw findings before persistence. Required for BG-003 to be usable on day one, not deferred to Milestone 4.
