@@ -42,6 +42,11 @@ program
   .option("--format <type>", "output format: pretty | json | sarif", "pretty")
   .option("--rule <ruleId>", "run only the given rule, e.g. BG-001")
   .option("--verbose", "print every file instead of the first 10 per section")
+  .option("--output <file>", "write the report to a file instead of stdout")
+  .option(
+    "--no-store",
+    "don't record this scan in .boundary-guard/findings.sqlite",
+  )
   .action(scanCommand);
 
 program
@@ -58,6 +63,7 @@ program
 program
   .command("baseline")
   .description("Record current violations so only new leaks trigger warnings")
+  .argument("[path]", "Next.js app root", ".")
   .action(baselineCommand);
 
 program

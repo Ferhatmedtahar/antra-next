@@ -7,6 +7,7 @@ Working backlog for `boundary-guard`, broken into epics — one folder each, in 
 - [02-boundary-detection/](./02-boundary-detection/) — AST boundary classification (Server/Client/Action/Route) — **done**
 - [03-schema-taint-sources/](./03-schema-taint-sources/) — real schema provider implementations + zero-schema heuristics — **done**
 - [04-rules-engine/](./04-rules-engine/) — render graph (taint propagation), BG-001–004 rules, sanitizers, suppressions — **done**
-- [05-storage-reporting-ci/](./05-storage-reporting-ci/) — SQLite storage, terminal/SARIF reporters, baseline — **next**
+- [05-storage-reporting-ci/](./05-storage-reporting-ci/) — SQLite storage, terminal/SARIF reporters, baseline — **done**
+- 06-studio — local web dashboard over `findings.sqlite` (+ `query`) — **next**, not yet written up
 
 See [`docs/adr/`](../adr/) for accepted architectural decisions and [`docs/c4/`](../c4/) for the settled system diagram.

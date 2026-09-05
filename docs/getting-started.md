@@ -16,8 +16,9 @@ Nothing scans anything yet. What exists is the **walking skeleton**: a CLI that 
 | `src/cli/index.ts` — commander registration, all 10 commands + flags                           | Real                                                                                                                                                                                                                             |
 | `init` / `sync` — `src/init/`, `src/framework/`, `src/schema/providers/`, `src/config/`        | Real (Epics 01+03): detects Next.js App Router, offers Prisma/Supabase/Drizzle/OpenAPI/Zod, extracts every field into `.boundary-guard/contract-snapshot.json`, seeds `sensitiveFields.include` in `boundary-guard.config.json`. |
 | `scan` — `src/engine.ts`, `src/ast/`, `src/classification/`, `src/rules/`, `src/suppressions/` | Real (Epics 02–04): classifies every file, resolves taint at every JSX/action/route sink, runs BG-001–004, applies inline suppressions, prints findings with provenance, exits 1 with `--fail-on-violation`.                     |
-| `doctor`, `baseline`, `trace`, `watch`, `fix`, `query`, `studio`                               | Placeholder bodies — parse args, print a message, do nothing else                                                                                                                                                                |
-| `src/storage/`, `src/reporters/`                                                               | Empty — this is where Epic 05 lands; `src/ast/render-graph.ts` + `src/rules/` are Epic 04                                                                                                                                        |
+| `baseline` — `src/baseline/`                                                                   | Real (Epic 05): records current findings so `scan` only fails on new ones.                                                                                                                                                       |
+| `doctor`, `trace`, `watch`, `fix`, `query`, `studio`                                           | Placeholder bodies — parse args, print a message, do nothing else                                                                                                                                                                |
+| `src/storage/`, `src/reporters/`                                                               | Real (Epic 05): every scan appended to `.boundary-guard/findings.sqlite`; `pretty` / `json` / `sarif` reporters.                                                                                                                 |
 | Husky pre-commit (lint-staged) + commit-msg (commitlint)                                       | Real, enforced on every commit                                                                                                                                                                                                   |
 | `tests/unit/smoke.test.ts`, `tests/unit/cli.test.ts`                                           | Real — verify the entrypoint loads and every command/flag is registered                                                                                                                                                          |
 
@@ -133,3 +134,26 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build
 ## What's next
 
 [Epic 01](./tasks/01-init-config-setup/) (`init`) and [Epic 02](./tasks/02-boundary-detection/) (`src/ast/boundary-classifier.ts`, `src/engine.ts`) are done. Next is [Epic 03](./tasks/03-schema-taint-sources/): real `extract()` bodies for the schema providers plus the zero-schema heuristics, so the snapshot stops being empty and `scan` has taint sources to work with. Everything later plugs into `engine.ts`'s `runScan()` without touching what's documented here.
+
+## Adopting on an existing codebase, and gating CI
+
+An existing project will have findings on day one. Don't fix them all before you can turn the gate on — record them:
+
+```bash
+boundary-guard baseline        # writes .boundary-guard/baseline.json — commit it
+boundary-guard scan            # now reports only findings that aren't in the baseline
+```
+
+Findings are matched by a fingerprint of rule + file + sink text (not line numbers), so unrelated edits don't resurrect them. Re-run `baseline` when you've deliberately accepted more; fix a baselined finding and it simply stops appearing.
+
+CI gate — every scan exits 1 on a new finding with `--fail-on-violation`, and SARIF plugs straight into GitHub code scanning:
+
+```yaml
+- run: pnpm exec boundary-guard scan --format sarif --output boundary-guard.sarif --fail-on-violation
+- uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: boundary-guard.sarif
+```
+
+Suppressed findings are included in the SARIF with `suppressions`, so the platform hides them itself. Every scan is also appended to `.boundary-guard/findings.sqlite` (gitignored) — `--no-store` skips that.

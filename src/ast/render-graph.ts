@@ -97,7 +97,11 @@ const ORM_CALL =
 
 /** Collapses a (possibly multi-line) expression to one readable line. */
 function firstLine(text: string, max = 90): string {
-  const line = text.replace(/\s+/g, " ").trim();
+  const line = text
+    .replace(/\s+/g, " ")
+    .replace(/\s+\./g, ".")
+    .replace(/\(\s+/g, "(")
+    .trim();
   return line.length > max ? `${line.slice(0, max - 1)}…` : line;
 }
 
