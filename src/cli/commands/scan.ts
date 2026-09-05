@@ -6,16 +6,24 @@ import chalk from "chalk";
 import { runScan, type ScanResult } from "../../engine.js";
 import { FrameworkNotDetectedError } from "../../framework/detect.js";
 import {
+  GitError,
+  listChangedFiles,
+  type ChangeMode,
+} from "../../git/changed-files.js";
+import {
   getReporter,
   isReportFormat,
   REPORT_FORMATS,
 } from "../../reporters/index.js";
 import { isRuleId, RULE_IDS } from "../../rules/index.js";
+import { scanSpinner } from "../progress.js";
 
 export interface ScanCommandOptions {
   strict?: boolean;
   diff?: boolean;
   staged?: boolean;
+  /** Ref for --diff; auto-detected (origin/main, main, …) when absent. */
+  base?: string;
   failOnViolation?: boolean;
   format?: string;
   rule?: string;
@@ -24,6 +32,8 @@ export interface ScanCommandOptions {
   /** commander's --no-store → false; absent → true. */
   store?: boolean;
 }
+
+const SOURCE_FILE = /\.(?:tsx?|jsx?)$/;
 
 export async function scanCommand(
   targetPath: string,
@@ -50,17 +60,75 @@ export async function scanCommand(
     process.exitCode = 2;
     return;
   }
+  if (options.staged && options.diff) {
+    console.error(chalk.red("--staged and --diff can't be combined."));
+    process.exitCode = 2;
+    return;
+  }
 
+  // --staged / --diff: rules run only on the changed files. The whole
+  // project is still parsed, so cross-file taint resolves; the scan is
+  // partial, so it isn't recorded in findings.sqlite.
+  let scope: { onlyFiles: string[]; scopeLabel: string } | null = null;
+  if (options.staged || options.diff) {
+    const mode: ChangeMode = options.staged ? "staged" : "diff";
+    try {
+      const changed = await listChangedFiles(rootDir, mode, options.base);
+      scope = {
+        onlyFiles: changed.files.filter((file) => SOURCE_FILE.test(file)),
+        scopeLabel:
+          mode === "staged"
+            ? "git staged files"
+            : `files changed since ${changed.base ?? "base"}`,
+      };
+    } catch (error) {
+      if (error instanceof GitError) {
+        console.error(chalk.red(error.message));
+        process.exitCode = 1;
+        return;
+      }
+      throw error;
+    }
+    if (scope.onlyFiles.length === 0) {
+      if (format === "json") {
+        console.log(
+          JSON.stringify(
+            {
+              scope: { partial: true, label: scope.scopeLabel, files: 0 },
+              findings: [],
+              suppressed: [],
+              baselined: [],
+            },
+            null,
+            2,
+          ),
+        );
+      } else {
+        console.log(
+          chalk.gray(`No ${scope.scopeLabel} to scan — nothing to do.`),
+        );
+      }
+      return;
+    }
+  }
+
+  const { spinner, onPhase } = scanSpinner();
   let result: ScanResult;
   try {
     result = await runScan({
       rootDir,
-      store: options.store !== false,
+      store: options.store !== false && scope === null,
+      onPhase,
+      ...(scope ?? {}),
       ...(options.rule !== undefined && isRuleId(options.rule)
         ? { onlyRules: [options.rule] }
         : {}),
     });
+    spinner.succeed(
+      `Scanned ${result.classifications.length} files in ${(result.durationMs / 1000).toFixed(1)}s`,
+    );
   } catch (error) {
+    spinner.fail("Scan failed");
     if (error instanceof FrameworkNotDetectedError) {
       console.error(chalk.red(error.message));
       process.exitCode = 1;

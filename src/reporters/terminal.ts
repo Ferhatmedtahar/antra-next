@@ -22,7 +22,7 @@ function countByRule(findings: readonly Finding[]): string {
     .join(", ");
 }
 
-class SourceCache {
+export class SourceCache {
   private readonly lines = new Map<string, string[] | null>();
 
   get(filePath: string): string[] | null {
@@ -47,7 +47,7 @@ class SourceCache {
  *   > 16 |       <ClientCard hash={user.password_hash} />
  *        |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
  */
-function codeFrame(
+export function codeFrame(
   finding: Finding,
   lines: string[],
   c: ChalkInstance,
@@ -108,6 +108,13 @@ function renderSummary(
   out.push(
     c.gray(`rules:     ${result.rulesRun.join(", ") || "(none enabled)"}`),
   );
+  if (result.scope.partial) {
+    out.push(
+      c.yellow(
+        `scope:     ${result.scope.label} — rules ran on ${result.scope.files} file(s); not recorded`,
+      ),
+    );
+  }
   out.push(c.gray(`duration:  ${(result.durationMs / 1000).toFixed(1)}s`));
   out.push("");
 
@@ -137,7 +144,7 @@ function renderSummary(
   return out;
 }
 
-function renderFindings(
+export function renderFindings(
   result: ScanResult,
   ctx: ReportContext,
   c: ChalkInstance,

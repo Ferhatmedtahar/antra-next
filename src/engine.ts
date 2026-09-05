@@ -1,3 +1,5 @@
+import path from "path";
+
 import {
   classifyFile,
   type FileClassification,
@@ -31,7 +33,28 @@ export interface ScanOptions {
   ignoreBaseline?: boolean;
   /** Append this scan to .boundary-guard/findings.sqlite (default true). */
   store?: boolean;
+  /** Progress hook for spinners; fired at the start of each phase. */
+  onPhase?: (phase: ScanPhase, detail?: string) => void;
+  /**
+   * Run the rules only on these files (absolute paths). The whole project is
+   * still parsed and classified so imports and boundaries resolve — this
+   * limits where findings are reported, not what the resolver can see.
+   */
+  onlyFiles?: readonly string[];
+  /** Human label for a partial scan ("git staged files"), shown by reporters. */
+  scopeLabel?: string;
 }
+
+export interface ScanScope {
+  /** True when `onlyFiles` restricted the rules to a subset. */
+  partial: boolean;
+  label: string;
+  /** Files the rules actually ran on. */
+  files: number;
+}
+
+export type ScanPhase =
+  "detect" | "config" | "project" | "classify" | "rules" | "store";
 
 export interface ScanResult {
   startedAt: string;
@@ -46,6 +69,7 @@ export interface ScanResult {
   /** The subset the classifier flags as sensitive — the real taint origins. */
   taintSources: TaintSource[];
   rulesRun: RuleId[];
+  scope: ScanScope;
   /** New, unsuppressed findings — the ones that fail the gate. */
   findings: Finding[];
   suppressed: Finding[];
@@ -66,9 +90,12 @@ export interface ScanResult {
  */
 export async function runScan(options: ScanOptions): Promise<ScanResult> {
   const { rootDir } = options;
+  const phase = options.onPhase ?? (() => undefined);
   const started = Date.now();
+  phase("detect");
   const adapter = await requireFramework(rootDir);
 
+  phase("config");
   const config = await loadConfigIfPresent(rootDir);
   const snapshot = config ? await loadSnapshot(rootDir) : null;
   const schemaFields = snapshot?.sources ?? [];
@@ -83,7 +110,9 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     config?.sanitizers ?? DEFAULT_SANITIZERS,
   );
 
+  phase("project");
   const { project, sourceFiles } = loadProject(rootDir);
+  phase("classify", `${sourceFiles.length} files`);
   const classificationList = sourceFiles.map(classifyFile);
   const classifications = new Map(
     classificationList.map((entry) => [entry.filePath, entry]),
@@ -95,9 +124,22 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       (!options.onlyRules || options.onlyRules.includes(rule.id)),
   );
   const resolver = new TaintResolver({ sensitivity, taintSources, sanitizer });
+  const onlyFiles = options.onlyFiles
+    ? new Set(options.onlyFiles.map((file) => path.resolve(file)))
+    : null;
+  const ruleFiles = onlyFiles
+    ? sourceFiles.filter((file) =>
+        onlyFiles.has(path.resolve(file.getFilePath())),
+      )
+    : sourceFiles;
+  phase(
+    "rules",
+    enabled.map((rule) => rule.id).join(", ") +
+      (onlyFiles ? ` on ${ruleFiles.length} file(s)` : ""),
+  );
   const raw = assignFingerprints(
     runRules(
-      sourceFiles,
+      ruleFiles,
       { rootDir, classifications, resolver, sanitizer },
       enabled,
     ),
@@ -120,6 +162,11 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     schemaFields,
     taintSources,
     rulesRun: enabled.map((rule) => rule.id),
+    scope: {
+      partial: onlyFiles !== null,
+      label: options.scopeLabel ?? (onlyFiles ? "partial" : "whole project"),
+      files: ruleFiles.length,
+    },
     findings: active,
     suppressed,
     baselined,
@@ -128,6 +175,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   };
 
   if (options.store !== false) {
+    phase("store");
     try {
       const store = FindingsStore.open(rootDir);
       try {

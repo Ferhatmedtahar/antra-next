@@ -96,6 +96,39 @@ export interface StoredFinding {
   suppressReason: string | null;
 }
 
+export interface StoredFile {
+  /** Relative to the scanned project root. */
+  path: string;
+  boundary: "server" | "client";
+  isServerActionModule: boolean;
+  isRouteHandler: boolean;
+  routeMethods: string[];
+  serverActions: { name: string; line: number }[];
+}
+
+interface FileRow {
+  path: string;
+  boundary: "server" | "client";
+  is_action_module: number;
+  is_route_handler: number;
+  route_methods: string;
+  server_actions: string;
+}
+
+function toFile(row: FileRow): StoredFile {
+  return {
+    path: row.path,
+    boundary: row.boundary,
+    isServerActionModule: row.is_action_module === 1,
+    isRouteHandler: row.is_route_handler === 1,
+    routeMethods: JSON.parse(row.route_methods) as string[],
+    serverActions: JSON.parse(row.server_actions) as {
+      name: string;
+      line: number;
+    }[],
+  };
+}
+
 interface ScanRow {
   id: number;
   started_at: string;
@@ -320,6 +353,16 @@ export class FindingsStore {
       )
       .all(scanId)
       .map(toFinding);
+  }
+
+  filesForScan(scanId: number): StoredFile[] {
+    return this.db
+      .prepare<[number], FileRow>(
+        `SELECT path, boundary, is_action_module, is_route_handler, route_methods, server_actions
+         FROM files WHERE scan_id = ? ORDER BY path`,
+      )
+      .all(scanId)
+      .map(toFile);
   }
 
   close(): void {

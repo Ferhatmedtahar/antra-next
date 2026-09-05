@@ -36,6 +36,10 @@ program
   .option("--diff", "only scan files changed relative to the base branch")
   .option("--staged", "only scan git-staged files")
   .option(
+    "--base <ref>",
+    "base ref for --diff (default: origin/main, main, origin/master, master)",
+  )
+  .option(
     "--fail-on-violation",
     "exit 1 if unsanitized boundary leaks are found",
   )
@@ -58,6 +62,8 @@ program
 program
   .command("doctor")
   .description("Validate configuration, rules, and parser readiness")
+  .argument("[path]", "Next.js app root", ".")
+  .option("--format <type>", "output format: pretty | json", "pretty")
   .action(doctorCommand);
 
 program
@@ -69,27 +75,45 @@ program
 program
   .command("trace")
   .description("Print the full dataflow path from DB source to client sink")
-  .argument("<target>", "file:line to trace, e.g. UserCard.tsx:85")
+  .argument("<target>", "file or file:line to trace, e.g. app/page.tsx:85")
+  .argument("[path]", "Next.js app root", ".")
+  .option("--format <type>", "output format: pretty | json", "pretty")
   .action(traceCommand);
 
 program
   .command("watch")
   .description("Run continuous analysis on local file changes")
+  .argument("[path]", "Next.js app root", ".")
+  .option("--full", "rescan the whole project on every change")
+  .option("--rule <ruleId>", "run only the given rule, e.g. BG-001")
   .action(watchCommand);
 
 program
   .command("fix")
-  .description("Auto-scaffold action validators and clean destructured props")
+  .description(
+    "Apply mechanical remediations: today, reasoned suppression comments",
+  )
+  .argument("[path]", "Next.js app root", ".")
+  .option("--suppress <rule>", "rule id (BG-001 … BG-004) or all")
+  .option("--reason <text>", "recorded in every inserted comment")
+  .option("--file <fragment>", "only files whose path contains this")
+  .option("--dry-run", "print the planned edits, write nothing")
   .action(fixCommand);
 
 program
   .command("query")
   .description("Query the local SQLite analysis database")
+  .argument("[sql]", "read-only SQL; omit to print the schema and examples")
+  .argument("[path]", "Next.js app root", ".")
+  .option("--format <type>", "output format: table | json | csv", "table")
   .action(queryCommand);
 
 program
   .command("studio")
   .description("Launch the local web dashboard over findings.sqlite")
+  .argument("[path]", "Next.js app root", ".")
+  .option("--port <port>", "port to listen on (localhost only)", "8080")
+  .option("--no-open", "don't open the browser")
   .action(studioCommand);
 
 const isMainModule =

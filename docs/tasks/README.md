@@ -8,6 +8,7 @@ Working backlog for `boundary-guard`, broken into epics — one folder each, in 
 - [03-schema-taint-sources/](./03-schema-taint-sources/) — real schema provider implementations + zero-schema heuristics — **done**
 - [04-rules-engine/](./04-rules-engine/) — render graph (taint propagation), BG-001–004 rules, sanitizers, suppressions — **done**
 - [05-storage-reporting-ci/](./05-storage-reporting-ci/) — SQLite storage, terminal/SARIF reporters, baseline — **done**
-- 06-studio — local web dashboard over `findings.sqlite` (+ `query`) — **next**, not yet written up
+- [06-studio/](./06-studio/) — local web dashboard over `findings.sqlite`, with config editing — **done (v1)**
+- [07-cli-commands/](./07-cli-commands/) — `doctor`, `trace`, `query`, `watch`, `fix`, `scan --staged/--diff` — **done**
 
 See [`docs/adr/`](../adr/) for accepted architectural decisions and [`docs/c4/`](../c4/) for the settled system diagram.

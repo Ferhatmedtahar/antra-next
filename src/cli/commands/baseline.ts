@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { writeBaseline } from "../../baseline/baseline.js";
 import { runScan } from "../../engine.js";
 import { FrameworkNotDetectedError } from "../../framework/detect.js";
+import { scanSpinner } from "../progress.js";
 
 /**
  * Records every current finding as known, so future scans only fail on new
@@ -15,12 +16,17 @@ export async function baselineCommand(targetPath: string): Promise<void> {
   console.log(chalk.blue.bold("boundary-guard baseline"));
   console.log(chalk.gray(`project: ${rootDir}\n`));
 
+  const { spinner, onPhase } = scanSpinner();
   try {
     const result = await runScan({
       rootDir,
       ignoreBaseline: true,
       store: false,
+      onPhase,
     });
+    spinner.succeed(
+      `Scanned ${result.classifications.length} files in ${(result.durationMs / 1000).toFixed(1)}s`,
+    );
     const fingerprints = result.findings.flatMap((finding) =>
       finding.fingerprint ? [finding.fingerprint] : [],
     );
@@ -51,6 +57,7 @@ export async function baselineCommand(targetPath: string): Promise<void> {
       ),
     );
   } catch (error) {
+    spinner.fail("Baseline failed");
     if (error instanceof FrameworkNotDetectedError) {
       console.error(chalk.red(error.message));
       process.exitCode = 1;
