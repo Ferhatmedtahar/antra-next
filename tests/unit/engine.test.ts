@@ -67,6 +67,26 @@ describe("runScan", () => {
     ]);
   });
 
+  it("reports phases in pipeline order for progress spinners", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+    const phases: string[] = [];
+
+    await runScan({
+      rootDir: project.dir,
+      store: false,
+      onPhase: (phase, detail) =>
+        phases.push(detail ? `${phase}:${detail}` : phase),
+    });
+
+    expect(phases).toEqual([
+      "detect",
+      "config",
+      "project",
+      "classify:1 files",
+      "rules:BG-001, BG-002, BG-003, BG-004",
+    ]);
+  });
+
   it("loads the snapshot and keeps only keyword-sensitive fields as taint sources", async () => {
     project = makeTempProject(NEXT_APP_FILES);
     await writeConfig(

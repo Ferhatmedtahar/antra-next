@@ -10,17 +10,17 @@ Git only tracks files, never directories. An empty folder — `src/ast/`, `src/s
 
 Nothing scans anything yet. What exists is the **walking skeleton**: a CLI that boots, parses every flag from the CLI surface spec, and dispatches to 10 commands — but every command body is a placeholder that prints "not implemented yet" and returns. The tooling around it (lint, format, typecheck, tests, git hooks) is real and enforced, not a placeholder.
 
-| Piece                                                                                          | State                                                                                                                                                                                                                            |
-| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev` / `pnpm build` / `pnpm test` / `pnpm typecheck` / `pnpm lint`                       | Real, all green                                                                                                                                                                                                                  |
-| `src/cli/index.ts` — commander registration, all 10 commands + flags                           | Real                                                                                                                                                                                                                             |
-| `init` / `sync` — `src/init/`, `src/framework/`, `src/schema/providers/`, `src/config/`        | Real (Epics 01+03): detects Next.js App Router, offers Prisma/Supabase/Drizzle/OpenAPI/Zod, extracts every field into `.boundary-guard/contract-snapshot.json`, seeds `sensitiveFields.include` in `boundary-guard.config.json`. |
-| `scan` — `src/engine.ts`, `src/ast/`, `src/classification/`, `src/rules/`, `src/suppressions/` | Real (Epics 02–04): classifies every file, resolves taint at every JSX/action/route sink, runs BG-001–004, applies inline suppressions, prints findings with provenance, exits 1 with `--fail-on-violation`.                     |
-| `baseline` — `src/baseline/`                                                                   | Real (Epic 05): records current findings so `scan` only fails on new ones.                                                                                                                                                       |
-| `doctor`, `trace`, `watch`, `fix`, `query`, `studio`                                           | Placeholder bodies — parse args, print a message, do nothing else                                                                                                                                                                |
-| `src/storage/`, `src/reporters/`                                                               | Real (Epic 05): every scan appended to `.boundary-guard/findings.sqlite`; `pretty` / `json` / `sarif` reporters.                                                                                                                 |
-| Husky pre-commit (lint-staged) + commit-msg (commitlint)                                       | Real, enforced on every commit                                                                                                                                                                                                   |
-| `tests/unit/smoke.test.ts`, `tests/unit/cli.test.ts`                                           | Real — verify the entrypoint loads and every command/flag is registered                                                                                                                                                          |
+| Piece                                                                                                                    | State                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev` / `pnpm build` / `pnpm test` / `pnpm typecheck` / `pnpm lint`                                                 | Real, all green                                                                                                                                                                                                                  |
+| `src/cli/index.ts` — commander registration, all 10 commands + flags                                                     | Real                                                                                                                                                                                                                             |
+| `init` / `sync` — `src/init/`, `src/framework/`, `src/schema/providers/`, `src/config/`                                  | Real (Epics 01+03): detects Next.js App Router, offers Prisma/Supabase/Drizzle/OpenAPI/Zod, extracts every field into `.boundary-guard/contract-snapshot.json`, seeds `sensitiveFields.include` in `boundary-guard.config.json`. |
+| `scan` — `src/engine.ts`, `src/ast/`, `src/classification/`, `src/rules/`, `src/suppressions/`                           | Real (Epics 02–04): classifies every file, resolves taint at every JSX/action/route sink, runs BG-001–004, applies inline suppressions, prints findings with provenance, exits 1 with `--fail-on-violation`.                     |
+| `baseline` — `src/baseline/`                                                                                             | Real (Epic 05): records current findings so `scan` only fails on new ones.                                                                                                                                                       |
+| `doctor`, `trace`, `watch`, `fix`, `query` — `src/doctor/`, `src/git/`, `src/watch/`, `src/fix/`, `src/storage/query.ts` | Real (Epic 07): health checks, per-line dataflow, read-only SQL over the scan history, save-and-rescan, reasoned suppression comments; `scan --staged` / `--diff` limit the rules to changed files.                              |
+| `src/storage/`, `src/reporters/`                                                                                         | Real (Epic 05): every scan appended to `.boundary-guard/findings.sqlite`; `pretty` / `json` / `sarif` reporters.                                                                                                                 |
+| Husky pre-commit (lint-staged) + commit-msg (commitlint)                                                                 | Real, enforced on every commit                                                                                                                                                                                                   |
+| `tests/unit/smoke.test.ts`, `tests/unit/cli.test.ts`                                                                     | Real — verify the entrypoint loads and every command/flag is registered                                                                                                                                                          |
 
 Architecture decisions are recorded in [`docs/adr/`](./adr/); the settled system diagram is [`docs/c4/system-context.md`](./c4/system-context.md); the task backlog is [`docs/tasks/`](./tasks/).
 
@@ -134,6 +134,34 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build
 ## What's next
 
 [Epic 01](./tasks/01-init-config-setup/) (`init`) and [Epic 02](./tasks/02-boundary-detection/) (`src/ast/boundary-classifier.ts`, `src/engine.ts`) are done. Next is [Epic 03](./tasks/03-schema-taint-sources/): real `extract()` bodies for the schema providers plus the zero-schema heuristics, so the snapshot stops being empty and `scan` has taint sources to work with. Everything later plugs into `engine.ts`'s `runScan()` without touching what's documented here.
+
+## The rest of the CLI
+
+```bash
+boundary-guard scan --staged                 # pre-commit: rules only on staged files (whole project still parsed)
+boundary-guard scan --diff --base origin/main   # PR scope: changed since the merge-base, untracked included
+boundary-guard doctor                        # 11 checks with a hint each; exit 1 on a ✖
+boundary-guard trace app/page.tsx:94         # why is this line flagged — path from origin to sink
+boundary-guard query                         # schema + example queries
+boundary-guard query "SELECT rule_id, COUNT(*) FROM findings WHERE status='active' GROUP BY 1" --format csv
+boundary-guard watch                         # full scan, then rescan whatever you save
+boundary-guard fix --suppress BG-002 --reason "validated upstream by middleware" --dry-run
+```
+
+Partial scans (`--staged`, `--diff`, `watch`, `trace`) print a `scope:` line and are never recorded in `findings.sqlite`, so Studio's history only holds whole-project runs. `fix` only inserts suppression comments — it picks `//`, `/* */` or `{/* */}` from the surrounding syntax and refuses to run without a `--reason`.
+
+## Studio — the local dashboard
+
+```bash
+pnpm build                      # once; builds the CLI and the Studio SPA into dist/
+boundary-guard studio           # http://127.0.0.1:8080 opens in your browser (--port, --no-open)
+```
+
+Studio reads the same `.boundary-guard/findings.sqlite` every scan writes and edits the same `boundary-guard.config.json` the CLI reads — pin or ignore a field on **Sources**, flip a rule or add a keyword on **Config**, hit **Run scan** in the sidebar and see the effect in **Findings** with the code frame and the path the value took. **Record baseline** does what the CLI command does. It binds to localhost only.
+
+The moon/sun button at the bottom of the sidebar switches between the light and dark themes; the choice is remembered per browser.
+
+Working on Studio itself: `pnpm dev studio <project> --no-open` provides the API on 8080 and `pnpm dev:studio` serves the SPA with hot reload on 5173, proxying `/api`. The UI is React + Tailwind v4 with shadcn/ui components under `studio/src/components/ui/` (add more with `pnpm dlx shadcn@latest add <name>`), Tabler icons, and Poppins bundled from `@fontsource/poppins`.
 
 ## Adopting on an existing codebase, and gating CI
 

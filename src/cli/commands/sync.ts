@@ -1,6 +1,7 @@
 import path from "path";
 
 import chalk from "chalk";
+import ora from "ora";
 
 import { ConfigNotFoundError } from "../../config/load.js";
 import { runSync } from "../../config/sync.js";
@@ -13,8 +14,13 @@ export async function syncCommand(targetPath: string): Promise<void> {
   console.log(chalk.blue.bold("boundary-guard sync"));
   console.log(chalk.gray(`project: ${rootDir}\n`));
 
+  const spinner = ora({
+    text: "Extracting schema fields…",
+    stream: process.stderr,
+  }).start();
   try {
     const result = await runSync(rootDir);
+    spinner.succeed(`Extracted ${result.snapshot.sources.length} fields`);
     const providerIds = result.config.providers.map((provider) => provider.id);
     console.log(chalk.green.bold("✓ snapshot refreshed"));
     console.log(
@@ -28,6 +34,7 @@ export async function syncCommand(targetPath: string): Promise<void> {
     }
     printSensitive(result.sensitive);
   } catch (error) {
+    spinner.fail("Sync failed");
     if (
       error instanceof ConfigNotFoundError ||
       error instanceof FrameworkNotDetectedError
