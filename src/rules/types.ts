@@ -18,6 +18,8 @@ export interface Finding {
   snippet: string;
   /** Provenance, nearest-to-sink first (empty for BG-002). */
   trace: string[];
+  /** Stable identity across line shifts (rule + file + sink text); set by the engine. */
+  fingerprint?: string;
   suppressed?: { reason: string | null };
 }
 
