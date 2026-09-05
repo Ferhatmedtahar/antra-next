@@ -1,5 +1,5 @@
 import type { ProviderConfig } from "../config/types.js";
-import { NotImplementedError } from "./errors.js";
+import { NotImplementedError, SchemaExtractionError } from "./errors.js";
 import { findProvider } from "./providers/index.js";
 import type { SchemaProvider, TaintSource } from "./types.js";
 
@@ -41,7 +41,7 @@ export async function extractSources(
         continue;
       }
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`${provider.id}: ${message}`, { cause: error });
+      throw new SchemaExtractionError(provider.id, message, { cause: error });
     }
   }
   return { sources: [...byOrigin.values()], skipped };

@@ -7,8 +7,9 @@
 
 - [x] **TASK-022s:** Design system — Poppins (`@fontsource/poppins`, self-hosted), Tabler icons, shadcn/ui components copied into `studio/src/components/ui/` (`radix-ui`, `cva`, `tailwind-merge`, `tw-animate-css`, sonner toasts, `components.json` + `@/` alias so `shadcn add` works), the shadcn oklch theme in `styles.css` with a selected `.dark` palette and a sidebar toggle (persisted, applied before first paint). `SectionHeader` (icon tile + title + description + action) heads every page and card; tables replaced by bordered row lists grouped by table/directory; findings open in a Sheet; baseline confirm is an AlertDialog.
 
+- [x] **TASK-023s:** Graph — `src/ast/boundary-graph.ts` `collectEdges` (renders: JSX tag → declaring file via `collectJsxSinks`; calls-action: imports of `"use server"` modules / inline actions), `ScanResult.edges` + a `graph` phase, `edges` table + `edgesForScan`, `GET /api/scans/:id/graph` (`buildGraph`: nodes = files with an edge or a finding; edges carry crossing + BG-001/003 finding counts by sink component). Studio **Graph** page on React Flow + dagre: render graph (filters: crossings only / with findings / action calls / hide isolated; search; LR/TB; click → neighbour highlight + side panel with findings and in/out edges; deep links from Findings and Files) and a Route tree view of `app/`. Finding sheet shows the trace as a vertical flow.
+
 Not in v1 (candidates for a follow-up):
 
-- Graph view of file → component edges (the data is there: `files` + findings' traces).
 - `query` command (ad-hoc SQL over `findings.sqlite`) — Studio covers the common questions.
 - Screenshot-based visual regression tests.

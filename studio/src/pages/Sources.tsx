@@ -1,9 +1,4 @@
-import {
-  IconDatabase,
-  IconKey,
-  IconSearch,
-  IconTable,
-} from "@tabler/icons-react";
+import { IconDatabase, IconKey, IconTable } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +14,7 @@ import {
   PageHeader,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatAbsolute, splitOrigin } from "@/format";
@@ -109,7 +104,7 @@ export function Sources() {
   if (config.data === null && !config.loading) {
     return (
       <>
-        <PageHeader icon={<IconDatabase />} title="Sources" />
+        <PageHeader title="Sources" />
         <Empty
           icon={<IconDatabase />}
           title="No config yet"
@@ -121,7 +116,7 @@ export function Sources() {
   if (sources.data && fields.length === 0) {
     return (
       <>
-        <PageHeader icon={<IconDatabase />} title="Sources" />
+        <PageHeader title="Sources" />
         <Empty
           icon={<IconDatabase />}
           title="The snapshot is empty"
@@ -134,33 +129,32 @@ export function Sources() {
   return (
     <>
       <PageHeader
-        icon={<IconDatabase />}
         title="Sources"
         description={
           <>
-            {sensitiveCount} of {fields.length} schema fields are taint origins
+            {sensitiveCount} of {fields.length} schema fields are taint origins.
             {sources.data?.generatedAt
-              ? ` · snapshot ${formatAbsolute(sources.data.generatedAt)}`
-              : ""}
-            . Pin what the keywords missed; ignore a false positive — ignore
-            always wins.
+              ? ` Snapshot taken ${formatAbsolute(sources.data.generatedAt)}.`
+              : ""}{" "}
+            Pin what the keywords missed, ignore a false positive. Ignore always
+            wins.
           </>
         }
       />
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Tabs
           value={view}
           onValueChange={(value) =>
             setView(value === "all" ? "all" : "sensitive")
           }
         >
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="sensitive">
               Sensitive
               <Badge
                 variant="soft-muted"
-                className="ml-1 h-5 px-1.5 tabular-nums"
+                className="ml-1.5 h-5 px-1.5 tabular-nums"
               >
                 {sensitiveCount}
               </Badge>
@@ -169,21 +163,19 @@ export function Sources() {
               All
               <Badge
                 variant="soft-muted"
-                className="ml-1 h-5 px-1.5 tabular-nums"
+                className="ml-1.5 h-5 px-1.5 tabular-nums"
               >
                 {fields.length}
               </Badge>
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative ml-auto">
-          <IconSearch className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-          <Input
-            type="search"
+        <div className="w-72">
+          <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery("")}
             placeholder="Filter by table or field"
-            className="w-72 pl-9"
           />
         </div>
       </div>
@@ -197,17 +189,17 @@ export function Sources() {
           ) : null}
           {groups.map((group) => (
             <div key={`${group.provider}:${group.container}`}>
-              <div className="bg-muted/50 flex items-center gap-2.5 px-5 py-2.5">
-                <IconTable className="text-primary size-4" />
-                <span className="font-mono text-sm font-medium">
+              <div className="bg-surface-soft flex items-center gap-2.5 px-5 py-2.5">
+                <IconTable className="text-muted-foreground size-4" />
+                <span className="font-mono text-sm font-semibold">
                   {group.container}
                 </span>
                 <span className="text-muted-foreground text-xs">
-                  {group.provider} · {group.fields.length} field
-                  {group.fields.length === 1 ? "" : "s"}
+                  {group.fields.length} field
+                  {group.fields.length === 1 ? "" : "s"} from {group.provider}
                 </span>
               </div>
-              <ul className="divide-border divide-y">
+              <ul className="divide-y divide-divider-subtle">
                 {group.fields.map((f) => (
                   <li
                     key={f.origin}

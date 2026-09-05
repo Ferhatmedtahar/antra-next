@@ -43,6 +43,7 @@ function sampleResult(rootDir: string): ScanResult {
     ],
     rulesRun: ["BG-001", "BG-002"],
     scope: { partial: false, label: "whole project", files: 1 },
+    edges: [],
     findings: [finding(16)],
     suppressed: [{ ...finding(28), suppressed: { reason: "public" } }],
     baselined: [finding(11, "BG-002")],

@@ -7,6 +7,7 @@ const PHASE_TEXT: Record<ScanPhase, (detail?: string) => string> = {
   config: () => "Loading config and snapshot…",
   project: () => "Parsing the project…",
   classify: (detail) => `Classifying ${detail ?? "files"}…`,
+  graph: () => "Linking the render graph…",
   rules: (detail) => `Running rules${detail ? ` (${detail})` : ""}…`,
   store: () => "Recording the scan…",
 };

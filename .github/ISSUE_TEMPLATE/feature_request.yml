@@ -1,0 +1,14 @@
+name: Feature request
+description: A provider, a rule, a framework, a command.
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: What would it catch or make easier?
+      description: A concrete example beats a description.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: How would you expect it to work?
+      description: The command, the config key, the output.

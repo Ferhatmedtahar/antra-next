@@ -1,47 +1,24 @@
-import {
-  cloneElement,
-  isValidElement,
-  type ReactElement,
-  type ReactNode,
-  type SVGProps,
-} from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 interface SectionHeaderProps {
-  icon: ReactNode;
+  /** Bare 16px muted icon inline before the title. Opt-in, `sm` only. */
+  glyph?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
   className?: string;
-  iconClassName?: string;
   action?: ReactNode;
   /** `sm` heads a card; `lg` heads a page. */
   size?: "sm" | "lg";
 }
 
-function SectionHeaderIcon({
-  icon,
-  className,
-}: {
-  icon: ReactNode;
-  className: string;
-}) {
-  if (isValidElement(icon)) {
-    const existing = (icon.props as { className?: string }).className ?? "";
-    return cloneElement(icon as ReactElement<SVGProps<SVGSVGElement>>, {
-      className: cn(className, existing),
-    });
-  }
-  return icon;
-}
-
-/** Icon tile + title + description, with an optional action on the right. */
+/** Clean title + description, with optional inline glyph and optional action on the right. */
 export function SectionHeader({
-  icon,
+  glyph,
   title,
   description,
   className,
-  iconClassName,
   action,
   size = "sm",
 }: Readonly<SectionHeaderProps>) {
@@ -49,48 +26,27 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "flex flex-row flex-wrap items-center justify-between gap-3 sm:gap-4",
+        "flex flex-row flex-wrap items-start justify-between gap-4",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-row items-center gap-3 sm:gap-4">
-        <div
-          className={cn(
-            "flex shrink-0 items-center justify-center",
-            large
-              ? "bg-primary text-primary-foreground size-12 rounded-xl shadow-sm"
-              : "bg-primary/10 text-primary size-10 rounded-lg",
-            iconClassName,
-          )}
-        >
-          <SectionHeaderIcon
-            icon={icon}
-            className={large ? "size-6" : "size-5"}
-          />
-        </div>
-
-        {title || description ? (
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 sm:gap-0.5">
-            {title ? (
-              large ? (
-                <h1 className="text-2xl leading-tight font-semibold tracking-tight">
-                  {title}
-                </h1>
-              ) : (
-                <h3 className="text-sm leading-snug font-semibold">{title}</h3>
-              )
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        {title ? (
+          <div className="flex items-center gap-2">
+            {!large && glyph ? (
+              <span className="text-muted-foreground size-4 shrink-0 [&_svg]:size-4">
+                {glyph}
+              </span>
             ) : null}
-            {description ? (
-              <p
-                className={cn(
-                  "text-muted-foreground leading-normal",
-                  large ? "text-sm" : "text-xs",
-                )}
-              >
-                {description}
-              </p>
-            ) : null}
+            {large ? (
+              <h1 className="text-display text-foreground">{title}</h1>
+            ) : (
+              <h3 className="text-title text-foreground">{title}</h3>
+            )}
           </div>
+        ) : null}
+        {description ? (
+          <p className="text-body-2-r text-muted-foreground">{description}</p>
         ) : null}
       </div>
 

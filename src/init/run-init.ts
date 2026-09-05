@@ -199,10 +199,15 @@ async function collectProviderConfigs(
   for (const provider of enabled) {
     const config: ProviderConfig = { id: provider.id };
     for (const field of await provider.configFields(rootDir)) {
-      config[field.key] = await prompter.input(
-        `${provider.label}: ${field.message}`,
-        field.defaultValue,
-      );
+      const answer = (
+        await prompter.input(
+          `${provider.label}: ${field.message}`,
+          field.defaultValue,
+        )
+      ).trim();
+      // An empty answer means "skip this one" — it must not land in the
+      // config as a blank key the provider would then try to honour.
+      if (answer !== "") config[field.key] = answer;
     }
     configs.push(config);
   }

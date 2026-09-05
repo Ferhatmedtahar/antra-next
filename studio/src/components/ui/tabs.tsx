@@ -18,13 +18,19 @@ function Tabs({
 
 function TabsList({
   className,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+}: React.ComponentProps<typeof TabsPrimitive.List> & {
+  variant?: "default" | "underline";
+}) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
+      data-variant={variant}
       className={cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+        variant === "underline"
+          ? "inline-flex h-10 w-fit items-center gap-6 bg-transparent p-0"
+          : "bg-surface-soft text-muted-foreground inline-flex h-10 w-fit items-center justify-center rounded-big p-1",
         className,
       )}
       {...props}
@@ -40,7 +46,10 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+        "group-data-[variant=underline]/tabs-list:relative group-data-[variant=underline]/tabs-list:h-10 group-data-[variant=underline]/tabs-list:px-1 group-data-[variant=underline]/tabs-list:text-muted-foreground group-data-[variant=underline]/tabs-list:hover:text-foreground group-data-[variant=underline]/tabs-list:data-[state=active]:text-foreground",
+        "in-data-[variant=underline]:relative in-data-[variant=underline]:h-10 in-data-[variant=underline]:px-1 in-data-[variant=underline]:text-muted-foreground in-data-[variant=underline]:hover:text-foreground in-data-[variant=underline]:data-[state=active]:text-foreground in-data-[variant=underline]:after:absolute in-data-[variant=underline]:after:bottom-0 in-data-[variant=underline]:after:left-0 in-data-[variant=underline]:after:right-0 in-data-[variant=underline]:after:h-0.5 in-data-[variant=underline]:after:bg-transparent in-data-[variant=underline]:data-[state=active]:after:bg-foreground",
+        "not-in-data-[variant=underline]:h-8 not-in-data-[variant=underline]:rounded-mid not-in-data-[variant=underline]:px-3 not-in-data-[variant=underline]:data-[state=active]:bg-card not-in-data-[variant=underline]:data-[state=active]:text-foreground",
         className,
       )}
       {...props}

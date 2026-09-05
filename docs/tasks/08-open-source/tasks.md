@@ -1,0 +1,7 @@
+# Epic 08 Tasks — in order
+
+- [x] **TASK-033:** `README.md` — the problem in four lines of RSC code, the rules table, install/init/scan/studio in sixty seconds, a Mermaid pipeline diagram, the trust tiers, the config reference, suppressions and baseline, the CI + SARIF recipe, the command table, Studio screenshots, and a limits section (Next.js App Router only, taint depth, keyword recall, ~13 s/1000 files).
+- [x] **TASK-034:** `LICENSE` (MIT), `CONTRIBUTING.md` (setup, scripts, layer map, how to add a rule or provider, commit conventions), `SECURITY.md` (localhost-only Studio, private advisory link, false negatives are bugs).
+- [x] **TASK-035:** `.github/workflows/ci.yml` — format check, typecheck, lint, test, build on Node 20 and 22; dogfood `doctor` + `scan --format sarif` over the fixture app with the report uploaded; commitlint over a pull request's commit range.
+- [x] **TASK-036:** `.github/ISSUE_TEMPLATE/` (bug report, false positive/negative with the snippet and config, feature request) + `PULL_REQUEST_TEMPLATE.md`; `package.json` metadata (`repository`, `homepage`, `bugs`, `keywords`, `author`, `prepublishOnly`).
+- [x] **TASK-037:** `docs/screenshots/` — a demo Next.js app built for the purpose (Supabase types, server pages leaking into client components, validated and unvalidated actions and route handlers) captured through headless Chrome, so the README never shows private code.

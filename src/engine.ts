@@ -4,6 +4,7 @@ import {
   classifyFile,
   type FileClassification,
 } from "./ast/boundary-classifier.js";
+import { collectEdges, type BoundaryEdge } from "./ast/boundary-graph.js";
 import { loadProject } from "./ast/project.js";
 import { TaintResolver } from "./ast/render-graph.js";
 import {
@@ -54,7 +55,7 @@ export interface ScanScope {
 }
 
 export type ScanPhase =
-  "detect" | "config" | "project" | "classify" | "rules" | "store";
+  "detect" | "config" | "project" | "classify" | "graph" | "rules" | "store";
 
 export interface ScanResult {
   startedAt: string;
@@ -64,6 +65,8 @@ export interface ScanResult {
   /** False when the project was never `init`-ed — zero-schema heuristics only. */
   configPresent: boolean;
   classifications: FileClassification[];
+  /** Render/action links between files — what Studio's graph draws. */
+  edges: BoundaryEdge[];
   /** Everything the snapshot holds. */
   schemaFields: TaintSource[];
   /** The subset the classifier flags as sensitive — the real taint origins. */
@@ -132,6 +135,8 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
         onlyFiles.has(path.resolve(file.getFilePath())),
       )
     : sourceFiles;
+  phase("graph");
+  const edges = collectEdges(ruleFiles, classifications);
   phase(
     "rules",
     enabled.map((rule) => rule.id).join(", ") +
@@ -159,6 +164,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     sourceRoot: adapter.findSourceRoot(rootDir),
     configPresent: config !== null,
     classifications: classificationList,
+    edges,
     schemaFields,
     taintSources,
     rulesRun: enabled.map((rule) => rule.id),

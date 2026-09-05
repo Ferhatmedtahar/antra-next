@@ -12,6 +12,8 @@ import {
   type JsxOpeningElement,
   type JsxSelfClosingElement,
   type MethodDeclaration,
+  type ObjectLiteralExpression,
+  type ParameterDeclaration,
   type PropertyAccessExpression,
   type SourceFile,
 } from "ts-morph";
@@ -73,6 +75,8 @@ export function describeOrigin(origin: TaintOrigin): string {
 
 const MAX_DEPTH = 12;
 const MAX_FILE_HOPS = 1;
+/** One parameter hop: a helper's caller is checked, its caller's caller isn't. */
+const MAX_PARAM_HOPS = 1;
 
 /** Properties that carry an opaque payload through unchanged (`const { data } = await ...`). */
 const PASSTHROUGH = new Set([
@@ -159,7 +163,53 @@ function enclosingFunction(node: Node): Node | undefined {
 interface WalkState {
   depth: number;
   hops: number;
+  paramHops: number;
   seen: Set<Node>;
+}
+
+/** The name call sites use for a function: its own, or the variable holding it. */
+function callableName(fn: CallableNode): string | null {
+  if (Node.isFunctionDeclaration(fn) || Node.isMethodDeclaration(fn)) {
+    return fn.getName() ?? null;
+  }
+  if (Node.isFunctionExpression(fn)) {
+    const own = fn.getName();
+    if (own) return own;
+  }
+  const parent = fn.getParent();
+  if (Node.isVariableDeclaration(parent) || Node.isPropertyAssignment(parent)) {
+    return parent.getName();
+  }
+  return null;
+}
+
+function asCallable(node: Node | undefined): CallableNode | null {
+  if (!node) return null;
+  return Node.isFunctionDeclaration(node) ||
+    Node.isArrowFunction(node) ||
+    Node.isFunctionExpression(node) ||
+    Node.isMethodDeclaration(node)
+    ? node
+    : null;
+}
+
+/** The expression a literal assigns to `name`, following shorthand. */
+function literalProperty(
+  literal: ObjectLiteralExpression,
+  name: string,
+): Node | null {
+  for (const property of literal.getProperties()) {
+    if (Node.isPropertyAssignment(property) && property.getName() === name) {
+      return property.getInitializer() ?? null;
+    }
+    if (
+      Node.isShorthandPropertyAssignment(property) &&
+      property.getName() === name
+    ) {
+      return property.getNameNode();
+    }
+  }
+  return null;
 }
 
 /**
@@ -192,8 +242,16 @@ export class TaintResolver {
     }
   }
 
+  /** Call expressions and JSX elements per file, indexed by the name they call. */
+  private readonly callSiteIndex = new Map<SourceFile, Map<string, Node[]>>();
+
   resolve(node: Node): Taint | null {
-    return this.visit(node, { depth: 0, hops: 0, seen: new Set() });
+    return this.visit(node, {
+      depth: 0,
+      hops: 0,
+      paramHops: 0,
+      seen: new Set(),
+    });
   }
 
   /** schema-field beats lexical; both respect sensitiveFields.exclude via the classifier. */
@@ -378,6 +436,9 @@ export class TaintResolver {
     if (Node.isBindingElement(definition)) {
       return this.visitBinding(definition, state);
     }
+    if (Node.isParameterDeclaration(definition)) {
+      return this.visitParameter(definition, null, state);
+    }
     if (Node.isImportSpecifier(definition) || Node.isImportClause(definition)) {
       const moduleFile = definition
         .getFirstAncestorByKind(SyntaxKind.ImportDeclaration)
@@ -405,6 +466,10 @@ export class TaintResolver {
     const isRest = element.getDotDotDotToken() !== undefined;
 
     const owner = pattern.getParent();
+    if (Node.isParameterDeclaration(owner)) {
+      // `function Card({ user })` — the value is whatever callers pass as `user`.
+      return isRest ? null : this.visitParameter(owner, propertyName, state);
+    }
     const initializer = Node.isVariableDeclaration(owner)
       ? owner.getInitializer()
       : undefined;
@@ -417,6 +482,181 @@ export class TaintResolver {
     }
     if (!base?.opaque) return null;
     if (isRest || PASSTHROUGH.has(propertyName)) {
+      return { ...base, trace: [step, ...base.trace] };
+    }
+    return null;
+  }
+
+  /**
+   * A parameter carries whatever the caller passed. Bounded hard: one
+   * parameter hop per walk, and only call sites in the same file, because
+   * finding every caller across a project needs a reference search we
+   * can't afford at each sink. A helper defined beside the page that
+   * renders it resolves; one imported from another module does not, and
+   * that stays a documented false negative (ADR-002).
+   */
+  private visitParameter(
+    parameter: ParameterDeclaration,
+    propertyName: string | null,
+    state: WalkState,
+  ): Taint | null {
+    if (state.paramHops >= MAX_PARAM_HOPS) return null;
+    if (state.seen.has(parameter)) return null;
+    state.seen.add(parameter);
+
+    const fn = asCallable(parameter.getParent());
+    if (!fn) return null;
+    const name = callableName(fn);
+    if (name === null) return null;
+    const index = fn.getParameters().indexOf(parameter);
+    if (index < 0) return null;
+
+    const next: WalkState = {
+      ...state,
+      depth: state.depth + 1,
+      paramHops: state.paramHops + 1,
+    };
+    const label = propertyName ?? parameter.getName();
+    return this.first(
+      this.callSitesIn(fn.getSourceFile(), name).map((site) =>
+        this.visitCallSite(site, index, propertyName, label, name, next),
+      ),
+    );
+  }
+
+  private callSitesIn(file: SourceFile, name: string): Node[] {
+    const cached = this.callSiteIndex.get(file);
+    if (cached) return cached.get(name) ?? [];
+
+    const index = new Map<string, Node[]>();
+    const add = (key: string, node: Node) => {
+      index.set(key, [...(index.get(key) ?? []), node]);
+    };
+    for (const call of file.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+      const callee = call.getExpression();
+      if (Node.isIdentifier(callee)) add(callee.getText(), call);
+      else if (Node.isPropertyAccessExpression(callee)) {
+        add(callee.getName(), call);
+      }
+    }
+    for (const kind of [
+      SyntaxKind.JsxOpeningElement,
+      SyntaxKind.JsxSelfClosingElement,
+    ] as const) {
+      for (const element of file.getDescendantsOfKind(kind)) {
+        add(element.getTagNameNode().getText(), element);
+      }
+    }
+    this.callSiteIndex.set(file, index);
+    return index.get(name) ?? [];
+  }
+
+  /**
+   * What one call site hands to the parameter. A destructured name maps to
+   * the argument property or JSX attribute of the same name, so the value
+   * is that expression itself; only a spread or a bare object argument
+   * needs the property read applying on top.
+   */
+  private visitCallSite(
+    site: Node,
+    index: number,
+    propertyName: string | null,
+    label: string,
+    fnName: string,
+    state: WalkState,
+  ): Taint | null {
+    if (state.seen.has(site)) return null;
+    state.seen.add(site);
+    const step = (value: Node) =>
+      `${label} ← ${firstLine(value.getText())} (parameter of ${fnName})`;
+    const direct = (value: Node): Taint | null => {
+      const taint = this.visit(value, state);
+      return taint ? { ...taint, trace: [step(value), ...taint.trace] } : null;
+    };
+
+    if (Node.isCallExpression(site)) {
+      const argument = site.getArguments()[index];
+      if (!argument) return null;
+      if (propertyName === null) return direct(argument);
+      if (Node.isObjectLiteralExpression(argument)) {
+        const value = literalProperty(argument, propertyName);
+        if (value) return direct(value);
+      }
+      return this.throughProperty(
+        argument,
+        propertyName,
+        step(argument),
+        state,
+      );
+    }
+
+    if (Node.isJsxOpeningElement(site) || Node.isJsxSelfClosingElement(site)) {
+      // JSX only ever passes the props object, so a positional parameter
+      // beyond the first has nothing to bind to.
+      if (propertyName === null && index !== 0) return null;
+      const spreads: Node[] = [];
+      for (const attribute of site.getAttributes()) {
+        if (Node.isJsxSpreadAttribute(attribute)) {
+          spreads.push(attribute.getExpression());
+          continue;
+        }
+        if (
+          propertyName !== null &&
+          Node.isJsxAttribute(attribute) &&
+          attribute.getNameNode().getText() === propertyName
+        ) {
+          const initializer = attribute.getInitializer();
+          const value =
+            initializer && Node.isJsxExpression(initializer)
+              ? initializer.getExpression()
+              : undefined;
+          if (value) return direct(value);
+        }
+      }
+      return this.first(
+        spreads.map((spread) =>
+          propertyName === null
+            ? direct(spread)
+            : this.throughProperty(spread, propertyName, step(spread), state),
+        ),
+      );
+    }
+    return null;
+  }
+
+  /** The object literal behind an expression, through one variable hop. */
+  private literalBehind(node: Node): ObjectLiteralExpression | null {
+    if (Node.isObjectLiteralExpression(node)) return node;
+    if (!Node.isIdentifier(node)) return null;
+    for (const declaration of resolveDeclarations(node)) {
+      if (!Node.isVariableDeclaration(declaration)) continue;
+      const initializer = declaration.getInitializer();
+      if (initializer && Node.isObjectLiteralExpression(initializer)) {
+        return initializer;
+      }
+    }
+    return null;
+  }
+
+  /** `<Card {...props} />` reaching `{ user }`: read `user` off the spread. */
+  private throughProperty(
+    object: Node,
+    propertyName: string,
+    step: string,
+    state: WalkState,
+  ): Taint | null {
+    // When the spread object is a literal we can see, read the exact key
+    // rather than guessing from the property name.
+    const literal = this.literalBehind(object);
+    const value = literal ? literalProperty(literal, propertyName) : null;
+    if (value) {
+      const exact = this.visit(value, state);
+      return exact ? { ...exact, trace: [step, ...exact.trace] } : null;
+    }
+    const base = this.visit(object, state);
+    const byName = this.classifyName(propertyName);
+    if (byName) return this.named(byName, base, step);
+    if (base?.opaque && PASSTHROUGH.has(propertyName)) {
       return { ...base, trace: [step, ...base.trace] };
     }
     return null;

@@ -135,6 +135,20 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build
 
 [Epic 01](./tasks/01-init-config-setup/) (`init`) and [Epic 02](./tasks/02-boundary-detection/) (`src/ast/boundary-classifier.ts`, `src/engine.ts`) are done. Next is [Epic 03](./tasks/03-schema-taint-sources/): real `extract()` bodies for the schema providers plus the zero-schema heuristics, so the snapshot stops being empty and `scan` has taint sources to work with. Everything later plugs into `engine.ts`'s `runScan()` without touching what's documented here.
 
+## Supabase without a generated types file
+
+`init` prefers a generated types file whenever it can find one, and it looks beyond the conventional locations: any `database.types.ts`, `supabase.types.ts` or `db.types.ts` within a few directories of the root that actually declares a `Database` type counts, so `docs/database.types.ts` is found. With a types file there is no key and no network call at all. When there genuinely isn't one, it looks for your project's own credentials in `.env.local`, `.env.development.local`, `.env.development` and `.env`, and asks for the **names** of the variables rather than their values:
+
+```
+? Env variable holding your Supabase project URL (the name, not the value) NEXT_PUBLIC_SUPABASE_URL
+? Env variable holding a Supabase API key (read at scan time, never stored)  SUPABASE_SERVICE_ROLE_KEY
+? Postgres schema to read                                                   public
+```
+
+The first question is still the types path, so you can point at a file it missed by typing it; leaving that blank is what selects the API route. The config then holds `{ "id": "supabase", "urlEnv": "…", "keyEnv": "…", "schema": "public" }` and nothing else. At `init` and `sync`, boundary-guard reads those variables and asks PostgREST to describe itself at `<url>/rest/v1/`, which returns every table and column in the schema. The key travels as a request header, is never written to the config or the snapshot, and is scrubbed out of any error message. An anon key is enough, because the schema document isn't gated by row-level security. Scans and CI read the committed snapshot, so nothing hits the network there.
+
+If the key is rejected or the variable is unset, `sync` says so in one line and exits 1 without touching the snapshot, so scans keep running on the last good one.
+
 ## The rest of the CLI
 
 ```bash
@@ -158,6 +172,8 @@ boundary-guard studio           # http://127.0.0.1:8080 opens in your browser (-
 ```
 
 Studio reads the same `.boundary-guard/findings.sqlite` every scan writes and edits the same `boundary-guard.config.json` the CLI reads — pin or ignore a field on **Sources**, flip a rule or add a keyword on **Config**, hit **Run scan** in the sidebar and see the effect in **Findings** with the code frame and the path the value took. **Record baseline** does what the CLI command does. It binds to localhost only.
+
+**Graph** draws the render graph — every file that renders a component declared in another file (bold blue when it crosses server → client, red when a finding rides on it) and every client file that calls a server action — with a Route tree tab for `app/`. Click a node for its findings and neighbours; Findings and Files link into it.
 
 The moon/sun button at the bottom of the sidebar switches between the light and dark themes; the choice is remembered per browser.
 

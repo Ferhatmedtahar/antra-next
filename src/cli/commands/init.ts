@@ -7,6 +7,7 @@ import {
   sensitivityFromConfig,
 } from "../../classification/classify.js";
 import { FrameworkNotDetectedError } from "../../framework/detect.js";
+import { SchemaExtractionError } from "../../schema/errors.js";
 import { frameworkAdapters } from "../../framework/index.js";
 import { inquirerPrompter, isPromptExit } from "../../init/prompter.js";
 import { runInit, type InitResult } from "../../init/run-init.js";
@@ -35,6 +36,16 @@ export async function initCommand(targetPath: string): Promise<void> {
     if (isPromptExit(error)) {
       console.log(chalk.yellow("\nAborted."));
       process.exitCode = 130;
+      return;
+    }
+    if (error instanceof SchemaExtractionError) {
+      console.error(chalk.red(`\n✖ ${error.message}`));
+      console.error(
+        chalk.gray(
+          "  Nothing was written. Fix the provider's path or credentials and run `boundary-guard init` again.",
+        ),
+      );
+      process.exitCode = 1;
       return;
     }
     throw error;

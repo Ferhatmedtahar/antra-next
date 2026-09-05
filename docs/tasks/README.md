@@ -10,5 +10,6 @@ Working backlog for `boundary-guard`, broken into epics — one folder each, in 
 - [05-storage-reporting-ci/](./05-storage-reporting-ci/) — SQLite storage, terminal/SARIF reporters, baseline — **done**
 - [06-studio/](./06-studio/) — local web dashboard over `findings.sqlite`, with config editing — **done (v1)**
 - [07-cli-commands/](./07-cli-commands/) — `doctor`, `trace`, `query`, `watch`, `fix`, `scan --staged/--diff` — **done**
+- [08-open-source/](./08-open-source/) — README, licence, contributing/security docs, GitHub CI and templates — **done**
 
 See [`docs/adr/`](../adr/) for accepted architectural decisions and [`docs/c4/`](../c4/) for the settled system diagram.

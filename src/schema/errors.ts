@@ -10,3 +10,20 @@ export class NotImplementedError extends Error {
     this.name = "NotImplementedError";
   }
 }
+
+/**
+ * A configured provider failed to read its schema: a missing types file,
+ * an unset environment variable, a rejected key, an unreachable project.
+ * The commands catch this to print one clear line rather than a stack —
+ * it is the user's configuration talking back, not a crash.
+ */
+export class SchemaExtractionError extends Error {
+  constructor(
+    readonly providerId: string,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(`${providerId}: ${message}`, options);
+    this.name = "SchemaExtractionError";
+  }
+}

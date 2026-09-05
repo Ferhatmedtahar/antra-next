@@ -7,6 +7,7 @@ import { ConfigNotFoundError } from "../../config/load.js";
 import { runSync } from "../../config/sync.js";
 import { CONFIG_FILENAME } from "../../config/write.js";
 import { FrameworkNotDetectedError } from "../../framework/detect.js";
+import { SchemaExtractionError } from "../../schema/errors.js";
 import type { TaintSource } from "../../schema/types.js";
 
 export async function syncCommand(targetPath: string): Promise<void> {
@@ -40,6 +41,17 @@ export async function syncCommand(targetPath: string): Promise<void> {
       error instanceof FrameworkNotDetectedError
     ) {
       console.error(chalk.red(error.message));
+      process.exitCode = 1;
+      return;
+    }
+    if (error instanceof SchemaExtractionError) {
+      console.error(chalk.red(error.message));
+      console.error(
+        chalk.gray(
+          `  Fix the provider entry in ${CONFIG_FILENAME}, or re-run \`boundary-guard init\` to point it somewhere else.\n` +
+            "  The previous snapshot is untouched, so scans keep working meanwhile.",
+        ),
+      );
       process.exitCode = 1;
       return;
     }

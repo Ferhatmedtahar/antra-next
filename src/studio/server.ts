@@ -19,11 +19,18 @@ import { writeConfig } from "../config/write.js";
 import { runScan } from "../engine.js";
 import { VERSION } from "../index.js";
 import { rules } from "../rules/index.js";
-import { FindingsStore, type StoredFinding } from "../storage/db.js";
+import {
+  FindingsStore,
+  type StoredFile,
+  type StoredFinding,
+} from "../storage/db.js";
 import type {
   BaselineResponse,
   CodeFrame,
   FindingDetail,
+  GraphEdge,
+  GraphNode,
+  GraphResponse,
   ProjectInfo,
   RuleInfo,
   ScanDetail,
@@ -158,6 +165,20 @@ export function createStudioApp(rootDir: string): Hono {
     return detail ? c.json(detail) : c.json({ error: `No scan ${id}` }, 404);
   });
 
+  app.get("/api/scans/:id/graph", (c) => {
+    const id = Number(c.req.param("id"));
+    const graph = withStore(rootDir, (store): GraphResponse | null => {
+      if (!store.listScans(1000).some((entry) => entry.id === id)) return null;
+      return buildGraph(
+        id,
+        store.filesForScan(id),
+        store.findingsForScan(id),
+        store.edgesForScan(id),
+      );
+    });
+    return graph ? c.json(graph) : c.json({ error: `No scan ${id}` }, 404);
+  });
+
   app.get("/api/sources", async (c) => {
     const config = await loadConfigIfPresent(rootDir);
     const snapshot = config ? await loadSnapshot(rootDir) : null;
@@ -269,6 +290,96 @@ export function createStudioApp(rootDir: string): Hono {
   });
 
   return app;
+}
+
+function nodeKind(file: StoredFile): GraphNode["kind"] {
+  if (file.isRouteHandler) return "route";
+  if (file.boundary === "client") return "client";
+  if (file.isServerActionModule || file.serverActions.length > 0) {
+    return "action";
+  }
+  return "server";
+}
+
+/** `… to client component <UserCard> …` → UserCard */
+const COMPONENT_IN_MESSAGE = /<([A-Za-z_$][\w$.]*)>/;
+
+/**
+ * Nodes are the files that take part in an edge or carry a finding; edges
+ * get the BG-001/BG-003 findings whose sink component they carry.
+ */
+export function buildGraph(
+  scanId: number,
+  files: StoredFile[],
+  findings: StoredFinding[],
+  stored: {
+    from: string;
+    to: string;
+    kind: GraphEdge["kind"];
+    names: string[];
+    count: number;
+  }[],
+): GraphResponse {
+  const byPath = new Map(files.map((file) => [file.path, file]));
+  const counted = findings.filter((finding) => finding.status !== "suppressed");
+  const fileFindings = new Map<string, { all: number; fresh: number }>();
+  for (const finding of counted) {
+    const entry = fileFindings.get(finding.file) ?? { all: 0, fresh: 0 };
+    entry.all += 1;
+    if (finding.status === "active") entry.fresh += 1;
+    fileFindings.set(finding.file, entry);
+  }
+
+  const edges: GraphEdge[] = stored.map((edge) => {
+    const fromFile = byPath.get(edge.from);
+    const toFile = byPath.get(edge.to);
+    const crossing =
+      edge.kind === "calls-action" ||
+      (fromFile?.boundary === "server" && toFile?.boundary === "client");
+    const onEdge = counted.filter(
+      (finding) =>
+        edge.kind === "renders" &&
+        finding.file === edge.from &&
+        (finding.ruleId === "BG-001" || finding.ruleId === "BG-003") &&
+        edge.names.includes(
+          COMPONENT_IN_MESSAGE.exec(finding.message)?.[1] ?? "",
+        ),
+    );
+    return {
+      id: `${edge.kind}:${edge.from}->${edge.to}`,
+      from: edge.from,
+      to: edge.to,
+      kind: edge.kind,
+      names: edge.names,
+      count: edge.count,
+      crossing,
+      findings: onEdge.length,
+      newFindings: onEdge.filter((finding) => finding.status === "active")
+        .length,
+    };
+  });
+
+  const involved = new Set<string>();
+  for (const edge of edges) {
+    involved.add(edge.from);
+    involved.add(edge.to);
+  }
+  for (const file of fileFindings.keys()) involved.add(file);
+
+  const nodes: GraphNode[] = files
+    .filter((file) => involved.has(file.path))
+    .map((file) => ({
+      id: file.path,
+      path: file.path,
+      kind: nodeKind(file),
+      boundary: file.boundary,
+      serverActions: file.serverActions.map((action) => action.name),
+      routeMethods: file.routeMethods,
+      findings: fileFindings.get(file.path)?.all ?? 0,
+      newFindings: fileFindings.get(file.path)?.fresh ?? 0,
+    }));
+
+  return { scanId, nodes, edges };
 }
 
 function toSummary(scan: {

@@ -41,6 +41,7 @@ describe("query", () => {
     );
 
     expect(describeSchema(project.dir).map((table) => table.table)).toEqual([
+      "edges",
       "files",
       "findings",
       "scans",

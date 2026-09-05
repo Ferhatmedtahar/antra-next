@@ -47,7 +47,7 @@ export function Config() {
   if (loaded.data === null && !loaded.loading) {
     return (
       <>
-        <PageHeader icon={<IconAdjustmentsHorizontal />} title="Config" />
+        <PageHeader title="Config" />
         <Empty
           icon={<IconAdjustmentsHorizontal />}
           title="No config yet"
@@ -59,7 +59,7 @@ export function Config() {
   if (!draft || !loaded.data) {
     return (
       <>
-        <PageHeader icon={<IconAdjustmentsHorizontal />} title="Config" />
+        <PageHeader title="Config" />
         <Skeleton className="h-64 rounded-xl" />
       </>
     );
@@ -97,7 +97,6 @@ export function Config() {
   return (
     <>
       <PageHeader
-        icon={<IconAdjustmentsHorizontal />}
         title="Config"
         description="Everything here is boundary-guard.config.json. Saving writes the file; the CLI reads the same one."
       />
@@ -106,21 +105,23 @@ export function Config() {
         <Card>
           <CardHeader>
             <SectionHeader
-              icon={<IconListCheck />}
+              glyph={<IconListCheck />}
               title="Rules"
               description="Switch a rule off and every scan skips it."
             />
           </CardHeader>
           <CardContent>
-            <ul className="divide-border divide-y rounded-lg border">
+            <ul className="divide-divider-subtle divide-y rounded-huge bg-surface-soft overflow-hidden">
               {(rules.data ?? []).map((rule) => (
                 <li
                   key={rule.id}
-                  className="flex items-center justify-between gap-6 px-4 py-3"
+                  className="flex items-center justify-between gap-6 px-5 py-3.5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <RuleTag id={rule.id} />
-                    <span className="truncate text-sm">{rule.description}</span>
+                    <span className="truncate text-body-2-m text-foreground">
+                      {rule.description}
+                    </span>
                     <SeverityPill severity={rule.severity} />
                   </div>
                   <Switch
@@ -139,7 +140,7 @@ export function Config() {
         <Card>
           <CardHeader>
             <SectionHeader
-              icon={<IconTags />}
+              glyph={<IconTags />}
               title="Sensitivity keywords"
               description="Name patterns, any language. Four letters or more match inside a name (token → accessToken); three or fewer match whole words only (ssn)."
             />
@@ -159,7 +160,7 @@ export function Config() {
           <Card>
             <CardHeader>
               <SectionHeader
-                icon={<IconPin />}
+                glyph={<IconPin />}
                 title="Pinned fields"
                 description="Always sensitive — exact field names or origins the keywords miss."
               />
@@ -180,10 +181,9 @@ export function Config() {
           <Card>
             <CardHeader>
               <SectionHeader
-                icon={<IconBan />}
+                glyph={<IconBan />}
                 title="Ignored fields"
                 description="Never sensitive. Ignore wins over pins and keywords."
-                iconClassName="bg-destructive/10 text-destructive"
               />
             </CardHeader>
             <CardContent>
@@ -204,7 +204,7 @@ export function Config() {
         <Card>
           <CardHeader>
             <SectionHeader
-              icon={<IconWand />}
+              glyph={<IconWand />}
               title="Sanitizers"
               description="A call to one of these breaks the taint chain and counts as validation for BG-002. Known: zod, valibot, yup, joi, arktype, next-safe-action — anything else matches as a function or method name."
             />
@@ -222,7 +222,7 @@ export function Config() {
         <Card>
           <CardHeader>
             <SectionHeader
-              icon={<IconPlug />}
+              glyph={<IconPlug />}
               title="Providers"
               description={`Framework: ${draft.frameworkAdapter}. Provider paths change through init; the snapshot refreshes with sync.`}
             />
@@ -234,14 +234,16 @@ export function Config() {
                 `boundary-guard init` to add one.
               </p>
             ) : (
-              <ul className="divide-border divide-y rounded-lg border">
+              <ul className="divide-divider-subtle divide-y rounded-huge bg-surface-soft overflow-hidden">
                 {draft.providers.map((provider) => (
                   <li
                     key={provider.id}
-                    className="flex items-baseline gap-4 px-4 py-3"
+                    className="flex items-baseline gap-4 px-5 py-3.5"
                   >
-                    <span className="text-sm font-medium">{provider.id}</span>
-                    <span className="text-muted-foreground font-mono text-xs">
+                    <span className="text-body-2-m font-medium">
+                      {provider.id}
+                    </span>
+                    <span className="text-muted-foreground font-mono text-code">
                       {Object.entries(provider)
                         .filter(([key]) => key !== "id")
                         .map(([key, value]) => `${key}=${String(value)}`)
@@ -257,7 +259,7 @@ export function Config() {
 
       <div
         className={cn(
-          "bg-background/95 fixed right-0 bottom-0 z-10 border-t px-10 py-3 backdrop-blur transition-transform",
+          "bg-card/95 fixed right-0 bottom-0 z-10 px-10 py-4 backdrop-blur transition-transform",
           dirty ? "translate-y-0" : "translate-y-full",
         )}
         style={{ left: SIDEBAR_WIDTH }}

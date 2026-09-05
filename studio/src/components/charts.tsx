@@ -23,13 +23,16 @@ export function BoundaryStrip({
   serverFiles,
   clientFiles,
   crossings,
+  sensitiveFields,
+  schemaFields,
 }: {
   serverFiles: number;
   clientFiles: number;
   crossings: Crossing[];
+  sensitiveFields?: number;
+  schemaFields?: number;
 }) {
   const total = Math.max(1, serverFiles + clientFiles);
-  // Keep both blocks readable even when one side dominates.
   const seam = Math.min(80, Math.max(20, (serverFiles / total) * 100));
   const [hover, setHover] = useState<number | null>(null);
   const fresh = crossings.filter((c) => !c.accepted).length;
@@ -37,47 +40,65 @@ export function BoundaryStrip({
 
   return (
     <figure className="relative">
-      <div className="relative flex h-36 overflow-hidden rounded-xl border shadow-sm">
+      <div className="relative flex h-40 overflow-hidden rounded-huge">
+        {/* Server slab: solid filled */}
         <div
-          className="bg-primary text-primary-foreground flex flex-col justify-between p-5"
+          className="bg-primary text-primary-foreground flex flex-col justify-between p-6 select-none"
           style={{ width: `${seam}%` }}
         >
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium opacity-90">
+          <span className="inline-flex items-center gap-1.5 text-label-3-m opacity-90">
             <IconServer className="size-4" /> Server
           </span>
           <span className="flex items-baseline gap-2">
-            <span className="text-4xl leading-none font-semibold tabular-nums">
+            <span className="text-stat leading-none font-semibold tabular-nums">
               {serverFiles}
             </span>
-            <span className="text-sm opacity-90">files</span>
+            <span className="text-body-2-r opacity-80">files</span>
           </span>
         </div>
-        <div className="bg-muted flex flex-1 flex-col items-end justify-between p-5 text-right">
-          <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+
+        {/* Client side: surface soft + diagonal subtle hatch */}
+        <div className="bg-surface-soft relative flex flex-1 flex-col items-end justify-between p-6 text-right select-none overflow-hidden">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 6px)",
+            }}
+          />
+          <span className="text-muted-foreground relative z-10 inline-flex items-center gap-1.5 text-label-3-m">
             Client <IconDeviceDesktop className="size-4" />
           </span>
-          <span className="flex items-baseline gap-2">
-            <span className="text-4xl leading-none font-semibold tabular-nums">
+          <span className="relative z-10 flex items-baseline gap-2">
+            <span className="text-stat text-foreground leading-none font-semibold tabular-nums">
               {clientFiles}
             </span>
-            <span className="text-muted-foreground text-sm">files</span>
+            <span className="text-muted-foreground text-body-2-r">files</span>
           </span>
         </div>
+
+        {/* The Seam: 2px line - red when violations crossed, neutral otherwise */}
         <div
           aria-hidden
-          className="bg-foreground absolute inset-y-0 w-0.5"
+          className={cn(
+            "absolute inset-y-0 w-0.5 z-20 transition-colors",
+            fresh > 0 ? "bg-destructive" : "bg-foreground/25",
+          )}
           style={{ left: `calc(${seam}% - 1px)` }}
         />
+
+        {/* Crossing dots */}
         {crossings.map((crossing, index) => {
           const top =
             crossings.length === 1
               ? 50
-              : 12 + (index / (crossings.length - 1)) * 76;
+              : 14 + (index / (crossings.length - 1)) * 72;
           const fill = crossing.accepted
-            ? "bg-card border-muted-foreground"
+            ? "bg-card border-muted-foreground/60"
             : crossing.severity === "error"
-              ? "bg-destructive border-card"
-              : "bg-warning border-card";
+              ? "bg-destructive border-background"
+              : "bg-warning border-background";
           return (
             <button
               key={index}
@@ -88,7 +109,7 @@ export function BoundaryStrip({
               onFocus={() => setHover(index)}
               onBlur={() => setHover(null)}
               className={cn(
-                "absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-sm",
+                "absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 z-30 transition-transform hover:scale-125 cursor-pointer",
                 fill,
               )}
               style={{ left: `${seam}%`, top: `${top}%` }}
@@ -96,23 +117,28 @@ export function BoundaryStrip({
           );
         })}
       </div>
+
       {hover !== null && crossings[hover] ? (
         <div
           role="tooltip"
-          className="bg-foreground text-background pointer-events-none absolute -top-2 left-1/2 max-w-[60ch] -translate-x-1/2 -translate-y-full rounded-md px-3 py-1.5 text-xs shadow-md"
+          className="bg-foreground text-background pointer-events-none absolute -top-2 left-1/2 max-w-[60ch] -translate-x-1/2 -translate-y-full rounded-mid px-3 py-1.5 text-xs z-40"
         >
-          {crossings[hover].accepted ? "Accepted · " : ""}
+          {crossings[hover].accepted ? "Accepted: " : ""}
           {crossings[hover].label}
         </div>
       ) : null}
-      <figcaption className="text-muted-foreground mt-3 text-sm">
+
+      <figcaption className="text-muted-foreground mt-3 text-body-2-r">
         {crossings.length === 0
           ? "Nothing crosses the boundary."
           : fresh === 0
-            ? `Nothing new. ${accepted} crossing${accepted === 1 ? "" : "s"} accepted in the baseline — the rings on the seam.`
-            : `${fresh} new crossing${fresh === 1 ? "" : "s"} flagged on the seam${
-                accepted > 0 ? `, ${accepted} accepted earlier (rings)` : ""
+            ? `Nothing new. ${accepted} crossing${accepted === 1 ? "" : "s"} accepted in the baseline (marked on the seam).`
+            : `${fresh} value${fresh === 1 ? "" : "s"} crossed into client components${
+                accepted > 0 ? `, and ${accepted} accepted earlier` : ""
               }.`}
+        {sensitiveFields !== undefined && schemaFields !== undefined
+          ? ` ${sensitiveFields} of ${schemaFields} schema fields are sensitive.`
+          : ""}
       </figcaption>
     </figure>
   );
@@ -145,14 +171,14 @@ export function RuleBars({
               ) : null}
             </span>
           </div>
-          <div className="bg-muted flex h-2.5 gap-0.5 overflow-hidden rounded-full">
+          <div className="bg-surface-soft flex h-2.5 gap-0.5 overflow-hidden rounded-full">
             <div
-              className="bg-primary h-full rounded-full"
+              className="bg-foreground/85 h-full rounded-full transition-all"
               style={{ width: `${(row.count / max) * 100}%` }}
             />
             {row.accepted > 0 ? (
               <div
-                className="bg-primary/30 h-full rounded-full"
+                className="bg-foreground/25 h-full rounded-full transition-all"
                 style={{ width: `${(row.accepted / max) * 100}%` }}
               />
             ) : null}
@@ -204,28 +230,28 @@ export function TrendLine({ scans }: { scans: ScanSummary[] }) {
           x2={W - padX}
           y1={y(0)}
           y2={y(0)}
-          stroke="var(--border)"
+          stroke="var(--divider-subtle)"
         />
         <line
           x1={padX}
           x2={W - padX}
           y1={y(max)}
           y2={y(max)}
-          stroke="var(--border)"
+          stroke="var(--divider-subtle)"
           strokeDasharray="2 4"
         />
         <text
           x={padX}
           y={padTop - 10}
-          className="fill-muted-foreground text-[10px]"
+          className="fill-muted-foreground text-[10px] font-mono"
         >
           {max} new
         </text>
-        <path d={area} fill="var(--primary)" opacity={0.08} />
+        <path d={area} fill="var(--foreground)" opacity={0.05} />
         <path
           d={path}
           fill="none"
-          stroke="var(--primary)"
+          stroke="var(--foreground)"
           strokeWidth={2}
           strokeLinejoin="round"
         />
@@ -253,7 +279,7 @@ export function TrendLine({ scans }: { scans: ScanSummary[] }) {
               cx={x(i)}
               cy={y(scan.findings)}
               r={hover === i ? 5 : 4}
-              fill="var(--primary)"
+              fill="var(--foreground)"
               stroke="var(--card)"
               strokeWidth={2}
             />
@@ -274,15 +300,14 @@ export function TrendLine({ scans }: { scans: ScanSummary[] }) {
       {active && hover !== null ? (
         <div
           role="tooltip"
-          className="bg-foreground text-background pointer-events-none absolute top-0 rounded-md px-3 py-1.5 text-xs shadow-md"
+          className="bg-card text-foreground pointer-events-none absolute top-0 rounded-mid px-3 py-1.5 text-label-2-m"
           style={{
             left: `${(x(hover) / W) * 100}%`,
             transform: "translateX(-50%)",
           }}
         >
           <span className="font-semibold tabular-nums">{active.findings}</span>{" "}
-          new · {active.baselined} baselined ·{" "}
-          {formatAbsolute(active.startedAt)}
+          new, {active.baselined} accepted on {formatAbsolute(active.startedAt)}
         </div>
       ) : null}
     </div>

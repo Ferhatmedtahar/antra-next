@@ -83,6 +83,7 @@ describe("runScan", () => {
       "config",
       "project",
       "classify:1 files",
+      "graph",
       "rules:BG-001, BG-002, BG-003, BG-004",
     ]);
   });

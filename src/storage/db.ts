@@ -4,6 +4,7 @@ import path from "path";
 import Database from "better-sqlite3";
 
 import { SNAPSHOT_DIR } from "../config/write.js";
+import type { EdgeKind } from "../ast/boundary-graph.js";
 import type { ScanResult } from "../engine.js";
 import type { Finding, RuleId, Severity } from "../rules/types.js";
 
@@ -58,7 +59,16 @@ CREATE TABLE IF NOT EXISTS findings (
   status TEXT NOT NULL,
   suppress_reason TEXT
 );
+CREATE TABLE IF NOT EXISTS edges (
+  scan_id INTEGER NOT NULL REFERENCES scans(id) ON DELETE CASCADE,
+  from_path TEXT NOT NULL,
+  to_path TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  names TEXT NOT NULL,
+  count INTEGER NOT NULL
+);
 CREATE INDEX IF NOT EXISTS findings_scan ON findings(scan_id);
+CREATE INDEX IF NOT EXISTS edges_scan ON edges(scan_id);
 CREATE INDEX IF NOT EXISTS files_scan ON files(scan_id);
 `;
 
@@ -94,6 +104,33 @@ export interface StoredFinding {
   fingerprint: string;
   status: FindingStatus;
   suppressReason: string | null;
+}
+
+export interface StoredEdge {
+  /** Relative to the scanned project root. */
+  from: string;
+  to: string;
+  kind: EdgeKind;
+  names: string[];
+  count: number;
+}
+
+interface EdgeRow {
+  from_path: string;
+  to_path: string;
+  kind: EdgeKind;
+  names: string;
+  count: number;
+}
+
+function toEdge(row: EdgeRow): StoredEdge {
+  return {
+    from: row.from_path,
+    to: row.to_path,
+    kind: row.kind,
+    names: JSON.parse(row.names) as string[],
+    count: row.count,
+  };
 }
 
 export interface StoredFile {
@@ -265,6 +302,12 @@ export class FindingsStore {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
+    const insertEdge = this.db.prepare<
+      [number, string, string, string, string, number]
+    >(
+      `INSERT INTO edges (scan_id, from_path, to_path, kind, names, count) VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+
     const sensitiveOrigins = new Set(result.taintSources.map((s) => s.origin));
     const write = this.db.transaction((): number => {
       const scanId = Number(
@@ -328,6 +371,16 @@ export class FindingsStore {
           finding.suppressed?.reason ?? null,
         );
       }
+      for (const edge of result.edges) {
+        insertEdge.run(
+          scanId,
+          relative(edge.from),
+          relative(edge.to),
+          edge.kind,
+          JSON.stringify(edge.names),
+          edge.count,
+        );
+      }
       return scanId;
     });
     return write();
@@ -363,6 +416,16 @@ export class FindingsStore {
       )
       .all(scanId)
       .map(toFile);
+  }
+
+  edgesForScan(scanId: number): StoredEdge[] {
+    return (
+      this.db
+        .prepare<[number]>(
+          "SELECT from_path, to_path, kind, names, count FROM edges WHERE scan_id = ? ORDER BY from_path, to_path, kind",
+        )
+        .all(scanId) as EdgeRow[]
+    ).map(toEdge);
   }
 
   close(): void {

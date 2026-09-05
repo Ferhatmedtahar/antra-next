@@ -26,7 +26,7 @@ export function Scans() {
   if (scans.data && scans.data.length === 0) {
     return (
       <>
-        <PageHeader icon={<IconHistory />} title="Scans" />
+        <PageHeader title="Scans" />
         <Empty
           icon={<IconHistory />}
           title="No scans yet"
@@ -39,7 +39,6 @@ export function Scans() {
   return (
     <>
       <PageHeader
-        icon={<IconHistory />}
         title="Scans"
         description="Every recorded run, newest first. Open one to browse its findings."
       />
@@ -52,9 +51,9 @@ export function Scans() {
               key={scan.id}
               type="button"
               onClick={() => navigate(`/findings?scan=${scan.id}`)}
-              className="hover:bg-accent/50 focus-visible:bg-accent/50 flex w-full items-center gap-5 px-5 py-4 text-left outline-none"
+              className="hover:bg-surface-soft focus-visible:bg-surface-soft flex w-full items-center gap-5 px-6 py-4 text-left transition-colors outline-none cursor-pointer"
             >
-              <span className="bg-muted text-muted-foreground flex size-11 shrink-0 items-center justify-center rounded-lg text-sm font-semibold tabular-nums">
+              <span className="bg-surface-soft text-foreground flex size-10 shrink-0 items-center justify-center rounded-mid font-mono text-sm font-semibold tabular-nums">
                 #{scan.id}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-1">

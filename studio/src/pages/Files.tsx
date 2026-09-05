@@ -1,5 +1,6 @@
-import { IconFiles, IconFolder, IconSearch } from "@tabler/icons-react";
+import { IconFiles, IconFolder, IconHierarchy } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 
 import type { FileDetail } from "../../../src/studio/types.js";
 
@@ -14,7 +15,8 @@ import {
   ZoneTag,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLoad } from "@/hooks";
 
@@ -71,7 +73,7 @@ export function Files() {
   if (project.data && !project.data.latest) {
     return (
       <>
-        <PageHeader icon={<IconFiles />} title="Files" />
+        <PageHeader title="Files" />
         <Empty
           icon={<IconFiles />}
           title="No scans yet"
@@ -84,38 +86,44 @@ export function Files() {
   return (
     <>
       <PageHeader
-        icon={<IconFiles />}
         title="Files"
-        description={`${files.length} files · ${counts.client} client boundaries · ${counts.actions} server actions · ${counts.routes} route handlers`}
+        description={`${files.length} files across the codebase. ${counts.client} client boundaries, ${counts.actions} server actions, and ${counts.routes} route handlers.`}
       />
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <Tabs
           value={view}
           onValueChange={(value) => {
             if (isView(value)) setView(value);
           }}
         >
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="client">
-              Client <Count n={counts.client} />
+              Client{" "}
+              <span className="text-micro font-mono ml-1 opacity-70">
+                {counts.client}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="actions">
-              Actions <Count n={counts.actions} />
+              Actions{" "}
+              <span className="text-micro font-mono ml-1 opacity-70">
+                {counts.actions}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="routes">
-              Routes <Count n={counts.routes} />
+              Routes{" "}
+              <span className="text-micro font-mono ml-1 opacity-70">
+                {counts.routes}
+              </span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative ml-auto">
-          <IconSearch className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-          <Input
-            type="search"
+        <div className="w-80 ml-auto">
+          <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery("")}
             placeholder="Filter by path"
-            className="w-72 pl-9"
           />
         </div>
       </div>
@@ -128,41 +136,52 @@ export function Files() {
           ) : null}
           {groups.map(([dir, entries]) => (
             <div key={dir}>
-              <div className="bg-muted/50 flex items-center gap-2.5 px-5 py-2.5">
-                <IconFolder className="text-primary size-4" />
-                <span className="font-mono text-sm font-medium">{dir}</span>
-                <span className="text-muted-foreground text-xs">
+              <div className="bg-surface-soft flex items-center gap-2.5 px-6 py-3">
+                <IconFolder className="text-foreground size-4" />
+                <span className="font-mono text-sm font-medium text-foreground">
+                  {dir}
+                </span>
+                <span className="text-muted-foreground text-label-2-m">
                   {entries.length} file{entries.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <ul className="divide-border divide-y">
+              <ul className="divide-divider-subtle divide-y">
                 {entries.map(({ base, file }) => (
                   <li
                     key={file.path}
-                    className="flex items-center gap-4 px-5 py-2.5"
+                    className="flex items-center gap-4 px-6 py-3 hover:bg-surface-soft/40 transition-colors"
                   >
                     <ZoneTag zone={file.boundary} />
                     <span className="min-w-0 flex-1 truncate font-mono text-sm">
                       {base}
                     </span>
-                    <span className="flex shrink-0 flex-wrap justify-end gap-1">
+                    <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
                       {file.isRouteHandler ? (
-                        <Badge variant="soft-primary" className="font-mono">
+                        <Badge variant="code" className="font-mono">
                           route [{file.routeMethods.join(", ")}]
                         </Badge>
                       ) : null}
                       {file.serverActions.map((action) => (
                         <Badge
                           key={`${action.name}:${action.line}`}
-                          variant="soft-primary"
+                          variant="code"
                           className="font-mono"
                         >
                           {action.name}:{action.line}
                         </Badge>
                       ))}
                       {file.isServerActionModule ? (
-                        <Badge variant="soft-muted">"use server"</Badge>
+                        <Badge variant="code" className="font-mono">
+                          'use server' module
+                        </Badge>
                       ) : null}
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link
+                          href={`/graph?focus=${encodeURIComponent(file.path)}`}
+                        >
+                          <IconHierarchy className="size-3.5" />
+                        </Link>
+                      </Button>
                     </span>
                   </li>
                 ))}
@@ -172,13 +191,5 @@ export function Files() {
         </ListPanel>
       )}
     </>
-  );
-}
-
-function Count({ n }: { n: number }) {
-  return (
-    <Badge variant="soft-muted" className="ml-1 h-5 px-1.5 tabular-nums">
-      {n}
-    </Badge>
   );
 }
