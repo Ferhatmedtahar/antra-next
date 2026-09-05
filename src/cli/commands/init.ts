@@ -2,14 +2,16 @@ import path from "path";
 
 import chalk from "chalk";
 
+import {
+  classifySources,
+  sensitivityFromConfig,
+} from "../../classification/classify.js";
+import { FrameworkNotDetectedError } from "../../framework/detect.js";
 import { frameworkAdapters } from "../../framework/index.js";
 import { inquirerPrompter, isPromptExit } from "../../init/prompter.js";
-import {
-  FrameworkNotDetectedError,
-  runInit,
-  type InitResult,
-} from "../../init/run-init.js";
+import { runInit, type InitResult } from "../../init/run-init.js";
 import { selectableProviders } from "../../schema/providers/index.js";
+import { printSensitive } from "./sync.js";
 
 export async function initCommand(targetPath: string): Promise<void> {
   const rootDir = path.resolve(targetPath);
@@ -53,11 +55,25 @@ function printResult(result: InitResult, rootDir: string): void {
   });
   providerLines.push(`zero-schema ${chalk.gray("(always on)")}`);
 
+  const sensitive = classifySources(
+    result.snapshot.sources,
+    sensitivityFromConfig(result.config),
+  );
+
   console.log(chalk.green.bold("\n✓ boundary-guard initialized"));
   console.log(`  framework: ${result.frameworkAdapter}`);
   console.log(`  providers: ${providerLines.join(", ")}`);
   console.log(
-    `  sources:   ${result.snapshot.sources.length} field(s) → ${path.relative(rootDir, result.snapshotPath)}`,
+    `  sources:   ${result.snapshot.sources.length} field(s), ${sensitive.length} look sensitive → ${path.relative(rootDir, result.snapshotPath)}`,
   );
   console.log(`  config:    ${path.relative(rootDir, result.configPath)}`);
+  const gitignoreNote = {
+    created: "created with the boundary-guard block",
+    appended: "boundary-guard block appended",
+    unchanged: "already has the boundary-guard block",
+  }[result.gitignore];
+  console.log(`  .gitignore: ${gitignoreNote}`);
+  if (result.snapshot.sources.length > 0) {
+    printSensitive(sensitive, { seeded: true });
+  }
 }

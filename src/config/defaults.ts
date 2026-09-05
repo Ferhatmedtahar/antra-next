@@ -16,8 +16,7 @@ export const DEFAULT_KEYWORDS: readonly string[] = [
   "ssn",
   "hash",
   "salt",
-  "session",
-  "stripe",
+  "otp",
 ];
 
 /** Validators that break the taint chain when they wrap a value (FR7). */

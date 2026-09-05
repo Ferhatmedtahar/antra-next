@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { NotImplementedError } from "../../../src/schema/errors.js";
 import {
   selectableProviders,
   zeroSchemaProvider,
@@ -19,10 +18,11 @@ describe("schema providers", () => {
     project = undefined;
   });
 
-  it("offers prisma, supabase, openapi, zod in that order; zero-schema is not selectable", () => {
+  it("offers prisma, supabase, drizzle, openapi, zod in that order; zero-schema is not selectable", () => {
     expect(selectableProviders.map((provider) => provider.id)).toEqual([
       "prisma",
       "supabase",
+      "drizzle",
       "openapi",
       "zod",
     ]);
@@ -69,10 +69,12 @@ describe("schema providers", () => {
       expect(field?.defaultValue).toBe("prisma/schema.prisma");
     });
 
-    it("extract() is not implemented yet", async () => {
+    it("extract() rejects when the configured schema file is missing", async () => {
       await expect(
-        prismaProvider.extract("/nowhere", {}),
-      ).rejects.toBeInstanceOf(NotImplementedError);
+        prismaProvider.extract("/nowhere", {
+          schemaPath: "prisma/schema.prisma",
+        }),
+      ).rejects.toThrow(/not found/);
     });
   });
 

@@ -16,10 +16,24 @@ export const boundaryGuardConfigSchema = z.object({
   version: z.literal(1),
   frameworkAdapter: z.string().min(1),
   providers: z.array(providerConfigSchema),
+  /** Name patterns: substring (≥4 chars) or whole-word (≤3) — any language. */
   keywords: z.object({
     include: z.array(z.string()),
-    exclude: z.array(z.string()),
+    /** Legacy alias for sensitiveFields.exclude. */
+    exclude: z.array(z.string()).optional(),
   }),
+  /**
+   * The sensitive-field list, by exact origin (`supabase:public.users.iban`)
+   * or exact field name. `init` seeds include with the keyword hits; the
+   * user edits from there. include = always sensitive; exclude = never
+   * sensitive and wins over everything.
+   */
+  sensitiveFields: z
+    .object({
+      include: z.array(z.string()).default([]),
+      exclude: z.array(z.string()).default([]),
+    })
+    .default({ include: [], exclude: [] }),
   sanitizers: z.array(z.string()),
   rules: z.record(z.string(), z.boolean()),
 });

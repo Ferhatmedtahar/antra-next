@@ -22,7 +22,8 @@ const sampleConfig: BoundaryGuardConfig = {
   version: 1,
   frameworkAdapter: "nextjs-app-router",
   providers: [{ id: "prisma", schemaPath: "prisma/schema.prisma" }],
-  keywords: { include: [...DEFAULT_KEYWORDS], exclude: [] },
+  keywords: { include: [...DEFAULT_KEYWORDS] },
+  sensitiveFields: { include: [], exclude: [] },
   sanitizers: ["zod"],
   rules: { "BG-001": true },
 };

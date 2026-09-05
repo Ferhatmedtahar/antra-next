@@ -1,4 +1,5 @@
 import type { SchemaProvider } from "../types.js";
+import { drizzleProvider } from "./drizzle.js";
 import { openapiProvider } from "./openapi.js";
 import { prismaProvider } from "./prisma.js";
 import { supabaseProvider } from "./supabase.js";
@@ -14,6 +15,11 @@ export { zeroSchemaProvider } from "./zero-schema.js";
 export const selectableProviders: readonly SchemaProvider[] = [
   prismaProvider,
   supabaseProvider,
+  drizzleProvider,
   openapiProvider,
   zodProvider,
 ];
+
+export function findProvider(id: string): SchemaProvider | undefined {
+  return selectableProviders.find((provider) => provider.id === id);
+}

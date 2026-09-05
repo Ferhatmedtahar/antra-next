@@ -41,11 +41,13 @@ program
   )
   .option("--format <type>", "output format: pretty | json | sarif", "pretty")
   .option("--rule <ruleId>", "run only the given rule, e.g. BG-001")
+  .option("--verbose", "print every file instead of the first 10 per section")
   .action(scanCommand);
 
 program
   .command("sync")
   .description("Refresh the static schema snapshot from DB/Prisma/Supabase")
+  .argument("[path]", "Next.js app root", ".")
   .action(syncCommand);
 
 program

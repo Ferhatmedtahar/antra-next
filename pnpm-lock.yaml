@@ -225,6 +225,9 @@ importers:
       ts-morph:
         specifier: ^28.0.0
         version: 28.0.0
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
       zod:
         specifier: ^4.3.6
         version: 4.5.4

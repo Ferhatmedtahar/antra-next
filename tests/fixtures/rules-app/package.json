@@ -1,0 +1,5 @@
+{
+  "name": "rules-app-fixture",
+  "private": true,
+  "dependencies": { "next": "^15.0.0", "zod": "^4.0.0" }
+}
