@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.worktrees/
 .boundary-guard/
 *.sqlite
 *.sqlite-journal
