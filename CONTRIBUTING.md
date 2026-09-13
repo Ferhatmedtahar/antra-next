@@ -1,63 +1,100 @@
-# Contributing
+# Contributing to Antra
 
-Thanks for looking. The most useful contributions, in order: a false positive or false negative with the snippet that caused it, a schema provider for something we don't read yet, a rule, docs.
+Thank you for your interest in contributing to Antra. Antra is an open source static analysis security tool created by Ferhat (Ferhatmedtahar).
 
-## Setup
+We welcome contributions from developers of all backgrounds. This guide will walk you through setting up your local development environment, understanding the codebase architecture, adding new rules or schema providers, and submitting your changes.
+
+## Prerequisites
+
+Before working on the codebase, please ensure you have the following installed on your machine:
+
+1. Node.js version 20 or higher.
+2. pnpm package manager (version 9 or newer).
+3. Git version control.
+
+## Setting Up Your Local Environment
+
+To clone the repository and install all workspace dependencies, execute the following commands in your terminal:
 
 ```bash
-git clone https://github.com/Ferhatmedtahar/boundary-guard.git
+git clone https://github.com/Ferhatmedtahar/Antra.git
 cd boundary-guard
 pnpm install
 pnpm test
 ```
 
-Node 20 or newer, pnpm (the version is pinned in `package.json`; corepack or pnpm itself will fetch it).
+All workspace packages will be linked automatically.
 
-| Script            | Does                                                       |
-| ----------------- | ---------------------------------------------------------- |
-| `pnpm dev <cmd>`  | Run the CLI from source: `pnpm dev scan ../some-next-app`. |
-| `pnpm test`       | Vitest, unit + fixture projects under `tests/fixtures/`.   |
-| `pnpm typecheck`  | Both tsconfigs (CLI and Studio).                           |
-| `pnpm lint`       | ESLint, type-aware.                                        |
-| `pnpm format`     | Prettier.                                                  |
-| `pnpm build`      | tsup for the CLI, Vite for the Studio, into `dist/`.       |
-| `pnpm dev:studio` | Studio with hot reload on 5173, proxying `/api` to 8080.   |
+## Codebase Architecture
 
-CI runs format check, typecheck, lint, tests and a build on every pull request.
+The project is structured as a pnpm monorepo consisting of three main areas:
 
-## How the code is laid out
+1. Core Engine and CLI (src directory):
+   The core scanning engine that parses TypeScript AST with ts-morph, computes the render graph, traces taint propagation across trust boundaries, executes security rules, and stores scan history in an internal SQLite database.
 
-`src/engine.ts` is the only place the scan pipeline is sequenced. Everything else is a layer it calls:
+2. Antra Studio (apps/studio directory):
+   A modern single page application dashboard built with Vite, React 19, Tailwind CSS, Radix UI, Tabler Icons, and XYFlow. It provides interactive visualizations of the component render graph, route trees, and code frames.
 
-```
-framework/   detect the framework (Next.js App Router today)
-schema/      providers that extract fields — Prisma, Supabase, Drizzle, OpenAPI, Zod
-classification/  which fields are sensitive; which calls are sanitizers
-ast/         ts-morph project, boundary classifier, render graph, taint resolver
-rules/       BG-001 … BG-004, one file each
-suppressions/ baseline/ storage/ reporters/   what happens to findings
-cli/         thin commands — parse flags, call the engine, print
-studio/      the Hono API; the React app lives in studio/
-```
+3. Documentation and Web (apps/web directory):
+   The documentation and marketing web application built with Next.js App Router and MDX.
 
-Design decisions live in `docs/adr/`; the diagram in `docs/c4/`; the backlog and what each epic did in `docs/tasks/`.
+4. Test Suite and Fixtures (tests directory):
+   Unit and integration test suites using Vitest, accompanied by realistic Next.js fixture applications in tests/fixtures/.
 
-## Adding a rule
+## Common Development Commands
 
-1. `src/rules/bg-00X.ts` exporting a `Rule` (`id`, `severity`, `description`, `run(file, ctx)`). Rules query the render graph through `ctx.resolver` and `collectJsxSinks`; they don't walk the AST themselves.
-2. Register it in `src/rules/index.ts` — the runner, reporters, Studio and `--rule` pick it up from there.
-3. Plant a sink in `tests/fixtures/rules-app/` and assert on it in `tests/unit/rules/`.
+The following commands are available from the root of the repository:
 
-## Adding a schema provider
+| Command                       | Purpose                                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm dev <command>`          | Runs the CLI directly from TypeScript source code. Example: `pnpm dev scan tests/fixtures/rules-app` |
+| `pnpm test`                   | Runs the entire test suite across all 31 test files using Vitest.                                    |
+| `pnpm typecheck`              | Runs TypeScript type checking across both the CLI engine and the Studio SPA.                         |
+| `pnpm build`                  | Compiles the CLI engine with tsup and builds the Studio SPA into dist/.                              |
+| `pnpm --filter studio dev`    | Starts the Studio frontend development server on port 5173 with hot module replacement.              |
+| `pnpm --filter studio build`  | Compiles the Studio frontend production assets.                                                      |
+| `pnpm --filter web dev`       | Starts the Next.js documentation server on port 3000.                                                |
+| `pnpm --filter web typecheck` | Validates TypeScript types across the documentation site.                                            |
 
-1. `src/schema/providers/<id>.ts` implementing `SchemaProvider`: `detect(rootDir)`, `configFields()` (what `init` asks for), `extract(rootDir, config)` returning `{ field, origin }[]` with origins like `prisma:User.passwordHash`.
-2. Add it to `selectableProviders` in `src/schema/providers/index.ts`.
-3. A fixture under `tests/fixtures/schemas/` and a test in `tests/unit/schema/`.
+## How to Add a New Security Rule
 
-## Branches and commits
+If you would like to contribute a new security check, follow these steps:
 
-One branch per task off `main`, squash-merged. Commit messages follow Conventional Commits and are checked by commitlint on commit (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `build:`, `ci:`, `perf:`). `pnpm commit` walks you through it. Details in [`docs/process/git-workflow.md`](./docs/process/git-workflow.md).
+1. Create a new rule definition file inside `src/rules/` named after the rule identifier, such as `bg-005.ts`.
+2. Implement the `Rule` interface. Each rule declares an identifier, a severity level (error or warning), a human readable description, and a `run(file, context)` function.
+3. Use the taint resolver and JSX sink utilities provided in the context rather than traversing the raw AST manually.
+4. Register the new rule in the central list located at `src/rules/index.ts`.
+5. Add a representative code snippet inside the test fixture project located at `tests/fixtures/rules-app/`.
+6. Write a comprehensive unit test inside `tests/unit/rules/` verifying that the rule flags the leak and produces accurate origin to sink traces.
 
-## Reporting a false positive
+## How to Add a Schema Provider
 
-Open an issue with the "False positive" template: the finding line as printed, the snippet, and what the value actually is. If you can reduce it to a file in `tests/fixtures/`, even better.
+Antra extracts database schemas to identify sensitive column names. To add support for a new database ORM or schema format:
+
+1. Create a new provider module in `src/schema/providers/<provider-id>.ts`.
+2. Implement the `SchemaProvider` interface:
+   The `detect(rootDir)` function checks if the provider is present in the project.
+   The `configFields()` function defines the paths and options needed in the configuration file.
+   The `extract(rootDir, config)` function parses the schema files and returns an array of field names and origin identifiers.
+3. Register the new provider inside `src/schema/providers/index.ts`.
+4. Add a sample schema fixture under `tests/fixtures/schemas/`.
+5. Add a test verifying extraction inside `tests/unit/schema/`.
+
+## Reporting False Positives and Bugs
+
+False positive reports are extremely valuable. If Antra flags a value that is safe, please open an issue on GitHub with:
+
+1. The exact rule identifier and terminal output.
+2. A minimal code snippet demonstrating the component and data flow.
+3. An explanation of why the value is safe to cross the client boundary.
+
+## Pull Request Guidelines
+
+Before submitting a pull request:
+
+1. Run `pnpm typecheck` and ensure there are zero type errors.
+2. Run `pnpm test` and ensure all tests pass.
+3. Keep pull requests focused on a single feature or fix.
+4. Maintain high documentation standards without using emojis or dashes.
+
+Antra is maintained by Ferhat (Ferhatmedtahar) and the open source community. Thank you for making React and Next.js applications more secure.

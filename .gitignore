@@ -1,7 +1,9 @@
 node_modules/
 dist/
 .worktrees/
-.boundary-guard/
+.next/
+*.tsbuildinfo
+.antra/
 *.sqlite
 *.sqlite-journal
 coverage/
