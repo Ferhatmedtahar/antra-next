@@ -44,6 +44,6 @@ Reach for a regular (non-squash) merge only when a branch's individual commits a
 
 Not relevant yet — nothing is published. When `antra` starts shipping to npm, tag releases (`v0.1.0`, ...) off `main` and reconsider whether a tool like Changesets (already used in the ipractis reference repo this project's tooling was modeled on) is worth adding. Don't wire that up before there's a first release to cut — it's dead process until then.
 
-## Where things stand right now
+## Repository Status
 
-No remote exists yet, and `main` has **zero commits** — everything from Milestone 0 through this session is still staged. Practical adjustment: get an initial commit onto `main` first, then start branching per-task from there. Branching before `main` has anything on it just adds ceremony with nothing to branch from.
+The repository is hosted with `origin/main` as the source of truth. Features and fixes are merged via pull requests or squash commits following Conventional Commits, with continuous integration verifying tests, lint, and build.

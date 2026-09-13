@@ -19,23 +19,47 @@ That is why it is a `warning` rather than an `error`: there may be nothing
 sensitive in the response today. The finding is about the shape of the decision,
 not about a value that is known to be dangerous.
 
-## Why it matters in schema-less projects
+## Common Questions: Types & Sensitivity
 
-BG-003 needs no schema at all. It fires on the _pattern_ — a call result passed
-directly into client props — so it is the rule that still works in a BFF or
-zero-schema project where there is no data layer to introspect. See
-[ADR-002](https://github.com/Ferhatmedtahar/Antra) on schema-optional ingestion and
-trust tiers.
+### Is this a TypeScript error?
+**No.** TypeScript types are completely erased at compile time. Even if `user` has an interface like `interface PublicUser { name: string }`, React Server Components serializes the **actual runtime JavaScript object** across the React Flight protocol. If your database query returned 15 columns, all 15 columns travel across the wire in the network payload and are visible in Chrome DevTools Network tab.
 
-## Fixing it
+### Is it because of a sensitive keyword?
+**No.** Rule `BG-001` checks for explicit sensitive keywords (like `password_hash`, `token`, `secret`). Rule `BG-003` checks for **unprojected ingress data** (from `fetch`, `supabase`, `prisma`, or external APIs). It triggers even if the current columns look harmless, protecting your application against accidental data exposure when new columns are added in future database migrations.
 
-Project what the client needs:
+## How to Fix It
 
-```ts
-const account = await fetchAccount(id);
-return <AccountCard account={{ name: account.name }} />;
+### Solution 1: Explicit Field Projection (Recommended)
+Only pass the specific fields the client component needs into a new object literal:
+
+```tsx
+// ❌ Dangerous: passes all database columns over the wire
+<StudentProfileScreen user={studentUser} />
+
+// ✅ Safe: only explicit fields are serialized to the browser
+<StudentProfileScreen
+  user={{
+    id: studentUser.id,
+    firstName: studentUser.first_name,
+    lastName: studentUser.last_name,
+    experiences: studentUser.experiences,
+  }}
+/>
 ```
 
-The projection is the point. It converts "whatever the backend returns" into a
-statement your code makes, which is a thing a reviewer can check and a diff can
-show changing.
+### Solution 2: Schema or DTO Validation (e.g. Zod)
+Parse through a validator or DTO mapping function. Registered sanitizers act as security checkpoints:
+
+```tsx
+const safeUser = publicStudentSchema.parse(studentUser);
+<StudentProfileScreen user={safeUser} />
+```
+
+### Solution 3: Inline Suppression (If verified safe)
+If you have reviewed the query and confirmed that all columns are safe and intended for the public browser:
+
+```tsx
+{/* antra-disable-next-line BG-003 reason="public student profile DTO verified" */}
+<StudentProfileScreen user={studentUser} />
+```
+

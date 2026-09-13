@@ -11,5 +11,6 @@ Working backlog for `antra`, broken into epics — one folder each, in build ord
 - [06-studio/](./06-studio/) — local web dashboard over `antra-findings.sqlite`, with config editing — **done (v1)**
 - [07-cli-commands/](./07-cli-commands/) — `doctor`, `trace`, `query`, `watch`, `fix`, `scan --staged/--diff` — **done**
 - [08-open-source/](./08-open-source/) — README, licence, contributing/security docs, GitHub CI and templates — **done**
+- [09-studio-redesign/](./09-studio-redesign/) — Studio redesign ("The Seam"): Cal Sans, JetBrains Mono, oklch theme, boundary strip hero — **done**
 
 See [`docs/adr/`](../adr/) for accepted architectural decisions and [`docs/c4/`](../c4/) for the settled system diagram.

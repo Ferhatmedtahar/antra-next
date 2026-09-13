@@ -6,9 +6,9 @@ Git only tracks files, never directories. An empty folder — `src/ast/`, `src/s
 
 `.gitkeep` is not a git feature — it's a zero-byte file with a name that's become a community convention (`.keep` and `.gitignore`-adjacent tricks also exist). Its only job is to give the empty folder _something_ to track, so the directory shows up after a clone. Once a real file lands in one of these folders (Milestone 1's `src/ast/boundary-classifier.ts`, for example), the `.gitkeep` in that folder becomes dead weight — delete it then, git doesn't need it once there's real content.
 
-## What's built so far (Milestone 0)
+## System Status
 
-Nothing scans anything yet. What exists is the **walking skeleton**: a CLI that boots, parses every flag from the CLI surface spec, and dispatches to 10 commands — but every command body is a placeholder that prints "not implemented yet" and returns. The tooling around it (lint, format, typecheck, tests, git hooks) is real and enforced, not a placeholder.
+The entire `antra` core engine, CLI, reporters, rules, and Studio dashboard are implemented, tested, and active. All 10 CLI commands and studio interfaces are functional.
 
 | Piece                                                                                                                    | State                                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ Either way, `scan` loads the target project, classifies every file, and runs the
 <ShareButton token={link.share_token} />
 ```
 
-Commands other than `init`/`sync`/`scan` still just confirm their flags were parsed.
+All CLI commands (`doctor`, `trace`, `watch`, `fix`, `query`, `baseline`, etc.) are fully implemented — see below for details.
 
 ## Tuning which fields count as sensitive
 
@@ -131,9 +131,13 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build
 - **`commit-msg`** runs `commitlint` — enforces [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.). A commit message that doesn't match gets rejected.
 - Don't want to hand-write a conventional commit message? Run `pnpm commit` instead of `git commit` — it launches an interactive prompt (Commitizen) that builds one for you.
 
-## What's next
+## Architectural Roadmap & Tasks
 
-[Epic 01](./tasks/01-init-config-setup/) (`init`) and [Epic 02](./tasks/02-boundary-detection/) (`src/ast/boundary-classifier.ts`, `src/engine.ts`) are done. Next is [Epic 03](./tasks/03-schema-taint-sources/): real `extract()` bodies for the schema providers plus the zero-schema heuristics, so the snapshot stops being empty and `scan` has taint sources to work with. Everything later plugs into `engine.ts`'s `runScan()` without touching what's documented here.
+Core development across Epics 00 through 09 (scaffolding, boundary detection, schema providers, rules engine, storage/SARIF/baseline, CLI commands, open source setup, and Studio redesign) is complete. For deep dives into design rationale and ongoing work, see:
+
+- [`docs/c4/system-context.md`](./c4/system-context.md) — Settled C4 system context diagram and pipeline architecture
+- [`docs/adr/`](./adr/) — Architectural Decision Records
+- [`docs/tasks/`](./tasks/) — Complete task checklist and implementation history across all epics
 
 ## Supabase without a generated types file
 

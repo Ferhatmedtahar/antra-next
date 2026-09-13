@@ -4,6 +4,7 @@ import {
   IconChartDots3,
   IconFocus2,
   IconHierarchy,
+  IconInfoCircle,
   IconSitemap,
   IconX,
 } from "@tabler/icons-react";
@@ -73,6 +74,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useLoad, useTheme } from "@/hooks";
 import { cn } from "@/lib/utils";
 
@@ -180,12 +186,12 @@ function BoundaryGraph({
 }) {
   const { theme } = useTheme();
   const [filters, setFilters] = useState<Filters>(() => ({
-    crossingsOnly: true,
+    crossingsOnly: false,
     // Start on what matters when there is something that matters.
     findingsOnly:
       focus === null && graph.edges.some((edge) => edge.findings > 0),
     actions: true,
-    hideIsolated: true,
+    hideIsolated: false,
   }));
   const [mode, setMode] = useState<LayoutMode>("force");
   const [query, setQuery] = useState("");
@@ -337,22 +343,26 @@ function BoundaryGraph({
           />
         </div>
         <FilterSwitch
-          label="Crossings only"
+          label="Server→Client only"
+          tooltip="Show only files that pass data or call actions across the Server→Client boundary. Turn off to see every file in the project."
           checked={filters.crossingsOnly}
           onChange={() => toggle("crossingsOnly")}
         />
         <FilterSwitch
-          label="With findings"
+          label="Has findings"
+          tooltip="Show only files where at least one security finding (BG-001–004) was detected."
           checked={filters.findingsOnly}
           onChange={() => toggle("findingsOnly")}
         />
         <FilterSwitch
           label="Action calls"
+          tooltip="Show edges where a component calls a Server Action."
           checked={filters.actions}
           onChange={() => toggle("actions")}
         />
         <FilterSwitch
-          label="Hide isolated"
+          label="Hide disconnected"
+          tooltip="Hide files that have no edges to any other file. Turn off to also see standalone route handlers and action modules."
           checked={filters.hideIsolated}
           onChange={() => toggle("hideIsolated")}
         />
@@ -522,18 +532,32 @@ function BoundaryGraph({
 
 function FilterSwitch({
   label,
+  tooltip,
   checked,
   onChange,
 }: {
   label: string;
+  tooltip?: string;
   checked: boolean;
   onChange: () => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
-      {label}
-    </label>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+          <span>{label}</span>
+          {tooltip ? (
+            <IconInfoCircle className="size-3.5 text-muted-foreground" />
+          ) : null}
+        </label>
+      </TooltipTrigger>
+      {tooltip ? (
+        <TooltipContent side="bottom" className="max-w-56 text-center">
+          {tooltip}
+        </TooltipContent>
+      ) : null}
+    </Tooltip>
   );
 }
 
