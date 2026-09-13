@@ -45,8 +45,15 @@ export type DocSource = {
   content: string;
 };
 
+/** Folder names that do not read right title-cased, e.g. "ci" → "Ci". */
+const GROUP_TITLES: Record<string, string> = {
+  ci: "CI",
+};
+
 function humanize(segment: string): string {
   if (!segment) return "Docs";
+  const override = GROUP_TITLES[segment];
+  if (override) return override;
   return segment
     .split(/[-_]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

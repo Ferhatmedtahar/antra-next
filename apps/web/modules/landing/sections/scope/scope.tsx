@@ -29,13 +29,13 @@ export function Scope() {
     >
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] border-t border-l border-[var(--color-divider)]">
         <GridCell>
-          <div className="mb-6 font-heading text-sm font-semibold uppercase tracking-wide text-accent-500">
+          <div className="mb-6 font-heading text-sm font-semibold uppercase tracking-wide text-accent-text">
             Does
           </div>
           <ul className="space-y-3 text-sm leading-relaxed">
             {DOES.map((item) => (
               <li key={item} className="flex gap-3">
-                <span className="font-mono text-accent-500">+</span>
+                <span className="font-mono text-accent-text">+</span>
                 <span className="text-[var(--color-ink)]/80">{item}</span>
               </li>
             ))}
@@ -62,7 +62,7 @@ export function Scope() {
           </div>
           <p className="text-sm leading-relaxed text-[var(--color-ink)]/72">
             Findings are <code className="font-mono">error</code> or{" "}
-            <code className="font-mono">warning</code>. Nothing in between —
+            <code className="font-mono">warning</code>. Nothing in between,
             because a level nobody agrees on is a level nobody acts on.
           </p>
         </GridCell>

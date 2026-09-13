@@ -26,7 +26,8 @@ export default function DocsError({
         Could not load documentation
       </h1>
       <p className="mb-8 max-w-xl text-lg leading-relaxed text-[var(--color-ink)]/70">
-        An unexpected error occurred while loading this documentation page.
+        This documentation page could not be loaded. Try again, or pick another
+        page from the navigation.
       </p>
       <div className="flex flex-wrap items-center gap-4">
         <button

@@ -38,7 +38,7 @@ antra scan --format sarif --output report.sarif
 ## Choosing a format
 
 `pretty` is for a terminal. `json` is for a script that wants the finding
-objects. `sarif` is what a code host understands — it is the format to reach
+objects. `sarif` is what a code host understands, which is the format to reach
 for in CI, because the host can then annotate the diff.
 
 ## Scoping a scan
@@ -64,7 +64,7 @@ antra scan --format sarif --output antra.sarif --fail-on-violation
 ```
 
 <Note type="warning">
-  `--strict` is broader than `--fail-on-violation` — it also treats warnings as
+  `--strict` is broader than `--fail-on-violation`: it also treats warnings as
   errors and requires a valid schema snapshot, so it can fail a build for
   reasons that are not leaks.
 </Note>
@@ -77,8 +77,8 @@ and what [`antra studio`](/docs/commands/studio) displays.
 
 <Note type="warning">
   A partial scan is **not** recorded. When you pass `--diff` or `--staged`, the
-  whole project is still parsed — so cross-file taint still resolves — but only
-  the changed files are reported against, and that partial result is
-  deliberately kept out of the database. Studio will not show it, and `antra
-  query` will not have it. Run a full scan when you want the run on the record.
+  whole project is still parsed, so cross-file taint still resolves, but only
+  the changed files are reported against. That partial result is deliberately
+  kept out of the database: Studio will not show it, and `antra query` will not
+  have it. Run a full scan when you want the run on the record.
 </Note>

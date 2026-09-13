@@ -1,3 +1,4 @@
+import { CircleHalfIcon } from "@/components/shared/shapes";
 import {
   GridCell,
   GridGroup,
@@ -29,8 +30,14 @@ export function Workflow() {
       id="workflow"
       kicker="Workflow"
       title="Fits the pipeline you already have."
-      lede="Antra runs as a CLI step. There is nothing to host and nothing to install on a server — a GitHub Action, a generic CI job, or a pre-commit hook all work the same way."
+      lede="Antra runs as a CLI step. There is nothing to host and nothing to install on a server, so a GitHub Action, a generic CI job, or a pre-commit hook all work the same way."
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-4 right-10 -z-10 select-none text-accent-text opacity-[0.25] "
+      >
+        <CircleHalfIcon className="size-6  md:size-8  animate-[spin_8s_linear_infinite] motion-reduce:animate-none" />
+      </div>
       <GridGroup>
         {STEPS.map((step, i) => (
           <GridCell key={step.title}>

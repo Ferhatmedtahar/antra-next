@@ -12,7 +12,7 @@ request body, with no call to a configured validator anywhere in its body.
 ## Why it fires
 
 Client input is untrusted by definition. A Server Action is a public endpoint,
-whether or not the component calling it sits behind a login — so "it's only
+whether or not the component calling it sits behind a login, so "it's only
 reachable from our own page" is not a defence the analysis can act on.
 
 ## What it checks
@@ -27,21 +27,24 @@ It then searches the handler's body for a call to a validator you have
 configured under `sanitizers`. If there is one, no finding. If there is not,
 there is.
 
-`GET`, `HEAD`, and `OPTIONS` are exempt — they have no body to validate.
+`GET`, `HEAD`, and `OPTIONS` are exempt, since they have no body to validate.
 
 ## Why the trace is empty
 
 Most findings carry the path a value took. BG-002 does not, and that is
-deliberate: it is about the _shape of the interface_ — parameters accepted, no
-validation — not about a particular value's journey through your code. There is
+deliberate: it is about the shape of the interface (parameters accepted, no
+validation), not about a particular value's journey through your code. There is
 no path to report.
 
-## Fixing it: How to Validate Input
+## Fixing it
 
-All `BG-002` asks for is **one runtime validation step** before using external parameters or request bodies.
+All BG-002 asks for is one runtime validation step before you use the external
+parameters or the request body. There are three ways to give it one.
 
-### Option 1: Schema Validation (e.g. Zod, Valibot)
-If your project uses a schema library, parse the input before passing it to internal services:
+### Parse with a schema library
+
+If your project already uses Zod, Valibot, or similar, parse the input before
+handing it to anything internal:
 
 ```ts
 import { z } from "zod";
@@ -53,14 +56,16 @@ const UpdateProfileSchema = z.object({
 
 export async function updateProfileAction(formData: FormData) {
   "use server";
-  // ✅ Antra recognizes .parse() and clears the BG-002 error
+  // Antra recognizes .parse() and clears the BG-002 error
   const validated = UpdateProfileSchema.parse(Object.fromEntries(formData));
   await db.users.update(validated);
 }
 ```
 
-### Option 2: Zero-Dependency Custom Function (No Libraries Needed!)
-You do **not** need to install Zod or any external package. You can write your own validation function in plain TypeScript:
+### Write your own validator
+
+You do not need to install anything. A plain TypeScript function that rejects
+what it does not expect is enough:
 
 ```ts
 // In your code: utils/validate.ts
@@ -72,24 +77,27 @@ export function validateConversationId(id: unknown): string {
 }
 ```
 
-Then in `antra.config.json` (or in Studio under **Sanitizers & Validators**), register the function name:
+Then register the function name in `antra.config.json`, or in Studio under
+**Sanitizers & Validators**:
 
 ```json
 "sanitizers": ["validateConversationId"]
 ```
 
-Now, Antra recognizes `validateConversationId(id)` as an approved checkpoint:
+Once the name is declared, Antra treats a call to it as an approved checkpoint:
 
 ```ts
 export async function uploadChatAttachmentAction(formData: FormData, conversationId: string) {
   "use server";
-  const validId = validateConversationId(conversationId); // 🛡️ Safe!
+  const validId = validateConversationId(conversationId);
   // ...
 }
 ```
 
-### Option 3: Inline Suppression (If Validated by Middleware)
-If your endpoint is already validated upstream (for example, by a Next.js proxy, API gateway, or custom middleware):
+### Suppress it when something upstream validates
+
+If the endpoint is already validated before it gets here, by a proxy, an API
+gateway, or your own middleware, say so at the line:
 
 ```ts
 // antra-disable-next-line BG-002 reason="validated upstream by authentication middleware"
@@ -97,4 +105,3 @@ export async function POST(request: Request) {
   // ...
 }
 ```
-

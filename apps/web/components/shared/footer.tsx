@@ -13,7 +13,7 @@ export function Footer() {
           <p className="text-sm text-[var(--color-ink)]/60">{site.tagline}</p>
         </div>
         <nav className="flex flex-wrap gap-8 text-sm">
-          <a href="/#how-it-works">How It Works</a>
+          <a href="/#how-it-works">How it works</a>
           <a href="/#checks">Checks</a>
           <a href={site.docsHome}>Documentation</a>
           <a href={site.githubUrl} target="_blank" rel="noreferrer">

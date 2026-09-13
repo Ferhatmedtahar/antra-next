@@ -1,6 +1,6 @@
 ---
 title: Trust boundaries
-description: The model the rules are built on — where a value stops being safe.
+description: The model the rules are built on, and where a value stops being safe.
 order: 110
 ---
 
@@ -27,20 +27,20 @@ response, in the same place a value in props is.
 
 An object crossing into client props is well-typed either way. `User` is `User`
 whether it carries an email, a hashed password, or an internal risk score.
-Types describe shape; the question here is about _provenance_ — where the value
-came from and what has happened to it since.
+Types describe shape. The question here is about _provenance_: where the value
+came from, and what has happened to it since.
 
 ## Taint tracking
 
 That is what the analysis actually does. It treats values from a source as
 tainted, follows them through assignments, calls, and returns, and reports when
-a tainted value reaches a sink — a boundary crossing — without passing through
+a tainted value reaches a sink (a boundary crossing) without passing through
 something that clears it.
 
-- **Source** — where a value enters, typically a database read through your
+- **Source**: where a value enters, typically a database read through your
   data layer.
-- **Sink** — the crossing that fires the finding.
-- **Sanitizer** — a step that clears taint. Recognized by name, so the ones
+- **Sink**: the crossing that fires the finding.
+- **Sanitizer**: a step that clears taint. Recognized by name, so the ones
   your project uses have to be declared in
   [`antra.config.json`](/docs/configuration/reference).
 
@@ -57,7 +57,7 @@ antra trace app/account/page.tsx:42
 ## Where this leaves false positives
 
 A static analysis of provenance cannot know your intent. It can only know that
-a value from a source reached a sink without a recognized step in between — so
+a value from a source reached a sink without a recognized step in between. So
 the two ways to silence a finding are to add the missing sanitizer declaration,
 which fixes every instance at once, or to
 [suppress this one with a reason](/docs/concepts/suppressions-and-baselines).

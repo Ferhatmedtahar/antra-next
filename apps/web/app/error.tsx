@@ -26,8 +26,8 @@ export default function ErrorBoundary({
           Something went wrong
         </h1>
         <p className="mb-8 max-w-md text-base leading-relaxed text-[var(--color-ink)]/70">
-          We encountered an unexpected error while processing this page. Please
-          try again.
+          This page could not be rendered. Try again, and if it keeps happening,
+          go back to the home page.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <button

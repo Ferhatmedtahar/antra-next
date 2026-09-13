@@ -25,7 +25,7 @@ The analysis treats a value as sensitive when it is:
 - a `process.env` value
 
 `process.env` is in that list because a server-side environment variable read
-into a prop is a leak regardless of what your schema says — the schema was never
+into a prop is a leak regardless of what your schema says. The schema was never
 asked about it.
 
 ## The mistake to avoid

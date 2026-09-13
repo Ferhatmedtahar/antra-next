@@ -9,7 +9,7 @@ export default function NotFound() {
       <NavBar />
       <main className="flex flex-1 items-center justify-center px-6 py-24">
         <div className="flex w-full max-w-xl flex-col items-center border border-[var(--color-divider)] bg-[var(--color-surface)] p-10 text-center md:p-14">
-          <div className="mb-4 inline-flex items-center justify-center border border-accent-500/30 bg-accent-500/10 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-accent-500">
+          <div className="mb-4 inline-flex items-center justify-center border border-accent-text/30 bg-accent-500/10 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-accent-text">
             404 Error
           </div>
           <h1 className="mb-3 font-heading text-3xl font-bold tracking-tight md:text-4xl">

@@ -1,3 +1,4 @@
+import { CircleFlowerIcon } from "@/components/shared/shapes";
 import {
   GridCell,
   GridGroup,
@@ -31,6 +32,12 @@ export function Checks() {
       title="What Antra actually looks for."
       lede="Antra is a static analysis security linter. Every check below runs on your source, locally, with no network calls and no code leaving the machine."
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-1 -left-10 -z-10 select-none text-accent-text opacity-[0.07] blur-[2px]"
+      >
+        <CircleFlowerIcon className="size-48 md:size-64  animate-[spin_35s_linear_infinite] motion-reduce:animate-none" />
+      </div>
       <GridGroup>
         {CHECKS.map((check, i) => (
           <GridCell key={check.title}>

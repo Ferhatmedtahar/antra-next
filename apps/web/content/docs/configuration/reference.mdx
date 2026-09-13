@@ -1,6 +1,6 @@
 ---
 title: Configuration reference
-description: Every field in antra.config.json.
+description: Every field in antra.config.json, with its type, default, and what it does.
 order: 510
 ---
 
@@ -15,13 +15,13 @@ half-applied.
 
 | Field              | Type     | Required | Default                            | What it holds                                                                          |
 | ------------------ | -------- | -------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
-| `version`          | `1`      | yes      | —                                  | Schema version. The literal `1`.                                                       |
-| `frameworkAdapter` | string   | yes      | —                                  | Which framework adapter to analyze with. v1 ships one: `nextjs-app-router`. Non-empty. |
-| `providers`        | object[] | yes      | —                                  | Schema providers to read sensitive fields from.                                        |
-| `keywords`         | object   | yes      | —                                  | Name patterns used to spot sensitive fields.                                           |
+| `version`          | `1`      | yes      | none                               | Schema version. The literal `1`.                                                       |
+| `frameworkAdapter` | string   | yes      | none                               | Which framework adapter to analyze with. v1 ships one: `nextjs-app-router`. Non-empty. |
+| `providers`        | object[] | yes      | none                               | Schema providers to read sensitive fields from.                                        |
+| `keywords`         | object   | yes      | none                               | Name patterns used to spot sensitive fields.                                           |
 | `sensitiveFields`  | object   | no       | `{ "include": [], "exclude": [] }` | The explicit sensitive-field list.                                                     |
-| `sanitizers`       | string[] | yes      | —                                  | Function names that clear taint.                                                       |
-| `rules`            | object   | yes      | —                                  | Rule id to boolean, enabling or disabling each rule.                                   |
+| `sanitizers`       | string[] | yes      | none                               | Function names that clear taint.                                                       |
+| `rules`            | object   | yes      | none                               | Rule id to boolean, enabling or disabling each rule.                                   |
 
 ## `keywords`
 
@@ -38,8 +38,8 @@ three characters or fewer match as whole words. That asymmetry is what keeps a
 three-letter pattern from matching half your codebase, and it applies to names
 in any language.
 
-`keywords.exclude` is accepted but is a legacy alias for
-`sensitiveFields.exclude` — prefer the latter.
+`keywords.exclude` is accepted, but it is a legacy alias for
+`sensitiveFields.exclude`. Prefer the latter.
 
 ## `sensitiveFields`
 
@@ -51,11 +51,12 @@ in any language.
 ```
 
 Entries are matched either by exact origin or by exact field name. An origin
-looks like `supabase:public.users.iban` — provider, path, field.
+looks like `supabase:public.users.iban`, meaning the provider, then the path,
+then the field.
 
-- `include` — always sensitive.
-- `exclude` — never sensitive, and it wins over everything else, including
-  `include` and the keyword patterns.
+- `include`: always sensitive.
+- `exclude`: never sensitive. It wins over everything else, including `include`
+  and the keyword patterns.
 
 `antra init` seeds `include` with the fields the keyword scan found, and you
 edit from there. That is why the file is worth reading once after `init`: it is
@@ -73,14 +74,14 @@ object is the provider's own settings.
 ]
 ```
 
-The entry is deliberately loose — each provider validates its own shape when it
+The entry is deliberately loose. Each provider validates its own shape when it
 runs, so the config file does not need to know every provider's settings. See
 [Schema providers](/docs/concepts/schema-providers) for what each one reads.
 
 <Note type="warning">
   Provider settings are not validated at load time, only when the provider runs.
   A typo in `schemaPath` shows up as a provider that extracts nothing, not as a
-  config error — so if a scan stops finding schema-derived fields, run `antra
+  config error. If a scan stops finding schema-derived fields, run `antra
   doctor` and check the snapshot.
 </Note>
 
@@ -96,9 +97,9 @@ runs, so the config file does not need to know every provider's settings. See
 ```
 
 Each key is a rule id and the boolean turns it on or off. Turning a rule off
-here is a project-level decision — it applies to everyone, stays out of the
-diff, and is the honest way to say "this rule is wrong for this codebase".
-Prefer it to a pile of per-line suppressions. The rules are documented at
+here is a project-level decision: it applies to everyone, stays out of the diff,
+and is the honest way to say "this rule is wrong for this codebase". Prefer it
+to a pile of per-line suppressions. The rules are documented at
 [BG-001](/docs/rules/bg-001), [BG-002](/docs/rules/bg-002),
 [BG-003](/docs/rules/bg-003), and [BG-004](/docs/rules/bg-004).
 
@@ -108,17 +109,24 @@ Prefer it to a pile of per-line suppressions. The rules are documented at
 "sanitizers": ["zod", "validateEmail", "parseUser"]
 ```
 
-Functions or schema libraries that act as **security checkpoints**. When Antra detects that data passes through any call to these names, it clears the taint and validates the input:
+These are the functions and schema libraries Antra counts as validation. When a
+value passes through a call to one of these names, Antra stops tracking it as
+tainted. The call is assumed to have checked the value, so nothing downstream of
+it is reported.
 
-- **Resolves BG-002 (Unvalidated Input):** Server Actions and Route Handlers that call a registered sanitizer count as validated.
-- **Resolves BG-003 (Opaque Object Pass):** Ingress data cleaned or validated through a sanitizer is recognized as safe before crossing to the client.
+- **BG-002.** A Server Action or route handler that calls a configured validator
+  counts as validated, and the rule stays quiet.
+- **BG-003.** A sanitized value carries no taint, so it is not reported when it
+  crosses to a client component.
 
-### Built-in Libraries vs Custom Functions
+### Libraries and your own functions
 
-1. **Popular Schema Libraries (Pre-configured):**
-   Antra recognizes `zod`, `valibot`, `yup`, `joi`, `arktype`, and `next-safe-action` out of the box.
-2. **Zero-Dependency Custom Functions (No Downloads Needed):**
-   You don't need any third-party package. You can write your own validation function (e.g. `function validateInput(data) { ... }`) and simply add its name (`"validateInput"`) to this list. When Antra sees `validateInput(params)`, it marks the data as verified.
+Antra knows the parse and validate call shapes of `zod`, `valibot`, `yup`,
+`joi`, `arktype`, and `next-safe-action` without any configuration.
+
+Every other name is matched as a function or method name, so a validator of your
+own works the same way. Add its name to the list (`"validateInput"`), and each
+call to `validateInput(data)` is treated as validation. No extra package needed.
 
 ## A complete example
 
@@ -161,7 +169,7 @@ Antra keeps its own state under `.antra/`:
 | Path                            | Written by                 | Holds                                                                                  |
 | ------------------------------- | -------------------------- | -------------------------------------------------------------------------------------- |
 | `.antra/antra-findings.sqlite`  | `antra scan`               | Scan history; read by `antra query` and Studio.                                        |
-| `.antra/contract-snapshot.json` | `antra init`, `antra sync` | The extracted taint sources — a generation timestamp and a list of field/origin pairs. |
+| `.antra/contract-snapshot.json` | `antra init`, `antra sync` | The extracted taint sources: a generation timestamp and a list of field/origin pairs. |
 
 Add `.antra/` to `.gitignore`. It is derived state, regenerated from
 your code and your data layer.

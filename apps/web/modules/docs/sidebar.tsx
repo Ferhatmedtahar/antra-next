@@ -25,7 +25,7 @@ export function DocsSidebar({ groups }: { groups: DocsNavGroup[] }) {
                       href={item.href}
                       className={`block border-l-2 py-1 pl-3 text-sm leading-snug ${
                         active
-                          ? "border-accent-500 font-semibold text-accent-500"
+                          ? "border-accent-text font-semibold text-accent-text"
                           : "border-transparent text-[var(--color-ink)]/72 hover:border-[var(--color-divider)] hover:text-[var(--color-ink)]"
                       }`}
                     >

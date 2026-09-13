@@ -10,10 +10,9 @@ bad at letting you browse.
 
 ## What it is not
 
-It is not a scanner. Studio reads
-`.antra/antra-findings.sqlite` — the database that
-[`antra scan`](/docs/commands/scan) writes into — and shows you what is already
-there. If you have just changed code, scan first:
+It is not a scanner. Studio reads `.antra/antra-findings.sqlite`, the database
+that [`antra scan`](/docs/commands/scan) writes into, and shows you what is
+already there. If you have just changed code, scan first:
 
 ```bash
 antra scan && antra studio
@@ -26,10 +25,10 @@ shows comes from the analysis you already ran; there is no model in the loop.
 
 - **The findings**, filtered and browsable, with the rule, location, sink, and
   trace each one carries.
-- **The graph** — the project as nodes, with boundary edges drawn where a value
+- **The graph**: the project as nodes, with boundary edges drawn where a value
   crosses from one side of a trust boundary to the other.
-- **Triage** — the place to decide what to do about a finding you have looked
-  at: follow the path it took, or record that you accept it.
+- **Triage**: the place to decide what to do about a finding you have looked at,
+  by following the path it took or recording that you accept it.
 
 ## Local by design
 

@@ -1,6 +1,6 @@
 ---
 title: Quick start
-description: init, scan, studio — the whole loop on one project.
+description: init, scan, and studio, run once to see the whole loop.
 order: 30
 ---
 
@@ -27,8 +27,8 @@ values to the boundaries they cross. The report names the rule, the location,
 the sink expression, and the path the value travelled.
 
 On a project with a lot of existing code, the first report can be long. That is
-expected — [baseline](/docs/commands/baseline) is the command for turning it
-into something you can act on.
+expected. [baseline](/docs/commands/baseline) is the command for turning it into
+something you can act on.
 
 ## 3. Read it in Studio
 
@@ -50,9 +50,9 @@ your scans recorded into. It binds to localhost on port 8080 by default.
 
 ## Where the state lives
 
-Everything Antra writes goes under `.antra/` in your project —
-`antra-findings.sqlite` for scan history, and `contract-snapshot.json` for the schema
-snapshot `init` generated. Add that directory to `.gitignore`.
+Everything Antra writes goes under `.antra/` in your project:
+`antra-findings.sqlite` for scan history, and `contract-snapshot.json` for the
+schema snapshot `init` generated. Add that directory to `.gitignore`.
 
 ## Next
 

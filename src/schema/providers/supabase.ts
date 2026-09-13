@@ -338,8 +338,25 @@ export const supabaseProvider: SchemaProvider = {
       {
         key: "typesPath",
         message:
-          "Path to your generated Supabase types file (run `supabase gen types typescript` first)",
+          "Path to your generated Supabase types file (run `supabase gen types typescript` first), or leave empty to read the schema from your Supabase project instead",
         defaultValue: TYPES_CANDIDATES[0],
+      },
+      {
+        key: "urlEnv",
+        message:
+          "Otherwise, the NAME of the env variable holding your Supabase project URL",
+        defaultValue: URL_ENV_CANDIDATES[0],
+      },
+      {
+        key: "keyEnv",
+        message:
+          "And the NAME of the env variable holding a Supabase API key (read at scan time, never stored)",
+        defaultValue: KEY_ENV_CANDIDATES[0],
+      },
+      {
+        key: "schema",
+        message: "Postgres schema to read",
+        defaultValue: "public",
       },
     ]);
   },
@@ -385,5 +402,29 @@ export const supabaseProvider: SchemaProvider = {
       );
     }
     return extractSupabaseApi({ url, key, schema });
+  },
+
+  /**
+   * Mirrors extract()'s own precedence, so "init accepted this" and
+   * "extract() accepted this" cannot disagree. `typesPath` counts only if
+   * the file is really there; the API fallback only if both named
+   * variables hold a value.
+   *
+   * Values are checked here purely to catch names that are configured but
+   * point at nothing — the authoritative read still happens at scan time,
+   * so rotating a key never means re-running init.
+   */
+  isViable(rootDir: string, config: unknown): boolean {
+    const asTypes = typesConfigSchema.safeParse(config);
+    if (asTypes.success) {
+      return fs.existsSync(path.resolve(rootDir, asTypes.data.typesPath));
+    }
+    const asApi = apiConfigSchema.safeParse(config);
+    if (!asApi.success) return false;
+    const env = readProjectEnv(rootDir);
+    const { urlEnv, keyEnv } = asApi.data;
+    return (
+      (env[urlEnv] ?? "").trim() !== "" && (env[keyEnv] ?? "").trim() !== ""
+    );
   },
 };

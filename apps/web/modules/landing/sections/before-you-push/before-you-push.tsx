@@ -1,10 +1,11 @@
+import { CircleFlowerIcon } from "@/components/shared/shapes";
 import {
   GridCell,
   GridGroup,
   SectionShell,
 } from "@/modules/landing/sections/section-shell";
 
-const STEPS = ["Write Code", "Antra", "Find Issues", "Fix", "Ship Safely"];
+const STEPS = ["Write Code", "Find Issues", "Fix", "Ship Safely"];
 
 export function BeforeYouPush() {
   return (
@@ -16,7 +17,12 @@ export function BeforeYouPush() {
     >
       <GridGroup>
         {STEPS.map((step, i) => (
-          <GridCell key={step}>
+          <GridCell
+            key={step}
+            corner={
+              <CircleFlowerIcon className="size-10 opacity-50  animate-[spin_15s_linear_infinite] motion-reduce:animate-none" />
+            }
+          >
             <div className="mb-6 font-mono text-xs text-[var(--color-ink)]/50">
               {String(i + 1).padStart(2, "0")}
             </div>

@@ -16,26 +16,26 @@ antra fix [path]
 
 ```bash
 antra fix --suppress BG-001 --reason "sanitized by parseUser()" --file app/account
-antra fix --suppress all --reason "accepted for now — see SEC-142" --dry-run
+antra fix --suppress all --reason "accepted for now, see SEC-142" --dry-run
 ```
 
 ## Flags
 
 | Flag                | Default    | What it does                                  |
 | ------------------- | ---------- | --------------------------------------------- |
-| `--suppress <rule>` | —          | Rule id (`BG-001` … `BG-004`) or `all`.       |
-| `--reason <text>`   | —          | Recorded in every inserted comment.           |
+| `--suppress <rule>` | none       | Rule id (`BG-001` to `BG-004`) or `all`.      |
+| `--reason <text>`   | none       | Recorded in every inserted comment.           |
 | `--file <fragment>` | every file | Only files whose path contains this fragment. |
 | `--dry-run`         | off        | Prints the planned edits and writes nothing.  |
 
 ## What it writes
 
-Today the only mechanical remediation is a **reasoned suppression comment** —
-a directive inserted directly above the crossing, carrying the reason you pass
-in `--reason`.
+Today the only mechanical remediation is a reasoned suppression comment: a
+directive inserted directly above the crossing, carrying the reason you pass in
+`--reason`.
 
-That is a real trade, and the command is named for what it does rather than
-what you might hope it does: it does not rewrite your code to sanitize a value.
+That is a real trade, and the command is named for what it does rather than what
+you might hope it does. It does not rewrite your code to sanitize a value.
 Deciding that a value is safe requires knowing your intent, and a tool that
 guesses will silently remove findings you needed to see.
 
@@ -55,5 +55,5 @@ antra fix --suppress BG-003 --reason "projected upstream" --file apps/dashboard
 
 ## Related
 
-- [Suppressions and baselines](/docs/concepts/suppressions-and-baselines) — the
+- [Suppressions and baselines](/docs/concepts/suppressions-and-baselines): the
   difference between suppressing one finding and baselining a report.

@@ -1,4 +1,5 @@
 import { Button } from "@/components/shared/button";
+import { AstroriskIcon } from "@/components/shared/shapes";
 import { Terminal } from "@/components/shared/terminal";
 import { site } from "@/config/site";
 
@@ -20,7 +21,7 @@ const step = (label: string, detail: string, seconds: string) =>
   `  ✓ ${label.padEnd(LABEL_WIDTH)}  ${detail.padEnd(DETAIL_WIDTH)}${seconds}s`;
 
 const SCAN_LINES = [
-  { text: "$ antra scan", className: "text-[#f1efee]" },
+  { text: "$ antra scan", className: "text-code-ink" },
   { text: "antra scan" },
   { text: step("Detect framework", "nextjs-app-router", "0.12") },
   {
@@ -41,21 +42,34 @@ const SCAN_LINES = [
   { text: "  files scanned      989" },
   { text: "  client boundaries  12" },
   { text: " " },
-  { text: "✖ 2 finding(s)  [BG-001 ×2]", className: "text-accent-500" },
+  { text: "✖ 2 finding(s)  [BG-001 ×2]", className: "text-accent-400" },
 ];
 
 export function Hero() {
   return (
-    <section id="top">
+    <section id="top" className="relative isolate overflow-hidden">
+      <div className="grid-backdrop" aria-hidden />
+      {/*
+        Ambient geometry, bleeding off the top-right corner. `-z-10` puts it
+        under the headline and the terminal, `blur-[2px]` stops the crisp edges
+        from competing with the type, and the section's `overflow-hidden` is
+        what keeps the overhang from adding a horizontal scrollbar.
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-16 -z-10 select-none text-accent-text opacity-10 blur-[2px] md:-right-30"
+      >
+        <AstroriskIcon className="size-72 md:size-96  animate-[spin_60s_linear_infinite] motion-reduce:animate-none" />
+      </div>
       <div className="mx-auto max-w-6xl px-6 pt-16">
         <div className="mb-6 flex items-center gap-2 text-accent-500">
-          <span className="font-heading text-sm font-extrabold text--ink">
+          <span className="font-heading text-sm font-extrabold text-[var(--color-ink)]">
             Developer security scanner
           </span>
         </div>
         <h1 className="mb-7 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight">
           Catch security issues before they{" "}
-          <span className="text-accent-500">cross the boundary.</span>
+          <span className="text-accent-text">cross the boundary.</span>
         </h1>
         <div className="flex flex-wrap items-end gap-8 pb-8">
           <p className="max-w-[56ch] flex-1 basis-110 text-lg leading-relaxed">

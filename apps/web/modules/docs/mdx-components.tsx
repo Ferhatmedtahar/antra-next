@@ -70,7 +70,7 @@ export const mdxComponents = {
     return (
       <a
         href={href}
-        className="text-accent-500 underline underline-offset-2 hover:text-accent-600"
+        className="text-accent-text underline underline-offset-2 hover:text-accent-text-hover"
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
         {...props}
       />
@@ -100,19 +100,19 @@ export const mdxComponents = {
   },
   pre: (props: ComponentPropsWithoutRef<"pre">) => (
     <pre
-      className="my-5 overflow-auto border border-[#3a3736] bg-[#1a1918] p-4 text-[13px] leading-relaxed text-[#f1efee]"
+      className="scrollbar-sleek my-5 overflow-auto border border-code-edge bg-code-bg p-4 text-[13px] leading-relaxed text-code-ink"
       {...props}
     />
   ),
   blockquote: (props: ComponentPropsWithoutRef<"blockquote">) => (
     <blockquote
-      className="my-5 border-l-2 border-accent-500 pl-4 text-[var(--color-ink)]/72 italic"
+      className="my-5 border-l-2 border-accent-text pl-4 text-[var(--color-ink)]/72 italic"
       {...props}
     />
   ),
   hr: () => <hr className="my-10 border-t-2 border-[var(--color-divider)]" />,
   table: (props: ComponentPropsWithoutRef<"table">) => (
-    <div className="my-6 overflow-x-auto">
+    <div className="scrollbar-sleek my-6 overflow-x-auto">
       <table className="w-full border-collapse text-sm" {...props} />
     </div>
   ),

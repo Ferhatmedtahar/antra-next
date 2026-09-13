@@ -41,18 +41,18 @@ jobs:
 
 ## Why each piece is there
 
-**`fetch-depth: 0`** — `--diff` compares against a base ref, which needs the
+**`fetch-depth: 0`**: `--diff` compares against a base ref, which needs the
 history to resolve one. A shallow checkout makes that fall back or fail.
 
-**`--format sarif`** — SARIF is what the code host understands, so findings
-land as annotations on the pull request instead of as log lines someone has to
-scroll for.
+**`--format sarif`**: SARIF is what the code host understands, so findings land
+as annotations on the pull request instead of as log lines someone has to scroll
+for.
 
-**`--fail-on-violation`** — without it a scan that finds something still exits
-0, by design. Add it on the step where you want the build to stop.
+**`--fail-on-violation`**: without it a scan that finds something still exits 0,
+by design. Add it on the step where you want the build to stop.
 
-**`if: always()` on the upload** — you want the report even when the scan
-failed the job, which is precisely the case where you need to read it.
+**`if: always()` on the upload**: you want the report even when the scan failed
+the job, which is precisely the case where you need to read it.
 
 ## Scoping to the diff
 

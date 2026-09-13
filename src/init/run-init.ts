@@ -334,63 +334,101 @@ async function collectProviderConfigs(
 ): Promise<ProviderConfig[]> {
   const configs: ProviderConfig[] = [];
   for (const provider of enabled) {
-    const config: ProviderConfig = { id: provider.id };
-    for (const field of await provider.configFields(rootDir)) {
-      const codegen = CODEGEN[provider.id];
-      const isMissingConventionalFile =
-        codegen?.fieldKey === field.key &&
-        field.defaultValue !== "" &&
-        !fs.existsSync(path.resolve(rootDir, field.defaultValue));
+    const codegen = CODEGEN[provider.id];
+    // Offered once per provider: re-asking "generate one now?" after a
+    // decline is just nagging, but the fields do need asking again when the
+    // first pass produced nothing usable.
+    let codegenOffered = false;
 
-      if (isMissingConventionalFile) {
-        const generated = await offerCodegen(
-          provider,
-          codegen,
-          rootDir,
-          prompter,
-          exec,
-          notes,
-        );
-        if (generated !== null) {
-          config[field.key] = generated;
-          continue;
+    for (;;) {
+      const config: ProviderConfig = { id: provider.id };
+      for (const field of await provider.configFields(rootDir)) {
+        const isCodegenField = codegen?.fieldKey === field.key;
+        const isMissingConventionalFile =
+          isCodegenField &&
+          field.defaultValue !== "" &&
+          !fs.existsSync(path.resolve(rootDir, field.defaultValue));
+
+        if (isMissingConventionalFile && !codegenOffered) {
+          codegenOffered = true;
+          const generated = await offerCodegen(
+            provider,
+            codegen,
+            rootDir,
+            prompter,
+            exec,
+            notes,
+          );
+          if (generated !== null) {
+            config[field.key] = generated;
+            continue;
+          }
         }
+
+        // Once the generate offer has been declined or has failed there is
+        // no file to point at, so re-submitting the conventional path as a
+        // default only invites an answer extract() has to reject. An empty
+        // default makes Enter mean "skip this one".
+        const suggested =
+          isCodegenField && codegenOffered ? "" : field.defaultValue;
+
+        const raw = (
+          await prompter.input(`${provider.label}: ${field.message}`, suggested)
+        ).trim();
+        // A refusal word ("n", "skip", ...) is never a real path — treating it
+        // as one silently fed a literal "n" into config, which then surfaced
+        // as a confusing crash from extract() far away from this prompt.
+        const answer = REFUSALS.has(raw.toLowerCase()) ? "" : raw;
+        if (raw !== "" && answer === "") {
+          notes.push(
+            `${provider.label}: skipped "${field.key}" — you answered "${raw}". ${
+              codegen
+                ? `Generate it with:\n    ${codegen.manualHint}\n  then run \`antra init\` again and paste the file's path when asked.`
+                : "Provide a real path next time, or leave it empty to skip."
+            }`,
+          );
+        }
+        // An empty answer means "skip this one" — it must not land in the
+        // config as a blank key the provider would then try to honour.
+        if (answer !== "") config[field.key] = answer;
       }
 
-      const raw = (
-        await prompter.input(
-          `${provider.label}: ${field.message}`,
-          field.defaultValue,
-        )
-      ).trim();
-      // A refusal word ("n", "skip", ...) is never a real path — treating it
-      // as one silently fed a literal "n" into config, which then surfaced
-      // as a confusing crash from extract() far away from this prompt.
-      const answer = REFUSALS.has(raw.toLowerCase()) ? "" : raw;
-      if (raw !== "" && answer === "") {
-        notes.push(
-          `${provider.label}: skipped "${field.key}" — you answered "${raw}". ${
-            codegen
-              ? `Generate it with:\n    ${codegen.manualHint}\n  then run \`antra init\` again and paste the file's path when asked.`
-              : "Provide a real path next time, or leave it empty to skip."
-          }`,
-        );
+      if (await isViable(provider, rootDir, config)) {
+        configs.push(config);
+        break;
       }
-      // An empty answer means "skip this one" — it must not land in the
-      // config as a blank key the provider would then try to honour.
-      if (answer !== "") config[field.key] = answer;
-    }
-    // No field got a real answer: the provider has nothing to extract from.
-    // Sending {id} alone to extract() throws a raw schema-validation error
-    // and aborts the whole run — dropping it here means zero-schema
-    // heuristics still apply instead of a crash.
-    if (Object.keys(config).length > 1) {
-      configs.push(config);
-    } else {
+
+      // Every field skipped, or answered in a way the provider cannot
+      // extract from. Dropping it quietly is how a project ends up with a
+      // config that reads as intact and a scan that finds nothing, so this
+      // asks instead of assuming. Declining loops back to the fields.
+      const proceed = await prompter.confirm(
+        `${provider.label} has no usable source yet. Continue with zero-schema heuristics only?`,
+        false,
+      );
+      if (!proceed) continue;
+
       notes.push(
         `${provider.label}: not configured for this run (zero-schema heuristics still apply).`,
       );
+      break;
     }
   }
   return configs;
+}
+
+/**
+ * "Configured" is not the same as "usable": `{ id, schema: "public" }` has
+ * two keys and still extracts nothing, and a `typesPath` naming a file that
+ * isn't there reads as configured right up until extract() throws. Providers
+ * that can judge their own shape do; the rest keep the older "more than just
+ * an id" rule.
+ */
+async function isViable(
+  provider: SchemaProvider,
+  rootDir: string,
+  config: ProviderConfig,
+): Promise<boolean> {
+  if (provider.isViable) return provider.isViable(rootDir, config);
+  return Object.keys(config).length > 1;
 }

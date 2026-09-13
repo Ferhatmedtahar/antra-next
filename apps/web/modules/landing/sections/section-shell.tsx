@@ -14,10 +14,13 @@ export function SectionShell({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="border-t-2 border-[var(--color-divider)]">
+    <section
+      id={id}
+      className="relative isolate overflow-hidden border-t-2 border-[var(--color-divider)]"
+    >
       <div className="mx-auto max-w-6xl px-6 py-20">
         <div className="mb-12 flex flex-wrap gap-8">
-          <div className="flex-none basis-40 text-[11px] font-heading font-semibold uppercase tracking-wide text-accent-500">
+          <div className="flex-none basis-40 text-[11px] font-heading font-semibold uppercase tracking-wide text-accent-text">
             {kicker}
           </div>
           <div className="min-w-0 flex-1 basis-[480px]">
@@ -45,20 +48,22 @@ export function GridGroup({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * The gradient layer a cell fades in on hover. Styles live in globals.css under
- * `.cell-wash` — see the note there. Exported on its own for a surface that
- * needs the wash without GridCell's padding or borders.
- */
 export function CellWash() {
   return <div aria-hidden className="cell-wash" />;
 }
 
-export function GridCell({ children }: { children: ReactNode }) {
+export function GridCell({
+  children,
+  corner,
+}: {
+  children: ReactNode;
+  corner?: ReactNode;
+}) {
   return (
     <div className="cell-wash-host border-r border-b border-[var(--color-divider)] px-6 py-8">
       <CellWash />
       {children}
+      {corner ? <div className="cell-corner">{corner}</div> : null}
     </div>
   );
 }

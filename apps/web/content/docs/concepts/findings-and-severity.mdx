@@ -4,9 +4,8 @@ description: What a finding contains, and why there are only two severity levels
 order: 120
 ---
 
-A finding is a structured record, not a log line. Every reporter —
-`pretty`, `json`, `sarif`, and the database behind Studio — carries the same
-fields.
+A finding is a structured record, not a log line. Every reporter (`pretty`,
+`json`, `sarif`, and the database behind Studio) carries the same fields.
 
 ## The shape of a finding
 
@@ -19,7 +18,7 @@ fields.
 | `line`, `column` | Where the sink is.                                                        |
 | `snippet`        | The sink expression itself, first line, trimmed.                          |
 | `trace`          | Provenance, nearest-to-sink first. Empty for BG-002.                      |
-| `fingerprint`    | Stable identity across line shifts — rule, file, and sink text.           |
+| `fingerprint`    | Stable identity across line shifts: rule, file, and sink text.            |
 | `suppressed`     | Present when a suppression applies, carrying its reason or a null reason. |
 
 ## Two severities, not five
@@ -29,7 +28,7 @@ Severity is `error` or `warning`. Nothing in between.
 The reasoning is practical rather than principled: a level nobody agrees on is
 a level nobody acts on. If a report can say "medium", then every project
 redefines medium, and the word stops carrying information. Two levels can each
-mean one thing — this fails the build, or this does not.
+mean one thing: this fails the build, or this does not.
 
 ## What the trace is for
 
@@ -43,8 +42,8 @@ antra trace app/account/page.tsx:42 --format json
 
 ## Fingerprints
 
-A finding's `fingerprint` is derived from the rule, the file, and the sink text
-— not from the line number. That is what lets a baseline survive edits above a
+A finding's `fingerprint` is derived from the rule, the file, and the sink text,
+not from the line number. That is what lets a baseline survive edits above a
 finding, and what stops every reformat from looking like a new violation.
 
 <Note>
