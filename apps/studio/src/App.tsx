@@ -9,7 +9,6 @@ import {
   IconLayoutDashboard,
   IconMoon,
   IconPlayerPlay,
-  IconShieldLock,
   IconSun,
 } from "@tabler/icons-react";
 import { useCallback, useMemo, useState, type ComponentType } from "react";
@@ -46,6 +45,7 @@ import {
 } from "@/hooks";
 import { SIDEBAR_WIDTH } from "@/layout";
 import { cn } from "@/lib/utils";
+import { NotFound } from "@/components/shared";
 import { Config } from "@/pages/Config";
 import { Files } from "@/pages/Files";
 import { Findings } from "@/pages/Findings";
@@ -90,9 +90,7 @@ export function App() {
                 <Route path="/files" component={Files} />
                 <Route path="/scans" component={Scans} />
                 <Route>
-                  <p className="text-muted-foreground text-body-2-r">
-                    Nothing here. Pick a page on the left.
-                  </p>
+                  <NotFound />
                 </Route>
               </Routes>
             </div>
@@ -176,12 +174,22 @@ function Sidebar() {
     >
       {/* Brand & Project Info */}
       <div className="flex items-center gap-3 px-3 py-2">
-        <div className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-icon transition-colors">
-          <IconShieldLock className="size-5" />
-        </div>
+        {/* Blended into the sidebar ground rather than boxed in a tile — the
+            art is blue on opaque white, and multiply/screen dissolve the white
+            in light and dark themes alike. The source has wide margins around
+            the ant, so a centred scale crops them past the clipping box.
+            Keep in step with apps/web/components/shared/logo.tsx. */}
+        <span className="relative block h-6 w-12 shrink-0 overflow-hidden">
+          <img
+            src="/antra.png"
+            alt=""
+            style={{ transform: "scale(1.8)" }}
+            className="size-full object-contain mix-blend-multiply dark:invert dark:hue-rotate-180 dark:mix-blend-screen"
+          />
+        </span>
         <div className="min-w-0">
           <div className="text-body-3-sb leading-tight text-foreground">
-            boundary-guard
+            antra
           </div>
           <div className="text-label-1-m text-muted-foreground">Studio</div>
         </div>
@@ -216,24 +224,33 @@ function Sidebar() {
               href={item.href}
               className={cn(
                 "group focus-ring rounded-big relative flex h-11 w-full cursor-pointer items-center gap-3 p-1.5 transition-colors",
+                // The row you are on wears the Run scan button's treatment:
+                // `bg-primary` is the ink/paper inversion, so it is the one
+                // filled control in the rail and it follows the theme with no
+                // second rule. Idle rows wash in `sidebar-accent`, which is the
+                // rail's own token rather than a palette stop picked to match it.
                 active
-                  ? "bg-card"
-                  : "hover:bg-secondary-1000/60 dark:hover:bg-secondary-900/60",
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-sidebar-accent",
               )}
             >
-              {/* Structure, not decoration: marks where you are. */}
-              {active ? (
-                <span
-                  aria-hidden
-                  className="bg-foreground absolute top-2.5 bottom-2.5 -left-px w-0.5 rounded-full"
-                />
-              ) : null}
+              {/* No marker bar. It used to hang off the row's left edge to say
+                  where you were, but the filled pill above now says that on its
+                  own — and against a dark pill the old bar was invisible in
+                  light mode anyway. */}
               <span
                 className={cn(
                   "rounded-mid flex size-8 shrink-0 items-center justify-center transition-colors",
+                  // Active tiles sit on the pill, so their ground is a wash of
+                  // the pill's own foreground — light-on-dark in light mode,
+                  // dark-on-light in dark. Idle tiles are `card`: white against
+                  // the warm rail in light, raised against near-black in dark.
+                  // `surface-soft` was the old idle ground and all but vanished
+                  // into the rail in light mode, which is what made the tile
+                  // read as missing rather than as a control.
                   active
-                    ? "bg-surface-soft text-foreground"
-                    : "bg-surface-soft text-muted-foreground group-hover:text-foreground",
+                    ? "bg-primary-foreground/15 text-primary-foreground"
+                    : "bg-card text-muted-foreground group-hover:text-foreground",
                 )}
               >
                 <Icon className="size-4.5" />
@@ -242,7 +259,7 @@ function Sidebar() {
                 className={cn(
                   "text-[13px] whitespace-nowrap transition-colors",
                   active
-                    ? "text-foreground font-semibold"
+                    ? "text-primary-foreground font-semibold"
                     : "text-muted-foreground group-hover:text-foreground font-medium",
                 )}
               >
@@ -265,10 +282,13 @@ function Sidebar() {
           {running ? "Scanning…" : "Run scan"}
         </ActionButton>
 
+        {/* `bg-card` over ghost's `transparent`: as a bare ghost it was only
+            visible on hover, so the rail's one secondary action was invisible
+            until you went looking for it. */}
         <Button
           variant="ghost"
           size="sm"
-          className="w-full text-muted-foreground hover:text-foreground h-8 text-xs font-medium gap-1.5"
+          className="bg-card hover:bg-surface-soft w-full text-muted-foreground hover:text-foreground h-8 text-xs font-medium gap-1.5"
           disabled={baselining}
           onClick={() => setConfirmBaseline(true)}
         >
@@ -295,6 +315,7 @@ function Sidebar() {
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="bg-card hover:bg-surface-soft"
                 onClick={toggle}
                 aria-label={
                   theme === "dark" ? "Switch to light" : "Switch to dark"
@@ -321,7 +342,7 @@ function Sidebar() {
             <AlertDialogDescription>
               Everything the last scan flagged becomes accepted. Future scans
               only fail on findings that appear after this point. The file goes
-              in .boundary-guard/baseline.json — commit it.
+              in .antra/baseline.json — commit it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

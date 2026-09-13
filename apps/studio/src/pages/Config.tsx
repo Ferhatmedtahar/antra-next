@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import type { StudioConfig } from "../../../src/studio/types.js";
+import type { StudioConfig } from "../../../../src/studio/types.js";
 
 import { api, ApiError } from "@/api";
 import { SIDEBAR_WIDTH } from "@/layout";
@@ -20,6 +20,7 @@ import {
   ChipEditor,
   Empty,
   ErrorNote,
+  ErrorState,
   PageHeader,
   RuleTag,
   SeverityPill,
@@ -43,7 +44,9 @@ export function Config() {
       setDraft(loaded.data ? structuredClone(loaded.data) : null);
   }, [loaded.data]);
 
-  if (loaded.error) return <ErrorNote message={loaded.error} />;
+  if (loaded.error) {
+    return <ErrorState description={loaded.error} retry={loaded.reload} />;
+  }
   if (loaded.data === null && !loaded.loading) {
     return (
       <>
@@ -51,7 +54,12 @@ export function Config() {
         <Empty
           icon={<IconAdjustmentsHorizontal />}
           title="No config yet"
-          body="Run `boundary-guard init` in the project first. Everything in boundary-guard.config.json is editable here afterwards."
+          body="Run `antra init` in the project first. Everything in antra.config.json is editable here afterwards."
+          action={
+            <Button variant="secondary" onClick={loaded.reload}>
+              Check again
+            </Button>
+          }
         />
       </>
     );
@@ -98,7 +106,7 @@ export function Config() {
     <>
       <PageHeader
         title="Config"
-        description="Everything here is boundary-guard.config.json. Saving writes the file; the CLI reads the same one."
+        description="Everything here is antra.config.json. Saving writes the file; the CLI reads the same one."
       />
 
       <div className="space-y-5 pb-24">
@@ -230,8 +238,8 @@ export function Config() {
           <CardContent>
             {draft.providers.length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                None configured — zero-schema heuristics only. Run
-                `boundary-guard init` to add one.
+                None configured — zero-schema heuristics only. Run `antra init`
+                to add one.
               </p>
             ) : (
               <ul className="divide-divider-subtle divide-y rounded-huge bg-surface-soft overflow-hidden">

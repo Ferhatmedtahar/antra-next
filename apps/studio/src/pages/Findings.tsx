@@ -10,17 +10,19 @@ import type {
   FindingDetail,
   FindingStatus,
   RuleId,
-} from "../../../src/studio/types.js";
+} from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
 import { FindingSheet } from "@/components/finding-sheet";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   ListPanel,
   LoadingRows,
   PageHeader,
   RuleTag,
+  RunScanButton,
   StatusPill,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -85,7 +87,9 @@ export function Findings() {
     suppressed: findings.filter((f) => f.status === "suppressed").length,
   };
 
-  if (project.error) return <ErrorNote message={project.error} />;
+  if (project.error) {
+    return <ErrorState description={project.error} retry={project.reload} />;
+  }
   if (project.data && !project.data.latest) {
     return (
       <>
@@ -93,7 +97,8 @@ export function Findings() {
         <Empty
           icon={<IconAlertTriangle />}
           title="No scans yet"
-          body="Run a scan from the sidebar. Findings show up here with a code frame and the path the value took."
+          body="Run a scan from below or the sidebar. Findings show up here with a code frame and the path the value took."
+          action={<RunScanButton />}
         />
       </>
     );
@@ -106,6 +111,9 @@ export function Findings() {
           icon={<IconAlertTriangle />}
           title="Nothing crossed the boundary"
           body="This scan found no sensitive value reaching a client component, no unvalidated input, and no secret in markup."
+          action={
+            <RunScanButton variant="secondary" label="Run another scan" />
+          }
         />
       );
     }
@@ -137,6 +145,18 @@ export function Findings() {
         icon={<IconSearch />}
         title="No findings match these filters"
         body="Widen the status or rule filters, or clear the search."
+        action={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setStatus("all");
+              setRules(RULES);
+              setQuery("");
+            }}
+          >
+            Clear filters
+          </Button>
+        }
       />
     );
   };

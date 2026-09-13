@@ -1,4 +1,4 @@
-import type { FileDetail } from "../../../../src/studio/types.js";
+import type { FileDetail } from "../../../../../src/studio/types.js";
 
 export interface RouteFile {
   /** page, layout, route, loading, error, template, default, not-found */

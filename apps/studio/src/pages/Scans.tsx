@@ -9,9 +9,11 @@ import { useLocation } from "wouter";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   ListPanel,
   LoadingRows,
   PageHeader,
+  RunScanButton,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/api";
@@ -22,7 +24,9 @@ export function Scans() {
   const scans = useLoad(() => api.scans());
   const [, navigate] = useLocation();
 
-  if (scans.error) return <ErrorNote message={scans.error} />;
+  if (scans.error) {
+    return <ErrorState description={scans.error} retry={scans.reload} />;
+  }
   if (scans.data && scans.data.length === 0) {
     return (
       <>
@@ -30,7 +34,8 @@ export function Scans() {
         <Empty
           icon={<IconHistory />}
           title="No scans yet"
-          body="Every scan — from the CLI or from here — is recorded in .boundary-guard/findings.sqlite."
+          body="Every scan — from the CLI or from here — is recorded in .antra/antra-findings.sqlite."
+          action={<RunScanButton />}
         />
       </>
     );

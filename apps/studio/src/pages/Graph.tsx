@@ -26,10 +26,16 @@ import type {
   GraphEdge,
   GraphNode,
   GraphResponse,
-} from "../../../src/studio/types.js";
+} from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
 import { FindingSheet } from "@/components/finding-sheet";
+import {
+  CANVAS,
+  CANVAS_FULLSCREEN,
+  FullscreenButton,
+  useFullscreen,
+} from "@/components/graph/canvas";
 import {
   FileNode,
   KIND_STYLE,
@@ -54,8 +60,10 @@ import { SectionHeader } from "@/components/section-header";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   PageHeader,
   RuleTag,
+  RunScanButton,
   StatusPill,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +87,6 @@ interface Filters {
 }
 
 const nodeTypes = { file: FileNode, route: RouteNode };
-const CANVAS = "h-[calc(100vh-19rem)] min-h-[520px]";
 
 function edgeColor(edge: GraphEdge): string {
   if (edge.newFindings > 0) return "var(--destructive)";
@@ -102,7 +109,9 @@ export function Graph() {
   );
   const [view, setView] = useState<View>("graph");
 
-  if (project.error) return <ErrorNote message={project.error} />;
+  if (project.error) {
+    return <ErrorState description={project.error} retry={project.reload} />;
+  }
   if (project.data && !project.data.latest) {
     return (
       <>
@@ -111,6 +120,7 @@ export function Graph() {
           icon={<IconHierarchy />}
           title="No scans yet"
           body="Run a scan to see which server files render which client components, where server actions are called from, and which of those edges carry a finding."
+          action={<RunScanButton />}
         />
       </>
     );
@@ -181,6 +191,7 @@ function BoundaryGraph({
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(focus);
   const [openFinding, setOpenFinding] = useState<FindingDetail | null>(null);
+  const { fullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   useEffect(() => {
     if (focus) setSelected(focus);
@@ -381,7 +392,9 @@ function BoundaryGraph({
         </ToggleGroup>
       </div>
 
-      <div className={cn("flex gap-4", CANVAS)}>
+      <div
+        className={cn("flex gap-4", fullscreen ? CANVAS_FULLSCREEN : CANVAS)}
+      >
         <div className="bg-surface-soft relative min-w-0 flex-1 overflow-hidden rounded-huge">
           {flow.nodes.length === 0 ? (
             <div className="flex h-full items-center justify-center">
@@ -392,6 +405,29 @@ function BoundaryGraph({
                   graph.nodes.length === 0
                     ? "No file renders a component declared in another file, and no client file imports a server action — or the tags couldn't be resolved to their declarations."
                     : "Every edge is filtered out. Turn off a filter or clear the search."
+                }
+                action={
+                  graph.nodes.length === 0 ? (
+                    <RunScanButton
+                      variant="secondary"
+                      label="Re-scan codebase"
+                    />
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setFilters({
+                          crossingsOnly: false,
+                          findingsOnly: false,
+                          actions: true,
+                          hideIsolated: false,
+                        });
+                        setQuery("");
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )
                 }
               />
             </div>
@@ -441,23 +477,39 @@ function BoundaryGraph({
               finding.
             </span>
           </div>
-          <Legend />
-        </div>
-
-        {selectedNode ? (
-          <NodePanel
-            node={selectedNode}
-            edges={flow.visibleEdges}
-            findings={findings.filter(
-              (finding) =>
-                finding.file === selectedNode.id &&
-                finding.status !== "suppressed",
+          {/* Steps aside for the panel rather than sitting under it — the panel
+              is an overlay, so nothing is hidden and nothing is covered. */}
+          <div
+            className={cn(
+              "absolute top-4 flex flex-col items-end gap-2 transition-[right] duration-200 motion-reduce:transition-none",
+              selectedNode ? "right-[21.5rem]" : "right-4",
             )}
-            onSelect={setSelected}
-            onClose={() => setSelected(null)}
-            onOpenFinding={setOpenFinding}
-          />
-        ) : null}
+          >
+            <FullscreenButton
+              fullscreen={fullscreen}
+              onToggle={toggleFullscreen}
+            />
+            <Legend />
+          </div>
+
+          {/* Overlaid on the canvas rather than a flex sibling: as a sibling the
+              panel narrowed the pane by 21rem on every selection, which reflowed
+              the diagram and threw away the zoom the reader had just set. */}
+          {selectedNode ? (
+            <NodePanel
+              node={selectedNode}
+              edges={flow.visibleEdges}
+              findings={findings.filter(
+                (finding) =>
+                  finding.file === selectedNode.id &&
+                  finding.status !== "suppressed",
+              )}
+              onSelect={setSelected}
+              onClose={() => setSelected(null)}
+              onOpenFinding={setOpenFinding}
+            />
+          ) : null}
+        </div>
       </div>
 
       <FindingSheet
@@ -526,7 +578,7 @@ function Legend() {
     />
   );
   return (
-    <div className="bg-surface-elevated/90 text-muted-foreground absolute bottom-4 left-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-mid px-3 py-1.5 text-xs backdrop-blur">
+    <div className="bg-surface-elevated/90 text-muted-foreground flex max-w-xs flex-wrap items-center justify-end gap-x-4 gap-y-1 rounded-mid px-3 py-1.5 text-xs backdrop-blur">
       <span className="flex items-center gap-1.5">
         <span
           aria-hidden
@@ -581,7 +633,7 @@ function NodePanel({
   const incoming = edges.filter((edge) => edge.to === node.id);
   const { dir, base } = splitPath(node.path);
   return (
-    <aside className="bg-card flex w-80 shrink-0 flex-col overflow-hidden rounded-huge">
+    <aside className="bg-card absolute top-4 right-4 bottom-4 z-10 flex w-80 flex-col overflow-hidden rounded-huge">
       <div className="p-5">
         <SectionHeader
           title={base}
@@ -745,6 +797,7 @@ function EdgeRow({
 
 function RouteTree({ files }: { files: FileDetail[] }) {
   const { theme } = useTheme();
+  const { fullscreen, toggle: toggleFullscreen } = useFullscreen();
   const segments = useMemo(() => buildRouteTree(files), [files]);
   const children = useMemo(() => {
     const map = new Map<string, RouteSegment[]>();
@@ -840,7 +893,7 @@ function RouteTree({ files }: { files: FileDetail[] }) {
     <div
       className={cn(
         "bg-surface-soft relative overflow-hidden rounded-huge",
-        CANVAS,
+        fullscreen ? CANVAS_FULLSCREEN : CANVAS,
       )}
     >
       <ReactFlowProvider>
@@ -869,7 +922,11 @@ function RouteTree({ files }: { files: FileDetail[] }) {
             className="!bg-surface-elevated overflow-hidden rounded-mid !border-0"
             style={{ width: 150, height: 100 }}
           />
-          <FitOnChange signature={`routes:${flow.nodes.length}`} />
+          {/* Keyed to the tree, not to the drawn node count. Expanding a
+              segment changes the latter, and refitting on that signature meant
+              every click to read a subtree reframed the whole diagram — so the
+              zoom the reader had just chosen was discarded each time. */}
+          <FitOnChange signature={`routes:${segments.length}`} />
         </ReactFlow>
       </ReactFlowProvider>
       <div className="bg-surface-elevated/90 text-muted-foreground absolute top-4 left-4 flex items-center gap-3 rounded-mid px-3 py-1.5 text-xs tabular-nums backdrop-blur">
@@ -898,6 +955,10 @@ function RouteTree({ files }: { files: FileDetail[] }) {
         >
           Collapse
         </button>
+      </div>
+
+      <div className="absolute top-4 right-4">
+        <FullscreenButton fullscreen={fullscreen} onToggle={toggleFullscreen} />
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
 import { IconHistory } from "@tabler/icons-react";
+import { useState } from "react";
 import { Link } from "wouter";
+
+import type { FindingDetail } from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
 import {
@@ -8,11 +11,14 @@ import {
   TrendLine,
   type Crossing,
 } from "@/components/charts";
+import { FindingSheet } from "@/components/finding-sheet";
 import { SectionHeader } from "@/components/section-header";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   PageHeader,
+  RunScanButton,
   TallyList,
   TallyRow,
 } from "@/components/shared";
@@ -31,14 +37,20 @@ export function Overview() {
     [latestId],
   );
   const rules = useLoad(() => api.rules());
+  // Set by a dot on the seam. Declared above the early returns below, since a
+  // hook cannot sit after a conditional return.
+  const [selected, setSelected] = useState<FindingDetail | null>(null);
 
-  if (project.error) return <ErrorNote message={project.error} />;
+  if (project.error) {
+    return <ErrorState description={project.error} retry={project.reload} />;
+  }
   if (project.data && !project.data.latest) {
     return (
       <Empty
         icon={<IconHistory />}
         title="No scans yet"
-        body="Run boundary-guard in your project directory or click 'Run scan' in the sidebar to scan your codebase."
+        body="Run antra in your project directory or click 'Run scan' below to scan your codebase."
+        action={<RunScanButton />}
       />
     );
   }
@@ -63,6 +75,7 @@ export function Overview() {
     label: `${f.ruleId}: ${f.message} (${f.file}:${f.line})`,
     severity: f.severity,
     accepted: f.status === "baselined",
+    finding: f,
   }));
 
   const byRule = (rules.data ?? []).map((rule) => {
@@ -85,7 +98,12 @@ export function Overview() {
         title="Overview"
         description={`Ran ${formatAbsolute(scan.startedAt)}. Took ${formatDuration(scan.durationMs)} across ${scan.rules.length} rules.`}
         action={
-          <Button variant="ghost" asChild>
+          // `secondary`, not `ghost` — the same fix as Record baseline in the
+          // sidebar. A ghost action is transparent until hovered, so the one
+          // route off this page was invisible in its resting state. Findings.tsx
+          // already uses `secondary` for its header action, so this is also the
+          // page-header convention rather than a one-off.
+          <Button variant="secondary" asChild>
             <Link href="/findings">Open findings</Link>
           </Button>
         }
@@ -98,6 +116,7 @@ export function Overview() {
           crossings={crossings}
           sensitiveFields={scan.taintSources}
           schemaFields={scan.schemaFields}
+          onOpenFinding={setSelected}
         />
       ) : (
         <Skeleton className="h-40 rounded-huge" />
@@ -157,6 +176,10 @@ export function Overview() {
           </Card>
         </div>
       </div>
+
+      {/* Opened by a dot on the seam — the full finding, the same sheet the
+          Findings page and the graph's node panel use. */}
+      <FindingSheet finding={selected} onClose={() => setSelected(null)} />
     </>
   );
 }

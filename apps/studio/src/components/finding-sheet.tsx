@@ -8,7 +8,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "wouter";
 
-import type { FindingDetail } from "../../../src/studio/types.js";
+import type { FindingDetail } from "../../../../src/studio/types.js";
 
 import {
   CodeFrame,
@@ -34,29 +34,48 @@ export function TracePath({ finding }: { finding: FindingDetail }) {
   const box = "rounded-mid px-3 py-2 font-mono text-code leading-5 break-all";
   return (
     <ol className="flex flex-col items-stretch">
-      {steps.map((step, index) => (
-        <li key={index} className="flex flex-col">
-          <div
-            className={cn(
-              box,
-              index === 0
-                ? "bg-surface-soft text-foreground"
-                : "bg-surface-soft/60 text-muted-foreground",
-            )}
-          >
-            <div className="text-muted-foreground mb-0.5 font-sans text-[10px]">
-              {index === 0 ? "origin" : `step ${index}`}
+      {steps.map((step, index) => {
+        const text = typeof step === "string" ? step : step.text;
+        const file = typeof step === "object" ? step.file : undefined;
+        const line = typeof step === "object" ? step.line : undefined;
+        return (
+          <li key={index} className="flex flex-col">
+            <div
+              className={cn(
+                box,
+                index === 0
+                  ? "bg-surface-soft text-foreground"
+                  : "bg-surface-soft/60 text-muted-foreground",
+              )}
+            >
+              <div className="text-muted-foreground mb-0.5 flex items-center justify-between font-sans text-[10px]">
+                <span className="font-medium">
+                  {index === 0 ? "origin" : `step ${index}`}
+                </span>
+                {file ? (
+                  <span
+                    className="font-mono text-[10px] opacity-75"
+                    title={`${file}${line ? `:${line}` : ""}`}
+                  >
+                    {file}
+                    {line ? `:${line}` : ""}
+                  </span>
+                ) : null}
+              </div>
+              <div>{text}</div>
             </div>
-            {step}
-          </div>
-          <IconArrowDown className="text-muted-foreground my-1 size-4 self-center" />
-        </li>
-      ))}
+            <IconArrowDown className="text-muted-foreground my-1 size-4 self-center" />
+          </li>
+        );
+      })}
       <li className={cn(box, "bg-destructive/10 text-destructive")}>
-        <div className="text-destructive mb-0.5 font-sans text-[10px]">
-          sink at {finding.file}:{finding.line}
+        <div className="text-destructive mb-0.5 flex items-center justify-between font-sans text-[10px]">
+          <span className="font-medium">sink</span>
+          <span className="font-mono text-[10px] opacity-90">
+            {finding.file}:{finding.line}
+          </span>
         </div>
-        {finding.snippet}
+        <div>{finding.snippet}</div>
       </li>
     </ol>
   );

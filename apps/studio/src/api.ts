@@ -8,7 +8,7 @@ import type {
   ScanSummary,
   SourcesResponse,
   StudioConfig,
-} from "../../src/studio/types.js";
+} from "../../../src/studio/types.js";
 
 export class ApiError extends Error {
   constructor(
@@ -31,7 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (text && !contentType.includes("application/json")) {
     // The SPA fallback answered an /api call: the running server predates this build.
     throw new ApiError(
-      "The Studio server is older than this page — restart `boundary-guard studio` after updating.",
+      "The Studio server is older than this page — restart `antra studio` after updating.",
       response.status,
     );
   }

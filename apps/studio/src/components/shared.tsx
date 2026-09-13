@@ -3,21 +3,30 @@ import {
   IconAlertOctagon,
   IconAlertTriangle,
   IconArrowRight,
+  IconCompass,
   IconDeviceDesktop,
+  IconPlayerPlay,
+  IconRefresh,
   IconServer,
   IconX,
 } from "@tabler/icons-react";
 import { useId, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { Link } from "wouter";
 
 import type {
   CodeFrame as Frame,
   FindingStatus,
   Severity,
-} from "../../../src/studio/types.js";
+} from "../../../../src/studio/types.js";
 
+import { api } from "@/api";
 import { SectionHeader } from "@/components/section-header";
+import { ActionButton } from "@/components/ui/action-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRefresh } from "@/hooks";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -218,23 +227,169 @@ export function Empty({
   title,
   body,
   action,
+  className,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
   title: string;
-  body: ReactNode;
+  body?: ReactNode;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="bg-surface-soft flex flex-col items-center rounded-huge px-6 py-16 text-center">
-      <div className="bg-card text-muted-foreground flex size-12 items-center justify-center rounded-icon [&_svg]:size-6">
-        {icon}
-      </div>
-      <p className="mt-4 text-title text-foreground">{title}</p>
-      <p className="text-muted-foreground mx-auto mt-1.5 max-w-[52ch] text-body-2-r">
-        {body}
-      </p>
+    <div
+      className={cn(
+        "bg-surface-soft flex flex-col items-center rounded-huge px-6 py-16 text-center",
+        className,
+      )}
+    >
+      {icon ? (
+        <div className="bg-card text-muted-foreground flex size-14 items-center justify-center rounded-huge shadow-xs [&_svg]:size-7">
+          {icon}
+        </div>
+      ) : null}
+      <p className="mt-4 text-title font-semibold text-foreground">{title}</p>
+      {body ? (
+        <p className="text-muted-foreground mx-auto mt-1.5 max-w-[52ch] text-body-2-r">
+          {body}
+        </p>
+      ) : null}
       {action ? <div className="mt-6">{action}</div> : null}
     </div>
+  );
+}
+
+export function ErrorState({
+  title = "Something went wrong",
+  description,
+  retry,
+  action,
+  className,
+}: {
+  title?: string;
+  description?: ReactNode;
+  retry?: () => void;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      role="alert"
+      className={cn(
+        "bg-surface-soft flex flex-col items-center rounded-huge px-6 py-16 text-center",
+        className,
+      )}
+    >
+      <div className="bg-destructive/10 text-destructive flex size-14 items-center justify-center rounded-huge [&_svg]:size-7">
+        <IconAlertTriangle />
+      </div>
+      <p className="mt-4 text-title font-semibold text-foreground">{title}</p>
+      {description ? (
+        <p className="text-muted-foreground mx-auto mt-1.5 max-w-[52ch] text-body-2-r">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {retry ? (
+          <Button variant="secondary" onClick={retry}>
+            <IconRefresh className="mr-2 size-4" />
+            Try again
+          </Button>
+        ) : null}
+        {action}
+      </div>
+    </div>
+  );
+}
+
+export function NotFound({
+  title = "Page not found",
+  description = "The page you are looking for does not exist or has moved.",
+  action,
+  className,
+}: {
+  title?: string;
+  description?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "bg-surface-soft flex flex-col items-center rounded-huge px-6 py-20 text-center",
+        className,
+      )}
+    >
+      <div className="bg-card text-muted-foreground flex size-14 items-center justify-center rounded-huge shadow-xs [&_svg]:size-7">
+        <IconCompass />
+      </div>
+      <p className="mt-4 text-title font-semibold text-foreground">{title}</p>
+      {description ? (
+        <p className="text-muted-foreground mx-auto mt-1.5 max-w-[52ch] text-body-2-r">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {action ?? (
+          <Button variant="secondary" asChild>
+            <Link href="/">Back to Overview</Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function RunScanButton({
+  variant = "primary",
+  size = "default",
+  label = "Run scan",
+  className,
+}: {
+  variant?: "primary" | "secondary";
+  size?: "default" | "small";
+  label?: string;
+  className?: string;
+}) {
+  const { bump } = useRefresh();
+  const [running, setRunning] = useState(false);
+
+  const handleClick = async () => {
+    setRunning(true);
+    try {
+      const result = await api.runScan();
+      if (result.findings > 0) {
+        toast.error(
+          `${result.findings} new finding${result.findings === 1 ? "" : "s"}`,
+          {
+            description: `${result.baselined} accepted in the baseline, ${result.suppressed} suppressed.`,
+          },
+        );
+      } else {
+        toast.success("Nothing new", {
+          description: `${result.baselined} accepted in the baseline, ${result.suppressed} suppressed.`,
+        });
+      }
+      bump();
+    } catch (error) {
+      toast.error("Scan failed", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <ActionButton
+      variant={variant}
+      size={size}
+      loading={running}
+      onClick={handleClick}
+      icon={<IconPlayerPlay className="size-4" />}
+      className={className}
+    >
+      {label}
+    </ActionButton>
   );
 }
 

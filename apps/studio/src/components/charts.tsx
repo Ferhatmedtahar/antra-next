@@ -1,7 +1,10 @@
 import { IconDeviceDesktop, IconServer } from "@tabler/icons-react";
 import { useState } from "react";
 
-import type { ScanSummary } from "../../../src/studio/types.js";
+import type {
+  FindingDetail,
+  ScanSummary,
+} from "../../../../src/studio/types.js";
 
 import { RuleTag } from "@/components/shared";
 import { formatAbsolute } from "@/format";
@@ -12,6 +15,14 @@ export interface Crossing {
   severity: "error" | "warning";
   /** Accepted in the baseline — still on the seam, drawn as a ring. */
   accepted?: boolean;
+  /**
+   * The finding this dot stands for.
+   *
+   * Carried so a dot can be opened, not only hovered. The label is enough to
+   * read a tooltip from, but the whole point of the seam is to get from "42
+   * things crossed" to the code that crossed — which needs the finding itself.
+   */
+  finding: FindingDetail;
 }
 
 /**
@@ -25,12 +36,14 @@ export function BoundaryStrip({
   crossings,
   sensitiveFields,
   schemaFields,
+  onOpenFinding,
 }: {
   serverFiles: number;
   clientFiles: number;
   crossings: Crossing[];
   sensitiveFields?: number;
   schemaFields?: number;
+  onOpenFinding?: (finding: FindingDetail) => void;
 }) {
   const total = Math.max(1, serverFiles + clientFiles);
   const seam = Math.min(80, Math.max(20, (serverFiles / total) * 100));
@@ -38,9 +51,40 @@ export function BoundaryStrip({
   const fresh = crossings.filter((c) => !c.accepted).length;
   const accepted = crossings.length - fresh;
 
+  /*
+   * Dot layout.
+   *
+   * Every crossing keeps its own dot — no clustering, no "+38 more" — so the
+   * seam stays a literal count of what crossed. But 160px of seam holding 42
+   * dots puts them 3px apart: a smear you can neither hover nor click, which
+   * is exactly what the red cluster on the seam had become. So the dots fan
+   * into lanes either side of the line and the strip grows to fit the rows
+   * that result. More crossings give a taller seam rather than a denser one.
+   *
+   * Row pitch equals lane pitch (22px) and each target is 20px square, so no
+   * two dots overlap and every one of them is reachable. The visual dot inside
+   * each target stays 14px, so the seam still reads as a thin thread and not
+   * as a wall of buttons.
+   *
+   * The lane count steps rather than scaling: fanning three dots across five
+   * lanes would look like scatter, so a short seam stays one clean column.
+   */
+  const LANES =
+    crossings.length <= 6
+      ? [0]
+      : crossings.length <= 16
+        ? [0, -11, 11]
+        : [0, -11, 11, -22, 22];
+  const ROW = 22;
+  const rows = Math.ceil(crossings.length / LANES.length);
+  const height = Math.max(160, rows * ROW + 36);
+
   return (
     <figure className="relative">
-      <div className="relative flex h-40 overflow-hidden rounded-huge">
+      <div
+        className="relative flex overflow-hidden rounded-huge"
+        style={{ height }}
+      >
         {/* Server slab: solid filled */}
         <div
           className="bg-primary text-primary-foreground flex flex-col justify-between p-6 select-none"
@@ -90,10 +134,9 @@ export function BoundaryStrip({
 
         {/* Crossing dots */}
         {crossings.map((crossing, index) => {
-          const top =
-            crossings.length === 1
-              ? 50
-              : 14 + (index / (crossings.length - 1)) * 72;
+          const row = Math.floor(index / LANES.length);
+          const dx = LANES[index % LANES.length];
+          const top = (height - rows * ROW) / 2 + row * ROW + ROW / 2;
           const fill = crossing.accepted
             ? "bg-card border-muted-foreground/60"
             : crossing.severity === "error"
@@ -108,12 +151,19 @@ export function BoundaryStrip({
               onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(index)}
               onBlur={() => setHover(null)}
-              className={cn(
-                "absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 z-30 transition-transform hover:scale-125 cursor-pointer",
-                fill,
-              )}
-              style={{ left: `${seam}%`, top: `${top}%` }}
-            />
+              onClick={() => onOpenFinding?.(crossing.finding)}
+              className="focus-ring group absolute z-30 flex size-5 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full focus-visible:z-40"
+              style={{ left: `calc(${seam}% + ${dx}px)`, top }}
+            >
+              {/* The visible dot is smaller than the button around it: the seam
+                  keeps its thin-thread look, the target keeps its 20px. */}
+              <span
+                className={cn(
+                  "pointer-events-none size-3.5 rounded-full border-2 transition-transform duration-150 group-hover:scale-125 group-focus-visible:scale-125",
+                  fill,
+                )}
+              />
+            </button>
           );
         })}
       </div>
@@ -138,6 +188,12 @@ export function BoundaryStrip({
               }.`}
         {sensitiveFields !== undefined && schemaFields !== undefined
           ? ` ${sensitiveFields} of ${schemaFields} schema fields are sensitive.`
+          : ""}
+        {/* Only when there is something to open, and only when the caller wired
+            a handler — the dots are inert without one, and a caption promising a
+            click that does nothing is worse than no caption. */}
+        {crossings.length > 0 && onOpenFinding
+          ? " Each dot on the seam opens its finding."
           : ""}
       </figcaption>
     </figure>

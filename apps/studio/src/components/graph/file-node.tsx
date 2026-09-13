@@ -7,7 +7,7 @@ import {
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo, type ReactNode } from "react";
 
-import type { GraphNodeKind } from "../../../../src/studio/types.js";
+import type { GraphNodeKind } from "../../../../../src/studio/types.js";
 
 import type { Direction } from "@/components/graph/layout";
 import { cn } from "@/lib/utils";

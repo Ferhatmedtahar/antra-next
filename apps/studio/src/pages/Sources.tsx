@@ -2,18 +2,25 @@ import { IconDatabase, IconKey, IconTable } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { SourceField, StudioConfig } from "../../../src/studio/types.js";
+import { Link } from "wouter";
+
+import type {
+  SourceField,
+  StudioConfig,
+} from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   ListNote,
   ListPanel,
   LoadingRows,
   PageHeader,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -100,7 +107,9 @@ export function Sources() {
     }
   };
 
-  if (sources.error) return <ErrorNote message={sources.error} />;
+  if (sources.error) {
+    return <ErrorState description={sources.error} retry={sources.reload} />;
+  }
   if (config.data === null && !config.loading) {
     return (
       <>
@@ -108,7 +117,12 @@ export function Sources() {
         <Empty
           icon={<IconDatabase />}
           title="No config yet"
-          body="Run `boundary-guard init` in the project to pick a schema provider and build the snapshot."
+          body="Run `antra init` in the project to pick a schema provider and build the snapshot."
+          action={
+            <Button variant="secondary" asChild>
+              <Link href="/config">Open Config</Link>
+            </Button>
+          }
         />
       </>
     );
@@ -120,7 +134,12 @@ export function Sources() {
         <Empty
           icon={<IconDatabase />}
           title="The snapshot is empty"
-          body="No schema fields were extracted. Check the provider path in Config, then run `boundary-guard sync`."
+          body="No schema fields were extracted. Check the provider path in Config, then run `antra sync`."
+          action={
+            <Button variant="secondary" asChild>
+              <Link href="/config">Check configuration</Link>
+            </Button>
+          }
         />
       </>
     );

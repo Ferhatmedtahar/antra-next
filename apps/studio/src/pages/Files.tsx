@@ -1,17 +1,19 @@
 import { IconFiles, IconFolder, IconHierarchy } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearch } from "wouter";
 
-import type { FileDetail } from "../../../src/studio/types.js";
+import type { FileDetail } from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
 import {
   Empty,
   ErrorNote,
+  ErrorState,
   ListNote,
   ListPanel,
   LoadingRows,
   PageHeader,
+  RunScanButton,
   ZoneTag,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,12 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLoad } from "@/hooks";
+import { cn } from "@/lib/utils";
+
+/** Same id on the row and the scroll target so a `?q=` deep link can find it. */
+function fileRowId(path: string): string {
+  return `file-row-${encodeURIComponent(path)}`;
+}
 
 type View = "all" | "client" | "actions" | "routes";
 const VIEWS: View[] = ["all", "client", "actions", "routes"];
@@ -41,6 +49,19 @@ export function Files() {
   );
   const [view, setView] = useState<View>("all");
   const [query, setQuery] = useState("");
+  const search = useSearch();
+  const targetPath = new URLSearchParams(search).get("q");
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!targetPath || !detail.data) return;
+    const row = document.getElementById(fileRowId(targetPath));
+    if (!row) return;
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlighted(targetPath);
+    const timer = setTimeout(() => setHighlighted(null), 3000);
+    return () => clearTimeout(timer);
+  }, [targetPath, detail.data]);
 
   const files = detail.data?.files ?? [];
   const groups = useMemo(() => {
@@ -69,7 +90,9 @@ export function Files() {
     routes: files.filter((f) => f.isRouteHandler).length,
   };
 
-  if (project.error) return <ErrorNote message={project.error} />;
+  if (project.error) {
+    return <ErrorState description={project.error} retry={project.reload} />;
+  }
   if (project.data && !project.data.latest) {
     return (
       <>
@@ -78,6 +101,7 @@ export function Files() {
           icon={<IconFiles />}
           title="No scans yet"
           body="Run a scan to see every file classified as server or client, with its server actions and route handlers."
+          action={<RunScanButton />}
         />
       </>
     );
@@ -132,7 +156,24 @@ export function Files() {
       ) : (
         <ListPanel>
           {groups.length === 0 ? (
-            <ListNote>Nothing matches that filter.</ListNote>
+            <div className="py-8">
+              <Empty
+                icon={<IconFiles />}
+                title="No files match that filter"
+                body="Try adjusting your search query or switching views."
+                action={
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setQuery("");
+                      setView("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                }
+              />
+            </div>
           ) : null}
           {groups.map(([dir, entries]) => (
             <div key={dir}>
@@ -149,7 +190,11 @@ export function Files() {
                 {entries.map(({ base, file }) => (
                   <li
                     key={file.path}
-                    className="flex items-center gap-4 px-6 py-3 hover:bg-surface-soft/40 transition-colors"
+                    id={fileRowId(file.path)}
+                    className={cn(
+                      "flex items-center gap-4 px-6 py-3 transition-colors duration-700 hover:bg-surface-soft/40",
+                      highlighted === file.path && "bg-primary/10",
+                    )}
                   >
                     <ZoneTag zone={file.boundary} />
                     <span className="min-w-0 flex-1 truncate font-mono text-sm">

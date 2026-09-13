@@ -31,5 +31,5 @@ export function splitOrigin(origin: string): {
 }
 
 export function suppressionComment(ruleId: string): string {
-  return `// boundary-guard-disable-next-line ${ruleId} reason=""`;
+  return `// antra-disable-next-line ${ruleId} reason=""`;
 }

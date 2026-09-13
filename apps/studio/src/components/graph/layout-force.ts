@@ -9,7 +9,7 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 
-import type { GraphNodeKind } from "../../../../src/studio/types.js";
+import type { GraphNodeKind } from "../../../../../src/studio/types.js";
 
 interface ForceBox {
   id: string;
