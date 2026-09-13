@@ -6,9 +6,15 @@ import Database from "better-sqlite3";
 import { SNAPSHOT_DIR } from "../config/write.js";
 import type { EdgeKind } from "../ast/boundary-graph.js";
 import type { ScanResult } from "../engine.js";
-import type { Finding, RuleId, Severity } from "../rules/types.js";
+import {
+  normalizeTraceStep,
+  type Finding,
+  type RuleId,
+  type Severity,
+  type TraceStep,
+} from "../rules/types.js";
 
-export const DB_FILENAME = "findings.sqlite";
+export const DB_FILENAME = "antra-findings.sqlite";
 
 export function dbPath(rootDir: string): string {
   return path.join(rootDir, SNAPSHOT_DIR, DB_FILENAME);
@@ -100,7 +106,7 @@ export interface StoredFinding {
   column: number;
   message: string;
   snippet: string;
-  trace: string[];
+  trace: TraceStep[];
   fingerprint: string;
   status: FindingStatus;
   suppressReason: string | null;
@@ -215,6 +221,7 @@ function toScan(row: ScanRow): StoredScan {
 }
 
 function toFinding(row: FindingRow): StoredFinding {
+  const parsed = JSON.parse(row.trace) as (TraceStep | string)[];
   return {
     id: row.id,
     scanId: row.scan_id,
@@ -225,7 +232,7 @@ function toFinding(row: FindingRow): StoredFinding {
     column: row.column,
     message: row.message,
     snippet: row.snippet,
-    trace: JSON.parse(row.trace) as string[],
+    trace: parsed.map(normalizeTraceStep),
     fingerprint: row.fingerprint,
     status: row.status,
     suppressReason: row.suppress_reason,
@@ -233,7 +240,7 @@ function toFinding(row: FindingRow): StoredFinding {
 }
 
 /**
- * D1 in docs/c4: every scan appended to `.boundary-guard/findings.sqlite`
+ * D1 in docs/c4: every scan appended to `.antra/antra-findings.sqlite`
  * (gitignored by `init`). Reporters and Studio read from here; nothing
  * else in the pipeline depends on it.
  */

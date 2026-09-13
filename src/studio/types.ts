@@ -27,6 +27,12 @@ export interface CodeFrame {
   lines: string[];
 }
 
+export interface TraceStep {
+  text: string;
+  file?: string;
+  line?: number;
+}
+
 export interface FindingDetail {
   id: number;
   ruleId: RuleId;
@@ -36,7 +42,7 @@ export interface FindingDetail {
   column: number;
   message: string;
   snippet: string;
-  trace: string[];
+  trace: (TraceStep | string)[];
   fingerprint: string;
   status: FindingStatus;
   suppressReason: string | null;
