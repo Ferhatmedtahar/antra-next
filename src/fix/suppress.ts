@@ -11,7 +11,7 @@ export interface SuppressionEdit {
   text: string;
 }
 
-const NEXT_LINE = "boundary-guard-disable-next-line";
+const NEXT_LINE = "antra-disable-next-line";
 
 /**
  * Picks a comment form the parser accepts where the sink line sits:

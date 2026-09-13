@@ -32,9 +32,9 @@ jobs:
       - run: pnpm build
       - name: Dogfood on the fixture app
         run: |
-          node bin/boundary-guard.js doctor tests/fixtures/rules-app
-          node bin/boundary-guard.js scan tests/fixtures/rules-app --no-store --format sarif --output reports/rules-app.sarif
-          node bin/boundary-guard.js scan tests/fixtures/rules-app --no-store --format json | node -e '
+          node bin/antra.js doctor tests/fixtures/rules-app
+          node bin/antra.js scan tests/fixtures/rules-app --no-store --format sarif --output reports/rules-app.sarif
+          node bin/antra.js scan tests/fixtures/rules-app --no-store --format json | node -e '
             let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
               const r = JSON.parse(s);
               if (r.findings.length === 0) { console.error("fixture produced no findings"); process.exit(1); }

@@ -20,13 +20,13 @@ const finding = (
 describe("applySuppressions", () => {
   const source = [
     "const a = 1;", // 1
-    '// boundary-guard-disable-next-line BG-001 reason="public token"', // 2
+    '// antra-disable-next-line BG-001 reason="public token"', // 2
     "<C token={x} />", // 3 suppressed BG-001
     "<C token={y} />", // 4 not suppressed
-    "{/* boundary-guard-disable-next-line */}", // 5
+    "{/* antra-disable-next-line */}", // 5
     "<C token={z} />", // 6 suppressed any rule
-    "<C token={w} /> // boundary-guard-disable-line BG-003", // 7 only BG-003
-    "// boundary-guard-disable-next-line BG-002, BG-003 reason='batch'", // 8
+    "<C token={w} /> // antra-disable-line BG-003", // 7 only BG-003
+    "// antra-disable-next-line BG-002, BG-003 reason='batch'", // 8
     "<C token={v} />", // 9
   ].join("\n");
   const getText = () => source;

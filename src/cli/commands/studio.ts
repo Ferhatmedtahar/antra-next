@@ -40,7 +40,7 @@ export async function studioCommand(
   if (!resolveAssetsDir()) {
     console.error(
       chalk.red(
-        "Studio assets are not built. Run `pnpm build:studio` in boundary-guard first.",
+        "Studio assets are not built. Run `pnpm build:studio` in antra first.",
       ),
     );
     process.exitCode = 1;
@@ -52,7 +52,7 @@ export async function studioCommand(
     port,
     open: options.open !== false,
   });
-  console.log(chalk.blue.bold("boundary-guard studio"));
+  console.log(chalk.blue.bold("antra studio"));
   console.log(chalk.gray(`project: ${rootDir}`));
   console.log(
     `\n  ${chalk.green("➜")}  ${url}   ${chalk.gray("(localhost only · Ctrl+C to stop)")}\n`,

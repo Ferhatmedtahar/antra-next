@@ -80,10 +80,13 @@ describe("runScan", () => {
 
     expect(phases).toEqual([
       "detect",
+      "detect:nextjs-app-router",
       "config",
+      "config:none — zero-schema heuristics",
       "project",
       "classify:1 files",
       "graph",
+      "graph:0 edges",
       "rules:BG-001, BG-002, BG-003, BG-004",
     ]);
   });

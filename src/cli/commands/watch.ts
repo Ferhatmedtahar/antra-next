@@ -54,7 +54,7 @@ export async function watchCommand(
       ? { onlyRules: [options.rule] as const }
       : {};
 
-  console.log(chalk.blue.bold("boundary-guard watch"));
+  console.log(chalk.blue.bold("antra watch"));
   console.log(chalk.gray(`project: ${rootDir}\n`));
 
   const scan = async (label: string, onlyFiles?: string[]) => {

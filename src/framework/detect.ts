@@ -6,7 +6,7 @@ export class FrameworkNotDetectedError extends Error {
     super(
       `${rootDir} doesn't look like a Next.js App Router project ` +
         "(expected next.config.*, an app/ or src/app/ directory, and next in package.json). " +
-        "boundary-guard v1 supports nothing else.",
+        "antra v1 supports nothing else.",
     );
     this.name = "FrameworkNotDetectedError";
   }

@@ -30,7 +30,7 @@ export async function doctorCommand(
     process.exitCode = 2;
     return;
   } else {
-    console.log(chalk.blue.bold("boundary-guard doctor"));
+    console.log(chalk.blue.bold("antra doctor"));
     console.log(chalk.gray(`project: ${rootDir}\n`));
     const width = Math.max(...report.checks.map((check) => check.label.length));
     for (const check of report.checks) {

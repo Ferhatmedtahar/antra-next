@@ -21,16 +21,16 @@ describe("watcher", () => {
   it("watches source files and the tool's own settings, nothing else", () => {
     expect(isWatchedPath("app/page.tsx")).toBe(true);
     expect(isWatchedPath("lib/db.js")).toBe(true);
-    expect(isWatchedPath("boundary-guard.config.json")).toBe(true);
-    expect(isWatchedPath(".boundary-guard/contract-snapshot.json")).toBe(true);
-    expect(isWatchedPath(".boundary-guard/baseline.json")).toBe(true);
-    expect(isWatchedPath(".boundary-guard/findings.sqlite")).toBe(false);
+    expect(isWatchedPath("antra.config.json")).toBe(true);
+    expect(isWatchedPath(".antra/contract-snapshot.json")).toBe(true);
+    expect(isWatchedPath(".antra/baseline.json")).toBe(true);
+    expect(isWatchedPath(".antra/antra-findings.sqlite")).toBe(false);
     expect(isWatchedPath("node_modules/next/index.js")).toBe(false);
     expect(isWatchedPath(".next/types/app.ts")).toBe(false);
     expect(isWatchedPath("app/types.d.ts")).toBe(false);
     expect(isWatchedPath("README.md")).toBe(false);
     expect(isProjectSettingsPath("app/page.tsx")).toBe(false);
-    expect(isProjectSettingsPath("boundary-guard.config.json")).toBe(true);
+    expect(isProjectSettingsPath("antra.config.json")).toBe(true);
   });
 
   it("batches a burst of saves into one debounced callback and follows new directories", async () => {

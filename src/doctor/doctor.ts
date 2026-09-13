@@ -83,7 +83,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     hint:
       nodeMajor >= MIN_NODE_MAJOR
         ? undefined
-        : `boundary-guard needs Node ${MIN_NODE_MAJOR} or newer.`,
+        : `antra needs Node ${MIN_NODE_MAJOR} or newer.`,
   });
 
   const adapter = await detectFramework(rootDir);
@@ -107,7 +107,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       label: "Config",
       status: "warn",
       detail: `no ${CONFIG_FILENAME} — zero-schema heuristics only`,
-      hint: "Run `boundary-guard init` to pick a schema provider and seed the sensitive fields.",
+      hint: "Run `antra init` to pick a schema provider and seed the sensitive fields.",
     });
   } else {
     try {
@@ -124,7 +124,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         label: "Config",
         status: "fail",
         detail: `${CONFIG_FILENAME} is invalid: ${describeError(error)}`,
-        hint: "Fix the file by hand or re-run `boundary-guard init` and accept the overwrite.",
+        hint: "Fix the file by hand or re-run `antra init` and accept the overwrite.",
       });
     }
   }
@@ -159,9 +159,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
             : config.providers.map((provider) => provider.id).join(", "),
       hint:
         problems.length > 0
-          ? "Re-run `boundary-guard init` to point the provider at the right file."
+          ? "Re-run `antra init` to point the provider at the right file."
           : config.providers.length === 0
-            ? "Run `boundary-guard init` and pick a provider to get real taint sources."
+            ? "Run `antra init` and pick a provider to get real taint sources."
             : undefined,
     });
 
@@ -173,7 +173,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         label: "Snapshot",
         status: "fail",
         detail: `${path.relative(rootDir, snapshotFile)} is missing`,
-        hint: "Run `boundary-guard sync`.",
+        hint: "Run `antra sync`.",
       });
     } else {
       try {
@@ -184,7 +184,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
           label: "Snapshot",
           status: "fail",
           detail: `snapshot is invalid: ${describeError(error)}`,
-          hint: "Run `boundary-guard sync` to rewrite it.",
+          hint: "Run `antra sync` to rewrite it.",
         });
       }
     }
@@ -208,7 +208,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
           (newer.length > 0 ? ` — older than ${newer.join(", ")}` : ""),
         hint:
           newer.length > 0
-            ? "The schema changed since the last sync; run `boundary-guard sync`."
+            ? "The schema changed since the last sync; run `antra sync`."
             : undefined,
       });
 
@@ -259,7 +259,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         : "none — every finding fails the gate",
       hint: baseline
         ? undefined
-        : "Adopting on an existing codebase? Run `boundary-guard baseline` and commit .boundary-guard/baseline.json.",
+        : "Adopting on an existing codebase? Run `antra baseline` and commit .antra/baseline.json.",
     });
   } catch (error) {
     add({
@@ -267,7 +267,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       label: "Baseline",
       status: "fail",
       detail: `baseline.json is invalid: ${describeError(error)}`,
-      hint: "Delete it and run `boundary-guard baseline` again.",
+      hint: "Delete it and run `antra baseline` again.",
     });
   }
 
@@ -280,11 +280,11 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     label: ".gitignore",
     status: hasBlock ? "ok" : "warn",
     detail: hasBlock
-      ? "managed block present — findings.sqlite stays out of git"
-      : "no boundary-guard block — findings.sqlite could be committed",
+      ? "managed block present — antra-findings.sqlite stays out of git"
+      : "no antra block — antra-findings.sqlite could be committed",
     hint: hasBlock
       ? undefined
-      : "Run `boundary-guard init` (it appends the block) or ignore .boundary-guard/*.sqlite* yourself.",
+      : "Run `antra init` (it appends the block) or ignore .antra/*.sqlite* yourself.",
   });
 
   const database = dbPath(rootDir);
@@ -309,7 +309,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
           id: "database",
           label: "Scan history",
           status: "ok",
-          detail: `${row.n} scan(s) in findings.sqlite${row.last ? `, last ${ageOf(row.last)}` : ""}`,
+          detail: `${row.n} scan(s) in antra-findings.sqlite${row.last ? `, last ${ageOf(row.last)}` : ""}`,
         });
       } finally {
         db.close();
@@ -319,8 +319,8 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         id: "database",
         label: "Scan history",
         status: "warn",
-        detail: `findings.sqlite can't be opened: ${describeError(error)}`,
-        hint: "Delete .boundary-guard/findings.sqlite; the next scan recreates it.",
+        detail: `antra-findings.sqlite can't be opened: ${describeError(error)}`,
+        hint: "Delete .antra/antra-findings.sqlite; the next scan recreates it.",
       });
     }
   }
@@ -343,7 +343,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
               : " (no tsconfig.json — path aliases won't resolve)"),
       hint:
         sourceFiles.length === 0
-          ? "Point boundary-guard at the app root, not a parent directory."
+          ? "Point antra at the app root, not a parent directory."
           : undefined,
     });
   } catch (error) {

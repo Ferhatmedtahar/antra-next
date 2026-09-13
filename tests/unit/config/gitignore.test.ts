@@ -44,7 +44,7 @@ describe("ensureGitignore", () => {
 
   it("is idempotent: a second run changes nothing, even if entries were edited", async () => {
     project = makeTempProject({
-      ".gitignore": `dist\n${GITIGNORE_MARKER}\n.boundary-guard/*.sqlite\n`,
+      ".gitignore": `dist\n${GITIGNORE_MARKER}\n.antra/*.sqlite\n`,
     });
     const before = fs.readFileSync(
       path.join(project.dir, ".gitignore"),

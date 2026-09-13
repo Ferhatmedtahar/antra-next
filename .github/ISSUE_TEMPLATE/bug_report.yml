@@ -5,7 +5,7 @@ body:
   - type: input
     attributes:
       label: Command
-      placeholder: boundary-guard scan . --format sarif
+      placeholder: antra scan . --format sarif
     validations:
       required: true
   - type: textarea
@@ -20,11 +20,11 @@ body:
       label: What you expected
   - type: textarea
     attributes:
-      label: Output of `boundary-guard doctor --format json`
+      label: Output of `antra doctor --format json`
       render: json
   - type: input
     attributes:
       label: Versions
-      placeholder: boundary-guard 0.1.0 · Node 22.16 · Next 15.3 · Linux
+      placeholder: antra 0.1.0 · Node 22.16 · Next 15.3 · Linux
     validations:
       required: true

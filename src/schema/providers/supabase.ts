@@ -381,7 +381,7 @@ export const supabaseProvider: SchemaProvider = {
         .filter((name): name is string => name !== null)
         .join(" and ");
       throw new Error(
-        `${missing} is not set. Add it to .env.local or export it, then run \`boundary-guard sync\`. The value is read at scan time and never written to disk.`,
+        `${missing} is not set. Add it to .env.local or export it, then run \`antra sync\`. The value is read at scan time and never written to disk.`,
       );
     }
     return extractSupabaseApi({ url, key, schema });

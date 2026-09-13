@@ -39,9 +39,9 @@ export function queryCommand(
   try {
     if (sql === undefined || sql.trim() === "") {
       const tables = describeSchema(rootDir);
-      console.log(chalk.blue.bold("boundary-guard query"));
+      console.log(chalk.blue.bold("antra query"));
       console.log(
-        chalk.gray(`database: ${rootDir}/.boundary-guard/findings.sqlite\n`),
+        chalk.gray(`database: ${rootDir}/.antra/antra-findings.sqlite\n`),
       );
       for (const table of tables) {
         console.log(
@@ -50,7 +50,7 @@ export function queryCommand(
       }
       console.log(chalk.gray("\n  Examples:"));
       for (const example of EXAMPLES) {
-        console.log(chalk.gray(`    boundary-guard query "${example}"`));
+        console.log(chalk.gray(`    antra query "${example}"`));
       }
       return;
     }

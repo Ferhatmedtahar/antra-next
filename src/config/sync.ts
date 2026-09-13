@@ -5,11 +5,11 @@ import {
 import { extractSources, type SkippedProvider } from "../schema/extract.js";
 import type { TaintSource } from "../schema/types.js";
 import { loadConfig } from "./load.js";
-import type { BoundaryGuardConfig, ContractSnapshot } from "./types.js";
+import type { AntraConfig, ContractSnapshot } from "./types.js";
 import { writeSnapshot } from "./write.js";
 
 export interface SyncResult {
-  config: BoundaryGuardConfig;
+  config: AntraConfig;
   snapshot: ContractSnapshot;
   snapshotPath: string;
   skipped: SkippedProvider[];

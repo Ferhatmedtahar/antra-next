@@ -24,7 +24,7 @@ const DEFAULT_SKIP = [
   "build",
   "out",
   "coverage",
-  ".boundary-guard",
+  ".antra",
   ".turbo",
   ".vercel",
 ] as const;

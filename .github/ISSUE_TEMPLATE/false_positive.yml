@@ -34,5 +34,5 @@ body:
   - type: textarea
     attributes:
       label: Config
-      description: Your boundary-guard.config.json, secrets removed.
+      description: Your antra.config.json, secrets removed.
       render: json
