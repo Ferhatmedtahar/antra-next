@@ -35,6 +35,26 @@
   --color-ink: #201e1d;
   --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
 
+  /* Scrollbar thumb. Neutral rather than accent: a scrollbar is chrome, and the
+     blue is reserved for things you can act on. Two stops, so hovering the rail
+     answers back. */
+  --color-scrollbar-thumb: color-mix(in srgb, #201e1d 28%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, #201e1d 46%, transparent);
+
+  /* Accent *text* is its own pair of tokens rather than a direct read of the
+     ramp. On a near-black ground the 500 blue lands at 2.9:1 against the page
+     and 2.5:1 against a raised surface, so dark remaps these two and leaves the
+     ramp alone to keep doing its job for fills, the mark, and the hover wash. */
+  --color-accent-text: var(--color-accent-500);
+  --color-accent-text-hover: var(--color-accent-600);
+
+  /* Code and terminal surfaces. Dark in both themes by design, neutral in both
+     so they do not read brown against a neutral ground. */
+  --color-code-bg: #141414;
+  --color-code-edge: #2f2f2f;
+  --color-code-ink: #ededed;
+  --color-code-dim: #9c9c9c;
+
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
@@ -44,10 +64,67 @@
 }
 
 .dark {
-  --color-bg: #1a1918;
-  --color-surface: #242322;
-  --color-ink: #f1efee;
-  --color-divider: color-mix(in srgb, #f1efee 24%, transparent);
+  --color-bg: #0a0a0a;
+  --color-surface: #161616;
+  --color-ink: #ededed;
+  --color-divider: color-mix(in srgb, #ededed 12%, transparent);
+  --color-accent-text: var(--color-accent-400);
+  --color-accent-text-hover: var(--color-accent-300);
+  --color-scrollbar-thumb: color-mix(in srgb, #ededed 22%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, #ededed 40%, transparent);
+}
+
+/*
+ * Sleek scrollbars, opted into by class.
+ *
+ * Firefox reads `scrollbar-width` and `scrollbar-color` off the class itself;
+ * WebKit ignores those and needs its own pseudo-elements, spelled out here
+ * rather than as a `*::` rule so the styles land only on the containers that ask
+ * for them. Square thumb, no radius, because every corner on this surface is
+ * zero-radius. The document scrollbar opts in from the `html` element.
+ */
+.scrollbar-sleek {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+.scrollbar-sleek::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-sleek::-webkit-scrollbar-track,
+.scrollbar-sleek::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scrollbar-sleek::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+}
+
+.scrollbar-sleek::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+.grid-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--color-divider) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-divider) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 20%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 20%,
+    transparent 78%
+  );
 }
 
 html {
@@ -102,6 +179,29 @@ body {
   opacity: 1;
 }
 
+/*
+ * Hover-revealed corner mark for a grid cell. Same mechanism as the wash, and
+ * deliberately so: the host owns the hover and both layers only fade, so a cell
+ * can carry the two at once without them fighting over the pointer. Same
+ * `-1` as the wash and later in the DOM, which is what puts the mark on top of
+ * the wash and still under the cell's own text.
+ */
+.cell-corner {
+  position: absolute;
+  right: 0rem;
+  top: 4px;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  color: var(--color-accent-text);
+  transition: opacity 300ms ease;
+}
+
+.cell-wash-host:hover .cell-corner,
+.cell-wash-host:focus-within .cell-corner {
+  opacity: 0.35;
+}
+
 .dark .cell-wash {
   background-image: linear-gradient(
     135deg,
@@ -117,6 +217,10 @@ body {
   }
 
   .cell-wash {
+    transition: none;
+  }
+
+  .cell-corner {
     transition: none;
   }
 }

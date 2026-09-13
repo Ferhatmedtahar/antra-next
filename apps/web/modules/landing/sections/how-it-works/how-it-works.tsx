@@ -19,7 +19,7 @@ const STAGES = [
   },
   {
     title: "Fix",
-    body: "Insert a reasoned suppression, or change the code — `antra scan` confirms the fix.",
+    body: "Insert a reasoned suppression, or change the code and let `antra scan` confirm the fix.",
   },
 ];
 

@@ -15,7 +15,7 @@ export function Toc({ content }: { content: string }) {
             <li key={heading.id} className={heading.level === 3 ? "pl-3" : ""}>
               <a
                 href={`#${heading.id}`}
-                className="block text-[13px] leading-snug text-[var(--color-ink)]/60 hover:text-accent-500"
+                className="block text-[13px] leading-snug text-[var(--color-ink)]/60 hover:text-accent-text"
               >
                 {heading.text}
               </a>

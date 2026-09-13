@@ -15,14 +15,14 @@ export function NavBar() {
         <Logo className="h-5 w-10" />
         {site.name}
       </Link>
-      <Link href="/#how-it-works" className="text-sm hover:text-accent-500">
+      <Link href="/#how-it-works" className="text-sm hover:text-accent-text">
         How it works
       </Link>
       <a
         href={site.githubUrl}
         target="_blank"
         rel="noreferrer"
-        className="text-sm hover:text-accent-500"
+        className="text-sm hover:text-accent-text"
       >
         GitHub
       </a>

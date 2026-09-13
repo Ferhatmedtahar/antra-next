@@ -12,9 +12,9 @@ without validation.
 
 The App Router makes it easy to move a value from the server to the client, and
 easy to do it by accident. A field read from your data layer gets returned from
-a Server Component, or handed to a Server Action, or interpolated into markup —
-and each of those is a boundary where "the server already checked that" stops
-being true.
+a Server Component, or handed to a Server Action, or interpolated into markup.
+Each of those is a boundary where "the server already checked that" stops being
+true.
 
 Nothing in the type system catches this. An object crossing into client props
 is well-typed whether or not the fields inside it were meant to travel.
@@ -31,23 +31,23 @@ leaving the machine, no running application to instrument.
 
 ## The pipeline
 
-1. **Scan** — parse the project and classify every file's boundary role.
-2. **Detect** — trace values across the React Flight boundary, Server Actions,
+1. **Scan**: parse the project and classify every file's boundary role.
+2. **Detect**: trace values across the React Flight boundary, Server Actions,
    and route handlers.
-3. **Understand** — read the path a value took, per finding.
-4. **Fix** — sanitize, suppress with a reason, or baseline what you accept.
+3. **Understand**: read the path a value took, per finding.
+4. **Fix**: sanitize, suppress with a reason, or baseline what you accept.
 
 ## Scope
 
 Antra looks at how values move across boundaries in your own code. It is not a
 dependency scanner, not a secrets scanner, and not an infrastructure audit.
-Being clear about that matters more than a longer feature list — see
-[what it does and does not do](/docs/concepts/findings-and-severity) before you
-decide where it fits in your pipeline.
+Being clear about that matters more than a longer feature list. See
+[findings and severity](/docs/concepts/findings-and-severity) before you decide
+where it fits in your pipeline.
 
 ## Where to go next
 
 - [Installation](/docs/getting-started/installation)
-- [Quick start](/docs/getting-started/quick-start) — init, scan, studio
-- [Trust boundaries](/docs/concepts/trust-boundaries) — the model the rules
-  are built on
+- [Quick start](/docs/getting-started/quick-start)
+- [Trust boundaries](/docs/concepts/trust-boundaries): the model the rules are
+  built on

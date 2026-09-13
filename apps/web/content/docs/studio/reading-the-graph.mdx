@@ -10,12 +10,12 @@ project as a shape, with the crossings drawn on it.
 ## Nodes are files
 
 Each node is a file in your project. The graph is not a call graph of every
-function — it is the file-level view, which is the altitude at which "this file
+function. It is the file-level view, which is the altitude at which "this file
 hands a value to that file" becomes visible.
 
 ## Edges are crossings
 
-The interesting edges are **boundary edges** — drawn where a value crosses from
+The interesting edges are **boundary edges**: drawn where a value crosses from
 one side of a trust boundary to the other, and directed, because the direction
 is the whole point. A Server Component handing a value to a Client Component is
 not the same relationship as the reverse, and the analysis treats them
@@ -36,10 +36,10 @@ crossing rather than a file.
 The triage panel is where a finding stops being a report and becomes a
 decision. For a selected finding it carries:
 
-- **What fired** — the rule, the sink, and the location.
-- **The path** — the provenance the analysis recorded, nearest-to-sink first.
+- **What fired**: the rule, the sink, and the location.
+- **The path**: the provenance the analysis recorded, nearest-to-sink first.
   This is the same list [`antra trace`](/docs/commands/trace) prints.
-- **What to do** — follow the path to its source to see where the value entered,
+- **What to do**: follow the path to its source to see where the value entered,
   or accept the crossing.
 
 ## The habit worth building
@@ -47,7 +47,7 @@ decision. For a selected finding it carries:
 Read the path before you read the rule. The rule tells you what kind of crossing
 it is; the path tells you whether the value was ever actually dangerous. Most
 findings that look wrong at first glance are a sanitizer the analysis did not
-recognize, and the path is where that shows up — a step in the middle that
+recognize, and the path is where that shows up: a step in the middle that
 clearly validates the value, which the config has not been told about.
 
 Fix those by declaring the sanitizer in
@@ -56,6 +56,6 @@ suppressing the findings one at a time.
 
 ## Related
 
-- [Trust boundaries](/docs/concepts/trust-boundaries) — the model the edges encode.
-- [Findings and severity](/docs/concepts/findings-and-severity) — the fields
+- [Trust boundaries](/docs/concepts/trust-boundaries): the model the edges encode.
+- [Findings and severity](/docs/concepts/findings-and-severity): the fields
   behind what you see in the panel.

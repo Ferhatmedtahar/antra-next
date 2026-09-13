@@ -6,7 +6,7 @@ order: 640
 
 **Severity:** `error`
 
-A concrete sensitive value is interpolated into an intrinsic element — as text
+A concrete sensitive value is interpolated into an intrinsic element, as text
 content or as an attribute value.
 
 ```tsx
@@ -17,13 +17,13 @@ content or as an attribute value.
 ## Why it fires
 
 No boundary crossing is needed. The value ends up in the HTML response as
-visible text or as an attribute, which is exactly the leak — and unlike BG-001,
-which is about structured prop data travelling through the Flight payload, this
-is a value written straight into the document.
+visible text or as an attribute, which is exactly the leak. Unlike BG-001, which
+is about structured prop data travelling through the Flight payload, this is a
+value written straight into the document.
 
 ## What it checks
 
-Intrinsic elements only — the tags that render to actual HTML. It looks at both
+Intrinsic elements only: the tags that render to actual HTML. It looks at both
 child content and attribute values, since an attribute is as readable as the
 text next to it.
 
@@ -31,7 +31,7 @@ text next to it.
 
 Almost always by removing the render rather than sanitizing it. A sensitive
 value being printed is a mistake about what the page is for, not a validation
-gap — there is rarely a legitimate reason for a password hash to be in a `.tsx`
+gap. There is rarely a legitimate reason for a password hash to be in a `.tsx`
 file's output.
 
 If the value genuinely belongs in the response, render the field the user is
@@ -43,7 +43,7 @@ allowed to see instead:
 
 ## Related
 
-- [BG-001](/docs/rules/bg-001) — the same class of value, crossing through
+- [BG-001](/docs/rules/bg-001): the same class of value, crossing through
   props into client components.
-- [Trust boundaries](/docs/concepts/trust-boundaries) — why markup counts as a
+- [Trust boundaries](/docs/concepts/trust-boundaries): why markup counts as a
   boundary.

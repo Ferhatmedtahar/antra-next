@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { antraConfigSchema } from "../../../src/config/types.js";
 import { configPath, snapshotPath } from "../../../src/config/write.js";
@@ -11,13 +11,18 @@ import type { CodegenRunner } from "../../../src/init/run-init.js";
 import { runInit } from "../../../src/init/run-init.js";
 import { selectableProviders } from "../../../src/schema/providers/index.js";
 import {
+  KEY_ENV_CANDIDATES,
+  URL_ENV_CANDIDATES,
+} from "../../../src/schema/providers/supabase.js";
+import {
   makeTempProject,
   NEXT_APP_FILES,
   type TempProject,
 } from "../../helpers/fixture.js";
 
 interface Script {
-  confirm?: boolean;
+  /** A fixed answer, or one decided per message when a flow asks twice. */
+  confirm?: boolean | ((message: string) => boolean);
   /** Override which ids get chosen; default = whatever was pre-checked. */
   choose?: (choices: readonly CheckboxChoice<string>[]) => string[];
   input?: (message: string, defaultValue: string) => string;
@@ -37,7 +42,11 @@ function scriptedPrompter(script: Script = {}): {
   const prompter: Prompter = {
     confirm(message) {
       seen.confirms.push(message);
-      return Promise.resolve(script.confirm ?? false);
+      return Promise.resolve(
+        typeof script.confirm === "function"
+          ? script.confirm(message)
+          : (script.confirm ?? false),
+      );
     },
     checkbox<T>(_message: string, choices: readonly CheckboxChoice<T>[]) {
       const asStrings = choices as readonly CheckboxChoice<string>[];
@@ -292,11 +301,13 @@ describe("runInit", () => {
     ]);
   });
 
-  it("declines the generate offer, drops an unconfigured provider instead of crashing, and never stores a refusal word as a path", async () => {
+  it("declines the generate offer, drops the provider once the user confirms, and never stores a refusal word as a path", async () => {
     project = makeTempProject(NEXT_APP_FILES);
 
     const { result, seen } = run(project.dir, {
-      confirm: false,
+      // Decline the generate offer, accept the fallback. The two are asked
+      // in sequence, so the script has to answer them differently.
+      confirm: (message) => message.includes("no usable source yet"),
       choose: () => ["prisma"],
       input: () => "n",
     });
@@ -304,15 +315,211 @@ describe("runInit", () => {
 
     expect(outcome.status).toBe("completed");
     if (outcome.status !== "completed") return;
+    expect(seen.confirms).toEqual([
+      "No Prisma (schema.prisma) schema file was found. Generate one now using its CLI?",
+      "Prisma (schema.prisma) has no usable source yet. Continue with zero-schema heuristics only?",
+    ]);
+    // The generate offer was declined, so the conventional path is no longer
+    // re-suggested as a default: it would only invite an answer extract()
+    // has to reject. Enter has to mean "skip this one".
     expect(seen.inputs).toEqual([
       {
         message: "Prisma (schema.prisma): Path to your Prisma schema",
-        defaultValue: "prisma/schema.prisma",
+        defaultValue: "",
       },
     ]);
     // "n" must never land in the config as a literal path.
     expect(outcome.config.providers).toEqual([]);
     expect(outcome.notes.join("\n")).toContain("npx prisma db pull");
+    expect(outcome.notes.join("\n")).toContain("not configured for this run");
+  });
+});
+
+const OPENAPI_DOC = {
+  swagger: "2.0",
+  definitions: {
+    users: {
+      properties: { id: { type: "string" }, password_hash: { type: "string" } },
+    },
+  },
+};
+
+/**
+ * The API path reaches the network, so fetch is stubbed at the global
+ * extractSupabaseApi reads by default. Returns the URLs it was called with.
+ */
+function stubOpenApi(): { urls: string[] } {
+  const urls: string[] = [];
+  vi.stubGlobal("fetch", (url: string) => {
+    urls.push(url);
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: () => Promise.resolve(JSON.stringify(OPENAPI_DOC)),
+    });
+  });
+  return { urls };
+}
+
+/**
+ * The flow this file exists to protect: no generated types file, no
+ * recognised credentials, and a user who just holds Enter. That used to
+ * dead-end — a bare path prompt whose empty answer silently dropped the
+ * provider, leaving a scan with nothing to check.
+ */
+describe("runInit with Supabase and no schema file", () => {
+  let project: TempProject | undefined;
+  const conventional = [...URL_ENV_CANDIDATES, ...KEY_ENV_CANDIDATES];
+  let ambient: (string | undefined)[] = [];
+
+  beforeEach(() => {
+    // A dev machine that exports real Supabase credentials would steer
+    // configFields down its "credentials detected" branch. These tests are
+    // about the branch where neither a types file nor credentials exist.
+    ambient = conventional.map((name) => process.env[name]);
+    for (const name of conventional) delete process.env[name];
+  });
+
+  afterEach(() => {
+    conventional.forEach((name, index) => {
+      const value = ambient[index];
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    });
+    project?.cleanup();
+    project = undefined;
+    vi.unstubAllGlobals();
+  });
+
+  it("offers the project's API when no types file exists, and reads the schema from it", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      ".env.local":
+        "ANTRA_TEST_SUPABASE_URL=https://abc.supabase.co\nANTRA_TEST_SUPABASE_KEY=service-key\n",
+    });
+    const { urls } = stubOpenApi();
+
+    const { result, seen } = run(project.dir, {
+      // Decline the generate offer, so the API path is what's left.
+      confirm: false,
+      choose: () => ["supabase"],
+      input: (message) => {
+        if (message.includes("types file")) return "";
+        if (message.includes("project URL")) return "ANTRA_TEST_SUPABASE_URL";
+        if (message.includes("API key")) return "ANTRA_TEST_SUPABASE_KEY";
+        return "";
+      },
+    });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(seen.confirms).toEqual([
+      "No Supabase (generated types, or your project's API) schema file was found. Generate one now using its CLI?",
+    ]);
+    expect(outcome.config.providers).toEqual([
+      {
+        id: "supabase",
+        urlEnv: "ANTRA_TEST_SUPABASE_URL",
+        keyEnv: "ANTRA_TEST_SUPABASE_KEY",
+      },
+    ]);
+    expect(urls).toEqual(["https://abc.supabase.co/rest/v1/"]);
+    expect(outcome.snapshot.sources).toEqual([
+      { field: "id", origin: "supabase:public.users.id" },
+      { field: "password_hash", origin: "supabase:public.users.password_hash" },
+    ]);
+  });
+
+  it("asks before falling back to zero-schema when nothing usable was given", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    const { result, seen } = run(project.dir, {
+      confirm: (message) => message.includes("no usable source yet"),
+      choose: () => ["supabase"],
+      input: () => "",
+    });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(seen.confirms).toContain(
+      "Supabase (generated types, or your project's API) has no usable source yet. Continue with zero-schema heuristics only?",
+    );
+    expect(outcome.config.providers).toEqual([]);
+    expect(outcome.notes.join("\n")).toContain("not configured for this run");
+    // The generate offer was declined, so the missing types path is offered
+    // as skippable; the credential fields still carry the conventional names,
+    // so a project that has them can just press Enter through.
+    expect(seen.inputs).toHaveLength(4);
+    expect(seen.inputs[0]?.message).toContain("types file");
+    expect(seen.inputs[0]?.defaultValue).toBe("");
+    expect(seen.inputs.slice(1).map((entry) => entry.defaultValue)).toEqual([
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "public",
+    ]);
+  });
+
+  it("re-asks the provider's fields when the user declines to fall back to zero-schema", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      ".env.local":
+        "ANTRA_TEST_SUPABASE_URL=https://abc.supabase.co\nANTRA_TEST_SUPABASE_KEY=service-key\n",
+    });
+    stubOpenApi();
+    let typesFileAsks = 0;
+    let fallbackOffers = 0;
+
+    const { result } = run(project.dir, {
+      confirm: (message) =>
+        message.includes("no usable source yet") ? ++fallbackOffers > 1 : false,
+      choose: () => ["supabase"],
+      input: (message) => {
+        if (message.includes("types file")) {
+          typesFileAsks++;
+          return "";
+        }
+        // The first pass answers nothing, which is what forces the fallback
+        // question; the second supplies what the provider actually needs.
+        if (typesFileAsks === 1) return "";
+        if (message.includes("project URL")) return "ANTRA_TEST_SUPABASE_URL";
+        if (message.includes("API key")) return "ANTRA_TEST_SUPABASE_KEY";
+        return "";
+      },
+    });
+    const outcome = await result;
+
+    expect(typesFileAsks).toBe(2);
+    expect(fallbackOffers).toBe(1);
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.config.providers).toEqual([
+      {
+        id: "supabase",
+        urlEnv: "ANTRA_TEST_SUPABASE_URL",
+        keyEnv: "ANTRA_TEST_SUPABASE_KEY",
+      },
+    ]);
+  });
+
+  it("rejects a types path that isn't there instead of writing it and failing later", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    const { result } = run(project.dir, {
+      confirm: (message) => message.includes("no usable source yet"),
+      choose: () => ["supabase"],
+      // A real-looking path that no file backs. Writing this into the config
+      // is what used to abort init with "types file not found" from extract().
+      input: (message) =>
+        message.includes("types file") ? "types/database.types.ts" : "",
+    });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.config.providers).toEqual([]);
     expect(outcome.notes.join("\n")).toContain("not configured for this run");
   });
 });

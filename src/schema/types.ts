@@ -31,6 +31,19 @@ export interface SchemaProvider {
   detect(rootDir: string): Promise<boolean>;
   /** What to ask the user, with defaults prefilled from whatever detect() located. */
   configFields(rootDir: string): Promise<ProviderConfigField[]>;
+  /**
+   * Whether `config` would give extract() something real to work with.
+   *
+   * Counting keys is not enough: `{ id, schema: "public" }` has two keys and
+   * still extracts nothing, and a `typesPath` pointing at a file that isn't
+   * there reads as configured right up until extract() throws. `init` asks
+   * this before writing the entry, so a half-answered provider becomes an
+   * explicit "continue without it?" instead of a crash far from the prompt.
+   *
+   * Optional — providers that don't implement it keep the older
+   * "more than just an id" rule.
+   */
+  isViable?(rootDir: string, config: unknown): boolean | Promise<boolean>;
   /** Real ingestion. Throws NotImplementedError until Epic 03 lands for that provider. */
   extract(rootDir: string, config: unknown): Promise<TaintSource[]>;
 }

@@ -22,8 +22,8 @@ export function CodeBlock({
   }
 
   return (
-    <div className="border border-[var(--term-line,#3a3736)] bg-[#1a1918] text-[#f1efee]">
-      <div className="flex items-center gap-3 border-b border-[#3a3736] px-4 py-2 text-[11px] font-mono uppercase tracking-wide text-[#9a9694]">
+    <div className="border border-code-edge bg-code-bg text-code-ink">
+      <div className="flex items-center gap-3 border-b border-code-edge px-4 py-2 text-[11px] font-mono uppercase tracking-wide text-code-dim">
         <span>{lang}</span>
         <button
           type="button"
@@ -33,7 +33,7 @@ export function CodeBlock({
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-auto p-4 text-[13px] leading-relaxed">
+      <pre className="scrollbar-sleek overflow-auto p-4 text-[13px] leading-relaxed">
         <code>{children}</code>
       </pre>
     </div>

@@ -29,7 +29,7 @@ Studio displays findings; it does not produce them. Two things have to be true:
 
 1. **You have scanned.** `antra studio` reads
    `.antra/antra-findings.sqlite`, which a scan writes. On a project you have
-   just initialized, run `antra scan` first — otherwise there is nothing to show.
+   just initialized, run `antra scan` first, otherwise there is nothing to show.
 2. **The scan stored its results.** `antra scan --no-store` deliberately skips
    recording, so a scan run that way leaves Studio with no new data to display.
 
@@ -41,7 +41,7 @@ Pass a different one:
 antra studio --port 8081
 ```
 
-`--no-open` is the flag for a headless machine — you get the server and the URL,
+`--no-open` is the flag for a headless machine: you get the server and the URL,
 and you forward the port or open it from wherever your browser is.
 
 <Note type="warning">

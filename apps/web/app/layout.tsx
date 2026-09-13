@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${plexMono.variable}`}
+      className={`${archivo.variable} ${plexMono.variable} scrollbar-sleek`}
       suppressHydrationWarning
     >
       <head>

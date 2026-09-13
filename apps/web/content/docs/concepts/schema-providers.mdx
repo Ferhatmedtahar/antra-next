@@ -5,8 +5,8 @@ order: 130
 ---
 
 The rules need to know which values must not cross a boundary. That answer lives
-in your data layer, and it is different for every project — so Antra reads it
-from a **provider** instead of asking you to write it out by hand.
+in your data layer, and it is different for every project. Antra reads it from a
+**provider** instead of asking you to write it out by hand.
 
 ## How it works
 
@@ -27,7 +27,7 @@ database at scan time.
 | Supabase    | `supabase`    | Supabase table definitions                                     |
 | OpenAPI     | `openapi`     | An OpenAPI document describing your API's fields               |
 | Drizzle     | `drizzle`     | Your Drizzle table definitions                                 |
-| Zero-schema | `zero-schema` | Nothing — the fallback for projects with no schema to read     |
+| Zero-schema | `zero-schema` | Nothing. The fallback for projects with no schema to read      |
 
 Providers are declared under `providers` in
 [`antra.config.json`](/docs/configuration/reference), each entry
@@ -43,26 +43,26 @@ antra sync
 ```
 
 A stale snapshot is the quiet failure mode of schema-aware analysis. It does not
-produce an error — it produces a scan that is confident about an outdated
-picture of your data, missing fields that were added and flagging ones that were
-renamed away.
+produce an error. It produces a scan that is confident about an outdated picture
+of your data, missing fields that were added and flagging ones that were renamed
+away.
 
 ## When the provider can't see it
 
-Some sensitive names live outside any schema — a field assembled in a helper, a
+Some sensitive names live outside any schema: a field assembled in a helper, a
 value computed at runtime. For those, list them under `sensitiveFields` in the
-config. That is the escape hatch, and it is deliberately explicit: a name the
+config. That is the escape hatch, and it is deliberately explicit. A name the
 analysis was told to treat as sensitive, rather than one it inferred.
 
 ## When there is no schema at all
 
-A project with no schema to introspect — a backend-for-frontend, or anything
-that fetches from an API you do not own — still gets analyzed. The
-`zero-schema` provider reads nothing, and the analysis falls back to heuristics
-on names and on the shape of the code. That is the mode
+A project with no schema to introspect (a backend-for-frontend, or anything that
+fetches from an API you do not own) still gets analyzed. The `zero-schema`
+provider reads nothing, and the analysis falls back to heuristics on names and
+on the shape of the code. That is the mode
 [BG-003](/docs/rules/bg-003) is built for: it needs no schema, because it fires
 on the pattern of an unprojected result being handed to a client rather than on
 the knowledge of which fields are sensitive.
 
-A scan run with no `antra.config.json` at all reports this state
-explicitly — zero taint sources, heuristics only.
+A scan run with no `antra.config.json` at all reports this state explicitly:
+zero taint sources, heuristics only.

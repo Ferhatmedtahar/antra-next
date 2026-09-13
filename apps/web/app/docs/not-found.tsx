@@ -4,7 +4,7 @@ import { site } from "@/config/site";
 export default function DocsNotFound() {
   return (
     <div className="flex w-full flex-col items-start py-8">
-      <div className="mb-4 inline-flex items-center justify-center border border-accent-500/30 bg-accent-500/10 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-accent-500">
+      <div className="mb-4 inline-flex items-center justify-center border border-accent-text/30 bg-accent-500/10 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-accent-text">
         404 · Doc Not Found
       </div>
       <h1 className="mb-3 font-heading text-3xl font-extrabold tracking-tight md:text-4xl">
