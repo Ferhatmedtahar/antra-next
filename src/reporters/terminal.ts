@@ -3,6 +3,7 @@ import path from "path";
 
 import { Chalk, type ChalkInstance } from "chalk";
 
+import { DISPLAY_NAME } from "../brand.js";
 import type { ScanResult } from "../engine.js";
 import type { Finding } from "../rules/types.js";
 import type { ReportContext, Reporter } from "./types.js";
@@ -102,40 +103,51 @@ function renderSummary(
     f.serverActions.map((action) => ({ file: f.filePath, ...action })),
   );
 
-  out.push(c.blue.bold("boundary-guard scan"));
-  out.push(c.gray(`project:   ${ctx.rootDir}`));
-  out.push(c.gray(`framework: ${result.frameworkAdapter}`));
+  // No title of its own: the progress block above already printed
+  // `antra scan`, and the summary reads as the rest of that same screen.
+  out.push("");
+  out.push(c.gray(`  project    ${ctx.rootDir}`));
+  out.push(c.gray(`  framework  ${result.frameworkAdapter}`));
   out.push(
-    c.gray(`rules:     ${result.rulesRun.join(", ") || "(none enabled)"}`),
+    c.gray(`  rules      ${result.rulesRun.join(", ") || "(none enabled)"}`),
   );
+  out.push(c.gray(`  duration   ${(result.durationMs / 1000).toFixed(1)}s`));
   if (result.scope.partial) {
     out.push(
       c.yellow(
-        `scope:     ${result.scope.label} — rules ran on ${result.scope.files} file(s); not recorded`,
+        `  scope      ${result.scope.label} — rules ran on ${result.scope.files} file(s); not recorded`,
       ),
     );
   }
-  out.push(c.gray(`duration:  ${(result.durationMs / 1000).toFixed(1)}s`));
   out.push("");
+
+  /** `label` padded so the values line up regardless of label length. */
+  const row = (label: string, value: string) => `  ${label.padEnd(18)}${value}`;
 
   if (result.configPresent) {
     out.push(
-      `  taint sources:     ${result.taintSources.length} sensitive of ${result.schemaFields.length} schema field(s)`,
+      row(
+        "taint sources",
+        `${result.taintSources.length} sensitive of ${result.schemaFields.length} schema field(s)`,
+      ),
     );
     list(result.taintSources.map((source) => source.origin));
   } else {
     out.push(
       c.yellow(
-        "  taint sources:     none — no boundary-guard.config.json; run `boundary-guard init` (zero-schema heuristics only)",
+        row(
+          "taint sources",
+          `none — no antra.config.json; run \`${DISPLAY_NAME} init\` (zero-schema heuristics only)`,
+        ),
       ),
     );
   }
-  out.push(`  files scanned:     ${result.classifications.length}`);
-  out.push(`  client boundaries: ${clients.length}`);
+  out.push(row("files scanned", String(result.classifications.length)));
+  out.push(row("client boundaries", String(clients.length)));
   list(clients.map((f) => relative(f.filePath)));
-  out.push(`  server actions:    ${actions.length}`);
+  out.push(row("server actions", String(actions.length)));
   list(actions.map((a) => `${relative(a.file)}:${a.line}  ${a.name}`));
-  out.push(`  route handlers:    ${routes.length}`);
+  out.push(row("route handlers", String(routes.length)));
   list(
     routes.map(
       (r) => `${relative(r.filePath)}  [${r.routeMethods.join(", ")}]`,
@@ -165,7 +177,7 @@ export function renderFindings(
   if (result.baselined.length > 0) {
     out.push(
       c.gray(
-        `  ${result.baselined.length} baselined (pre-existing — \`boundary-guard baseline\` to refresh)`,
+        `  ${result.baselined.length} baselined (pre-existing — \`${DISPLAY_NAME} baseline\` to refresh)`,
       ),
     );
   }
@@ -189,7 +201,14 @@ export function renderFindings(
     const lines = sources.get(finding.filePath);
     if (lines) out.push(...codeFrame(finding, lines, c));
     else out.push(c.gray(`        ${finding.snippet}`));
-    for (const step of finding.trace) out.push(c.gray(`        ↳ ${step}`));
+    for (const step of finding.trace) {
+      const text = typeof step === "string" ? step : step.text;
+      const loc =
+        typeof step === "object" && step.file
+          ? `  (${step.file}${step.line ? `:${step.line}` : ""})`
+          : "";
+      out.push(c.gray(`        ↳ ${text}${loc}`));
+    }
   }
   if (result.storeError) {
     out.push("", c.yellow(`  (not recorded: ${result.storeError})`));
@@ -197,13 +216,35 @@ export function renderFindings(
   return out;
 }
 
+/**
+ * Where to go after reading the report. Interactive terminals only — a CI log
+ * does not have a browser to open.
+ */
+function renderNextSteps(c: ChalkInstance): string[] {
+  const hint = (command: string, description: string) =>
+    `${c.gray("    ")}${c.bold(command.padEnd(30))}${c.gray(description)}`;
+  return [
+    "",
+    c.gray("  next"),
+    hint(`${DISPLAY_NAME} studio`, "explore the boundary graph in a browser"),
+    hint(
+      `${DISPLAY_NAME} trace <file>:<line>`,
+      "read the full path one finding travelled",
+    ),
+  ];
+}
+
 export const terminalReporter: Reporter = {
   format: "pretty",
   render(result, ctx) {
     const c = new Chalk(ctx.color ? {} : { level: 0 });
-    return [
+    const lines = [
       ...renderSummary(result, ctx, c),
       ...renderFindings(result, ctx, c),
-    ].join("\n");
+    ];
+    if (ctx.color && process.stdout.isTTY === true) {
+      lines.push(...renderNextSteps(c));
+    }
+    return lines.join("\n");
   },
 };

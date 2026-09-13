@@ -3,7 +3,7 @@ import { pathToFileURL } from "url";
 
 import { VERSION } from "../index.js";
 import { rules } from "../rules/index.js";
-import type { Finding } from "../rules/types.js";
+import { formatTraceStep, type Finding } from "../rules/types.js";
 import type { Reporter } from "./types.js";
 
 const SARIF_SCHEMA =
@@ -23,7 +23,7 @@ interface SarifResult {
       };
     };
   }[];
-  partialFingerprints: { "boundaryGuard/v1": string };
+  partialFingerprints: { "antra/v1": string };
   properties: { trace: string[] };
   baselineState?: "new" | "unchanged";
   suppressions?: { kind: "inSource"; justification?: string }[];
@@ -56,8 +56,8 @@ function toResult(
         },
       },
     ],
-    partialFingerprints: { "boundaryGuard/v1": finding.fingerprint ?? "" },
-    properties: { trace: finding.trace },
+    partialFingerprints: { "antra/v1": finding.fingerprint ?? "" },
+    properties: { trace: finding.trace.map(formatTraceStep) },
   };
   if (status === "baselined") result.baselineState = "unchanged";
   if (status === "suppressed") {
@@ -86,10 +86,9 @@ export const sarifReporter: Reporter = {
         {
           tool: {
             driver: {
-              name: "boundary-guard",
+              name: "antra",
               version: VERSION,
-              informationUri:
-                "https://github.com/Ferhatmedtahar/boundary-guard",
+              informationUri: "https://github.com/Ferhatmedtahar/Antra",
               rules: rules.map((rule) => ({
                 id: rule.id,
                 name: rule.id.replace("-", ""),
@@ -97,7 +96,7 @@ export const sarifReporter: Reporter = {
                 fullDescription: { text: rule.description },
                 defaultConfiguration: { level: rule.severity },
                 helpUri:
-                  "https://github.com/Ferhatmedtahar/boundary-guard/tree/main/docs",
+                  "https://github.com/Ferhatmedtahar/Antra/tree/main/docs",
               })),
             },
           },

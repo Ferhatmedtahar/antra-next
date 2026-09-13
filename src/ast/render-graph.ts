@@ -18,12 +18,15 @@ import {
   type SourceFile,
 } from "ts-morph";
 
+import path from "path";
+
 import {
   isSensitiveName,
   normalizeFieldName,
   type SensitivityConfig,
 } from "../classification/classify.js";
 import type { SanitizerMatcher } from "../classification/sanitizers.js";
+import type { TraceStep } from "../rules/types.js";
 import type { TaintSource } from "../schema/types.js";
 
 /**
@@ -51,13 +54,14 @@ export interface Taint {
   /** A whole unknown object (ingress) rather than one sensitive value. */
   opaque: boolean;
   /** Provenance, nearest-to-sink first. */
-  trace: string[];
+  trace: TraceStep[];
 }
 
 export interface TaintContext {
   sensitivity: SensitivityConfig;
   taintSources: readonly TaintSource[];
   sanitizer: SanitizerMatcher;
+  rootDir?: string;
 }
 
 export function describeOrigin(origin: TaintOrigin): string {
@@ -345,6 +349,20 @@ export class TaintResolver {
     );
   }
 
+  private step(node: Node, text: string): TraceStep {
+    try {
+      const sourceFile = node.getSourceFile();
+      const rawPath = sourceFile.getFilePath();
+      const file = this.ctx.rootDir
+        ? path.relative(this.ctx.rootDir, rawPath)
+        : rawPath;
+      const line = node.getStartLineNumber();
+      return { text, file, line };
+    } catch {
+      return { text };
+    }
+  }
+
   private visitProperty(
     node: PropertyAccessExpression | ElementAccessExpression,
     name: string,
@@ -356,14 +374,18 @@ export class TaintResolver {
       return {
         origin: { kind: "env", name },
         opaque: false,
-        trace: [node.getText()],
+        trace: [this.step(node, node.getText())],
       };
     }
     const byName = this.classifyName(name);
     const base = this.visit(objectNode, state);
-    if (byName) return this.named(byName, base, node.getText());
+    if (byName)
+      return this.named(byName, base, this.step(node, node.getText()));
     if (base?.opaque && PASSTHROUGH.has(name)) {
-      return { ...base, trace: [node.getText(), ...base.trace] };
+      return {
+        ...base,
+        trace: [this.step(node, node.getText()), ...base.trace],
+      };
     }
     return null;
   }
@@ -377,7 +399,7 @@ export class TaintResolver {
   private named(
     origin: TaintOrigin,
     base: Taint | null,
-    step: string,
+    step: TraceStep,
   ): Taint | null {
     if (origin.kind === "lexical" && !base) return null;
     return { origin, opaque: false, trace: [step, ...(base?.trace ?? [])] };
@@ -396,7 +418,7 @@ export class TaintResolver {
       return {
         origin: { kind: "ingress", call: ingress },
         opaque: true,
-        trace: [ingress],
+        trace: [this.step(call, ingress)],
       };
     }
     return this.visitCallee(call, state);
@@ -420,8 +442,12 @@ export class TaintResolver {
       // Binding elements describe their own step; plain declarations get one here.
       if (Node.isVariableDeclaration(definition)) {
         const initializer = definition.getInitializer();
-        const step = `${name} ← ${firstLine(initializer?.getText() ?? definition.getText())}`;
-        return { ...taint, trace: [step, ...taint.trace] };
+        const stepText = `${name} ← ${firstLine(initializer?.getText() ?? definition.getText())}`;
+        const nodeForLoc = initializer ?? definition;
+        return {
+          ...taint,
+          trace: [this.step(nodeForLoc, stepText), ...taint.trace],
+        };
       }
       return taint;
     }
@@ -474,7 +500,8 @@ export class TaintResolver {
       ? owner.getInitializer()
       : undefined;
     const base = initializer ? this.visit(initializer, state) : null;
-    const step = `${element.getText()} ← ${firstLine(initializer?.getText() ?? "(parameter)")}`;
+    const stepText = `${element.getText()} ← ${firstLine(initializer?.getText() ?? "(parameter)")}`;
+    const step = this.step(element, stepText);
 
     if (!isRest) {
       const byName = this.classifyName(propertyName);
@@ -571,7 +598,9 @@ export class TaintResolver {
       `${label} ← ${firstLine(value.getText())} (parameter of ${fnName})`;
     const direct = (value: Node): Taint | null => {
       const taint = this.visit(value, state);
-      return taint ? { ...taint, trace: [step(value), ...taint.trace] } : null;
+      return taint
+        ? { ...taint, trace: [this.step(value, step(value)), ...taint.trace] }
+        : null;
     };
 
     if (Node.isCallExpression(site)) {
@@ -642,11 +671,12 @@ export class TaintResolver {
   private throughProperty(
     object: Node,
     propertyName: string,
-    step: string,
+    stepText: string,
     state: WalkState,
   ): Taint | null {
     // When the spread object is a literal we can see, read the exact key
     // rather than guessing from the property name.
+    const step = this.step(object, stepText);
     const literal = this.literalBehind(object);
     const value = literal ? literalProperty(literal, propertyName) : null;
     if (value) {
@@ -701,7 +731,10 @@ export class TaintResolver {
       if (taint) {
         return {
           ...taint,
-          trace: [`${callee.getText()}() returns`, ...taint.trace],
+          trace: [
+            this.step(fn, `${callee.getText()}() returns`),
+            ...taint.trace,
+          ],
         };
       }
     }

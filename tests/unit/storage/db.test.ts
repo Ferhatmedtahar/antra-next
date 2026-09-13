@@ -63,7 +63,7 @@ describe("FindingsStore", () => {
     project = undefined;
   });
 
-  it("creates the database under .boundary-guard and appends scans", () => {
+  it("creates the database under .antra and appends scans", () => {
     project = makeTempProject();
     store = FindingsStore.open(project.dir);
 
@@ -106,7 +106,7 @@ describe("FindingsStore", () => {
       ruleId: "BG-001",
       file: "app/page.tsx",
       column: 3,
-      trace: ["a", "b"],
+      trace: [{ text: "a" }, { text: "b" }],
       fingerprint: "fp16",
     });
   });

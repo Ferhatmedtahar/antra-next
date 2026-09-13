@@ -7,6 +7,22 @@ import type { SanitizerMatcher } from "../classification/sanitizers.js";
 export type RuleId = "BG-001" | "BG-002" | "BG-003" | "BG-004";
 export type Severity = "error" | "warning";
 
+export interface TraceStep {
+  text: string;
+  file?: string;
+  line?: number;
+}
+
+export function normalizeTraceStep(step: TraceStep | string): TraceStep {
+  return typeof step === "string" ? { text: step } : step;
+}
+
+export function formatTraceStep(step: TraceStep | string): string {
+  if (typeof step === "string") return step;
+  if (!step.file) return step.text;
+  return `${step.text} (${step.file}${step.line ? `:${step.line}` : ""})`;
+}
+
 export interface Finding {
   ruleId: RuleId;
   severity: Severity;
@@ -17,7 +33,7 @@ export interface Finding {
   /** The sink expression, first line, trimmed. */
   snippet: string;
   /** Provenance, nearest-to-sink first (empty for BG-002). */
-  trace: string[];
+  trace: (TraceStep | string)[];
   /** Stable identity across line shifts (rule + file + sink text); set by the engine. */
   fingerprint?: string;
   suppressed?: { reason: string | null };
@@ -47,7 +63,7 @@ export function findingAt(
   rule: Pick<Rule, "id" | "severity">,
   node: Node,
   message: string,
-  trace: readonly string[] = [],
+  trace: readonly (TraceStep | string)[] = [],
 ): Finding {
   const sourceFile = node.getSourceFile();
   const { line, column } = sourceFile.getLineAndColumnAtPos(node.getStart());
@@ -59,6 +75,6 @@ export function findingAt(
     line,
     column,
     snippet: firstLine(node.getText()),
-    trace: [...trace],
+    trace: trace.map(normalizeTraceStep),
   };
 }

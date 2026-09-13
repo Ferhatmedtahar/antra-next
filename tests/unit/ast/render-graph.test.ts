@@ -158,7 +158,7 @@ describe("TaintResolver", () => {
       field: "password_hash",
       origins: ["prisma:User.password_hash"],
     });
-    expect(taint?.trace).toEqual([
+    expect(taint?.trace.map((s) => s.text)).toEqual([
       "user.password_hash",
       "user ← row (parameter of Row)",
       "row ← await db.user.findUnique({ where: { id: 1 } })",
@@ -179,13 +179,13 @@ describe("TaintResolver", () => {
     // the parameter walk reached the caller's fetch.
     const positional = resolver.resolve(expr(file, "value.api_token"));
     expect(positional?.origin).toEqual({ kind: "lexical", field: "api_token" });
-    expect(positional?.trace).toContain(
+    expect(positional?.trace.map((s) => s.text)).toContain(
       'value ← await fetch("/u").then((r) => r.json()) (parameter of render)',
     );
     const spread = resolver.resolve(expr(file, "user.api_token"));
     expect(spread?.origin.kind).toBe("lexical");
     expect(
-      spread?.trace.some((step) => step.includes("parameter of Card")),
+      spread?.trace.some((step) => step.text.includes("parameter of Card")),
     ).toBe(true);
   });
 

@@ -90,7 +90,9 @@ describe("rules end to end (rules-app fixture)", () => {
     expect(byLine(16)?.message).toContain(
       'Schema field "password_hash" — prisma:User.password_hash',
     );
-    expect(byLine(16)?.trace).toEqual([
+    expect(
+      byLine(16)?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
       "user.password_hash",
       "user ← await db.user.findUnique({ where: { id: 1 } })",
       "db.user.findUnique({ where: { id: 1 } })",
@@ -100,7 +102,9 @@ describe("rules end to end (rules-app fixture)", () => {
     );
     expect(byLine(18)?.message).toContain("Unprojected result of res.json()");
     expect(byLine(20)?.message).toContain("Process.env.STRIPE_SECRET_KEY");
-    expect(byLine(23)?.trace).toEqual([
+    expect(
+      byLine(23)?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
       "password_hash: hashed ← user",
       "user ← await db.user.findUnique({ where: { id: 1 } })",
       "db.user.findUnique({ where: { id: 1 } })",
@@ -174,7 +178,9 @@ describe("rules end to end (rules-app fixture)", () => {
     expect(finding?.ruleId).toBe("BG-001");
     // Reported where the value crosses, inside the helper, not at the call.
     expect(finding?.line).toBe(4);
-    expect(finding?.trace).toEqual([
+    expect(
+      finding?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
       "user.password_hash",
       "user ← row (parameter of Row)",
       "row ← await db.user.findUnique({ where: { id: 1 } })",
