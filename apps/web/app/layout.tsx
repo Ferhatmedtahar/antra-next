@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import { Anton, Archivo, IBM_Plex_Mono } from "next/font/google";
 
 import { ThemeScript } from "@/components/shared/theme-script";
 import { site } from "@/config/site";
@@ -18,6 +18,20 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+/**
+ * The navbar wordmark, and nothing else. Loaded under its own variable name
+ * rather than folded into `--font-heading`: the token it feeds is named for the
+ * one place it is allowed to appear, so a stray `font-wordmark` elsewhere is
+ * visible in review as the mistake it is.
+ *
+ * Single weight, hence the explicit `400`.
+ */
+const anton = Anton({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-anton",
+});
+
 export const metadata: Metadata = {
   title: { default: site.name, template: `%s · ${site.name}` },
   description: site.description,
@@ -31,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${plexMono.variable} scrollbar-sleek`}
+      className={`${archivo.variable} ${plexMono.variable} ${anton.variable} scrollbar-sleek`}
       suppressHydrationWarning
     >
       <head>
