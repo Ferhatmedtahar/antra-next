@@ -2,14 +2,14 @@ import fs from "fs";
 import path from "path";
 
 import {
-  boundaryGuardConfigSchema,
+  antraConfigSchema,
   contractSnapshotSchema,
-  type BoundaryGuardConfig,
+  type AntraConfig,
   type ContractSnapshot,
 } from "./types.js";
 
-export const CONFIG_FILENAME = "boundary-guard.config.json";
-export const SNAPSHOT_DIR = ".boundary-guard";
+export const CONFIG_FILENAME = "antra.config.json";
+export const SNAPSHOT_DIR = ".antra";
 export const SNAPSHOT_FILENAME = "contract-snapshot.json";
 
 export function configPath(rootDir: string): string {
@@ -32,24 +32,24 @@ export class ConfigExistsError extends Error {
 }
 
 /**
- * Writes `boundary-guard.config.json`. Refuses to clobber an existing file
+ * Writes `antra.config.json`. Refuses to clobber an existing file
  * unless `overwrite` is explicitly true — the confirmation prompt lives in
  * `init`, this layer only enforces the decision (FR-INIT-7).
  */
 export async function writeConfig(
   rootDir: string,
-  config: BoundaryGuardConfig,
+  config: AntraConfig,
   options: { overwrite: boolean },
 ): Promise<string> {
   const target = configPath(rootDir);
   if (!options.overwrite && fs.existsSync(target)) {
     throw new ConfigExistsError(target);
   }
-  await writeJson(target, boundaryGuardConfigSchema.parse(config));
+  await writeJson(target, antraConfigSchema.parse(config));
   return target;
 }
 
-/** Writes `.boundary-guard/contract-snapshot.json`, creating the directory. */
+/** Writes `.antra/contract-snapshot.json`, creating the directory. */
 export async function writeSnapshot(
   rootDir: string,
   snapshot: ContractSnapshot,

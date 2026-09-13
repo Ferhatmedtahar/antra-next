@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { DEFAULT_KEYWORDS } from "../../../src/config/defaults.js";
 import {
-  boundaryGuardConfigSchema,
+  antraConfigSchema,
   contractSnapshotSchema,
-  type BoundaryGuardConfig,
+  type AntraConfig,
 } from "../../../src/config/types.js";
 import {
   ConfigExistsError,
@@ -18,7 +18,7 @@ import {
 } from "../../../src/config/write.js";
 import { makeTempProject, type TempProject } from "../../helpers/fixture.js";
 
-const sampleConfig: BoundaryGuardConfig = {
+const sampleConfig: AntraConfig = {
   version: 1,
   frameworkAdapter: "nextjs-app-router",
   providers: [{ id: "prisma", schemaPath: "prisma/schema.prisma" }],
@@ -45,7 +45,7 @@ describe("config writer", () => {
 
     expect(written).toBe(configPath(project.dir));
     expect(configExists(project.dir)).toBe(true);
-    const parsed = boundaryGuardConfigSchema.parse(
+    const parsed = antraConfigSchema.parse(
       JSON.parse(fs.readFileSync(written, "utf8")),
     );
     expect(parsed).toEqual(sampleConfig);
@@ -68,7 +68,7 @@ describe("config writer", () => {
     const invalid = {
       ...sampleConfig,
       version: 2,
-    } as unknown as BoundaryGuardConfig;
+    } as unknown as AntraConfig;
 
     await expect(
       writeConfig(project.dir, invalid, { overwrite: false }),
@@ -76,7 +76,7 @@ describe("config writer", () => {
     expect(configExists(project.dir)).toBe(false);
   });
 
-  it("writes the snapshot, creating .boundary-guard/", async () => {
+  it("writes the snapshot, creating .antra/", async () => {
     project = makeTempProject();
     const snapshot = {
       generatedAt: "2026-09-04T00:00:00.000Z",

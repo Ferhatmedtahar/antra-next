@@ -1,0 +1,41 @@
+---
+title: "BG-003: Opaque object pass"
+description: An unprojected fetch or database result is passed whole to a Client Component.
+order: 630
+---
+
+**Severity:** `warning`
+
+The raw, unprojected result of a fetch or database call is handed whole to a
+Client Component.
+
+## Why it fires
+
+Nobody picked fields, so whatever the backend returns gets serialized to the
+browser — today, and again after its next deploy. The set of fields that cross
+is not decided by your code; it is decided by whoever changes that endpoint.
+
+That is why it is a `warning` rather than an `error`: there may be nothing
+sensitive in the response today. The finding is about the shape of the decision,
+not about a value that is known to be dangerous.
+
+## Why it matters in schema-less projects
+
+BG-003 needs no schema at all. It fires on the _pattern_ — a call result passed
+directly into client props — so it is the rule that still works in a BFF or
+zero-schema project where there is no data layer to introspect. See
+[ADR-002](https://github.com/Ferhatmedtahar/Antra) on schema-optional ingestion and
+trust tiers.
+
+## Fixing it
+
+Project what the client needs:
+
+```ts
+const account = await fetchAccount(id);
+return <AccountCard account={{ name: account.name }} />;
+```
+
+The projection is the point. It converts "whatever the backend returns" into a
+statement your code makes, which is a thing a reviewer can check and a diff can
+show changing.

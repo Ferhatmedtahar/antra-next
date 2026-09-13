@@ -4,6 +4,7 @@ import {
   classifyFile,
   type FileClassification,
 } from "./ast/boundary-classifier.js";
+import { collectEdges, type BoundaryEdge } from "./ast/boundary-graph.js";
 import { loadProject } from "./ast/project.js";
 import { TaintResolver } from "./ast/render-graph.js";
 import {
@@ -19,6 +20,7 @@ import {
 import { createSanitizerMatcher } from "./classification/sanitizers.js";
 import { DEFAULT_KEYWORDS, DEFAULT_SANITIZERS } from "./config/defaults.js";
 import { loadConfigIfPresent, loadSnapshot } from "./config/load.js";
+import { CONFIG_FILENAME } from "./config/write.js";
 import { requireFramework } from "./framework/detect.js";
 import { rules, runRules, type Finding, type RuleId } from "./rules/index.js";
 import type { TaintSource } from "./schema/types.js";
@@ -31,7 +33,7 @@ export interface ScanOptions {
   onlyRules?: readonly RuleId[];
   /** Treat every finding as new — what `baseline` needs to record them all. */
   ignoreBaseline?: boolean;
-  /** Append this scan to .boundary-guard/findings.sqlite (default true). */
+  /** Append this scan to .antra/antra-findings.sqlite (default true). */
   store?: boolean;
   /** Progress hook for spinners; fired at the start of each phase. */
   onPhase?: (phase: ScanPhase, detail?: string) => void;
@@ -54,7 +56,7 @@ export interface ScanScope {
 }
 
 export type ScanPhase =
-  "detect" | "config" | "project" | "classify" | "rules" | "store";
+  "detect" | "config" | "project" | "classify" | "graph" | "rules" | "store";
 
 export interface ScanResult {
   startedAt: string;
@@ -64,6 +66,8 @@ export interface ScanResult {
   /** False when the project was never `init`-ed — zero-schema heuristics only. */
   configPresent: boolean;
   classifications: FileClassification[];
+  /** Render/action links between files — what Studio's graph draws. */
+  edges: BoundaryEdge[];
   /** Everything the snapshot holds. */
   schemaFields: TaintSource[];
   /** The subset the classifier flags as sensitive — the real taint origins. */
@@ -73,9 +77,9 @@ export interface ScanResult {
   /** New, unsuppressed findings — the ones that fail the gate. */
   findings: Finding[];
   suppressed: Finding[];
-  /** Known before this scan (in .boundary-guard/baseline.json). */
+  /** Known before this scan (in .antra/baseline.json). */
   baselined: Finding[];
-  /** Row id in findings.sqlite, when stored. */
+  /** Row id in antra-findings.sqlite, when stored. */
   scanId: number | null;
   storeError: string | null;
 }
@@ -94,11 +98,13 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
   const started = Date.now();
   phase("detect");
   const adapter = await requireFramework(rootDir);
+  phase("detect", adapter.id);
 
   phase("config");
   const config = await loadConfigIfPresent(rootDir);
   const snapshot = config ? await loadSnapshot(rootDir) : null;
   const schemaFields = snapshot?.sources ?? [];
+  phase("config", config ? CONFIG_FILENAME : "none — zero-schema heuristics");
 
   // Zero-schema heuristics are always on (ADR-002): without a config the
   // defaults still apply, there's just no snapshot to back them.
@@ -123,7 +129,12 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
       config?.rules[rule.id] !== false &&
       (!options.onlyRules || options.onlyRules.includes(rule.id)),
   );
-  const resolver = new TaintResolver({ sensitivity, taintSources, sanitizer });
+  const resolver = new TaintResolver({
+    sensitivity,
+    taintSources,
+    sanitizer,
+    rootDir,
+  });
   const onlyFiles = options.onlyFiles
     ? new Set(options.onlyFiles.map((file) => path.resolve(file)))
     : null;
@@ -132,6 +143,9 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
         onlyFiles.has(path.resolve(file.getFilePath())),
       )
     : sourceFiles;
+  phase("graph");
+  const edges = collectEdges(ruleFiles, classifications);
+  phase("graph", `${edges.length} edges`);
   phase(
     "rules",
     enabled.map((rule) => rule.id).join(", ") +
@@ -159,6 +173,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
     sourceRoot: adapter.findSourceRoot(rootDir),
     configPresent: config !== null,
     classifications: classificationList,
+    edges,
     schemaFields,
     taintSources,
     rulesRun: enabled.map((rule) => rule.id),

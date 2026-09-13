@@ -1,12 +1,31 @@
 {
-  "name": "boundary-guard",
+  "name": "antra",
   "version": "0.1.0",
   "description": "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
+  "keywords": [
+    "nextjs",
+    "react-server-components",
+    "security",
+    "static-analysis",
+    "linter",
+    "taint-analysis",
+    "prisma",
+    "supabase",
+    "sarif"
+  ],
+  "homepage": "https://github.com/Ferhatmedtahar/Antra#readme",
+  "bugs": {
+    "url": "https://github.com/Ferhatmedtahar/Antra/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ferhatmedtahar/Antra.git"
+  },
+  "author": "Ferhat Mohamed Tahar",
   "type": "module",
   "license": "MIT",
-  "author": "",
   "bin": {
-    "boundary-guard": "./bin/boundary-guard.js"
+    "antra": "./bin/antra.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,10 +52,10 @@
   "packageManager": "pnpm@11.24.0",
   "scripts": {
     "dev": "tsx src/cli/index.ts",
-    "build": "tsup && vite build",
+    "build": "tsup && pnpm --filter studio build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit && tsc -p studio/tsconfig.json --noEmit",
+    "typecheck": "tsc --noEmit && pnpm --filter studio typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -44,8 +63,9 @@
     "prepare": "husky",
     "commit": "cz",
     "build:cli": "tsup",
-    "build:studio": "vite build",
-    "dev:studio": "vite"
+    "build:studio": "pnpm --filter studio build",
+    "dev:studio": "pnpm --filter studio dev",
+    "prepublishOnly": "pnpm build"
   },
   "config": {
     "commitizen": {

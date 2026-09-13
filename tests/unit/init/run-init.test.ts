@@ -2,11 +2,12 @@ import fs from "fs";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { boundaryGuardConfigSchema } from "../../../src/config/types.js";
+import { antraConfigSchema } from "../../../src/config/types.js";
 import { configPath, snapshotPath } from "../../../src/config/write.js";
 import { frameworkAdapters } from "../../../src/framework/index.js";
 import type { CheckboxChoice, Prompter } from "../../../src/init/prompter.js";
 import { FrameworkNotDetectedError } from "../../../src/framework/detect.js";
+import type { CodegenRunner } from "../../../src/init/run-init.js";
 import { runInit } from "../../../src/init/run-init.js";
 import { selectableProviders } from "../../../src/schema/providers/index.js";
 import {
@@ -58,7 +59,7 @@ function scriptedPrompter(script: Script = {}): {
   return { prompter, seen };
 }
 
-function run(dir: string, script?: Script) {
+function run(dir: string, script?: Script, exec?: CodegenRunner) {
   const { prompter, seen } = scriptedPrompter(script);
   return {
     seen,
@@ -67,6 +68,7 @@ function run(dir: string, script?: Script) {
       prompter,
       adapters: frameworkAdapters,
       providers: selectableProviders,
+      ...(exec ? { exec } : {}),
     }),
   };
 }
@@ -110,7 +112,7 @@ describe("runInit", () => {
     expect(seen.choices.every((choice) => choice.checked === false)).toBe(true);
     expect(seen.inputs).toEqual([]);
 
-    const onDisk = boundaryGuardConfigSchema.parse(
+    const onDisk = antraConfigSchema.parse(
       JSON.parse(fs.readFileSync(configPath(project.dir), "utf8")),
     );
     expect(onDisk.rules["BG-003"]).toBe(true);
@@ -223,7 +225,7 @@ describe("runInit", () => {
   it("keeps an existing config when the user declines to overwrite", async () => {
     project = makeTempProject({
       ...NEXT_APP_FILES,
-      "boundary-guard.config.json": '{"marker":true}\n',
+      "antra.config.json": '{"marker":true}\n',
     });
 
     const { result, seen } = run(project.dir, { confirm: false });
@@ -240,16 +242,77 @@ describe("runInit", () => {
   it("overwrites an existing config when the user confirms", async () => {
     project = makeTempProject({
       ...NEXT_APP_FILES,
-      "boundary-guard.config.json": '{"marker":true}\n',
+      "antra.config.json": '{"marker":true}\n',
     });
 
     const outcome = await run(project.dir, { confirm: true }).result;
 
     expect(outcome.status).toBe("completed");
     expect(
-      boundaryGuardConfigSchema.safeParse(
+      antraConfigSchema.safeParse(
         JSON.parse(fs.readFileSync(configPath(project.dir), "utf8")),
       ).success,
     ).toBe(true);
+  });
+
+  it("offers to generate a missing Prisma schema and uses the CLI's output when accepted", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    const exec: CodegenRunner = (command, args, options) => {
+      expect(command).toBe("npx");
+      expect(args).toEqual(["prisma", "db", "pull"]);
+      fs.mkdirSync(`${options.cwd}/prisma`, { recursive: true });
+      fs.writeFileSync(
+        `${options.cwd}/prisma/schema.prisma`,
+        "model User { password_hash String }\n",
+      );
+      return Promise.resolve({ stdout: "" });
+    };
+
+    const { result, seen } = run(
+      project.dir,
+      { confirm: true, choose: () => ["prisma"] },
+      exec,
+    );
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(seen.confirms).toEqual([
+      "No Prisma (schema.prisma) schema file was found. Generate one now using its CLI?",
+    ]);
+    expect(outcome.config.providers).toEqual([
+      { id: "prisma", schemaPath: "prisma/schema.prisma" },
+    ]);
+    expect(outcome.snapshot.sources).toEqual([
+      { field: "password_hash", origin: "prisma:User.password_hash" },
+    ]);
+    expect(outcome.notes).toEqual([
+      "Prisma (schema.prisma): generated prisma/schema.prisma.",
+    ]);
+  });
+
+  it("declines the generate offer, drops an unconfigured provider instead of crashing, and never stores a refusal word as a path", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    const { result, seen } = run(project.dir, {
+      confirm: false,
+      choose: () => ["prisma"],
+      input: () => "n",
+    });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(seen.inputs).toEqual([
+      {
+        message: "Prisma (schema.prisma): Path to your Prisma schema",
+        defaultValue: "prisma/schema.prisma",
+      },
+    ]);
+    // "n" must never land in the config as a literal path.
+    expect(outcome.config.providers).toEqual([]);
+    expect(outcome.notes.join("\n")).toContain("npx prisma db pull");
+    expect(outcome.notes.join("\n")).toContain("not configured for this run");
   });
 });

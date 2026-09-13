@@ -9,7 +9,12 @@ import {
 import { writeConfig, writeSnapshot } from "../../../src/config/write.js";
 import { runScan, type ScanResult } from "../../../src/engine.js";
 import type { Finding } from "../../../src/rules/index.js";
-import { copyFixture, type TempProject } from "../../helpers/fixture.js";
+import {
+  copyFixture,
+  makeTempProject,
+  NEXT_APP_FILES,
+  type TempProject,
+} from "../../helpers/fixture.js";
 
 async function initFixture(project: TempProject): Promise<void> {
   await writeConfig(
@@ -85,7 +90,9 @@ describe("rules end to end (rules-app fixture)", () => {
     expect(byLine(16)?.message).toContain(
       'Schema field "password_hash" — prisma:User.password_hash',
     );
-    expect(byLine(16)?.trace).toEqual([
+    expect(
+      byLine(16)?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
       "user.password_hash",
       "user ← await db.user.findUnique({ where: { id: 1 } })",
       "db.user.findUnique({ where: { id: 1 } })",
@@ -95,7 +102,9 @@ describe("rules end to end (rules-app fixture)", () => {
     );
     expect(byLine(18)?.message).toContain("Unprojected result of res.json()");
     expect(byLine(20)?.message).toContain("Process.env.STRIPE_SECRET_KEY");
-    expect(byLine(23)?.trace).toEqual([
+    expect(
+      byLine(23)?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
       "password_hash: hashed ← user",
       "user ← await db.user.findUnique({ where: { id: 1 } })",
       "db.user.findUnique({ where: { id: 1 } })",
@@ -140,5 +149,66 @@ describe("rules end to end (rules-app fixture)", () => {
     expect(page.find((f) => f.line === 16)?.message).toContain(
       "matches a sensitivity keyword",
     );
+  });
+
+  it("follows a value into a local helper's props and flags the leak there", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      "components/ClientCard.tsx":
+        '"use client";\nexport const ClientCard = (props: any) => null;\n',
+      "app/page.tsx": [
+        'import { ClientCard } from "../components/ClientCard";',
+        "",
+        "function Row({ user }: { user: any }) {",
+        "  return <ClientCard hash={user.password_hash} />;",
+        "}",
+        "",
+        "export default async function Page() {",
+        "  const row = await db.user.findUnique({ where: { id: 1 } });",
+        "  return <Row user={row} />;",
+        "}",
+        "",
+      ].join("\n"),
+    });
+
+    result = await runScan({ rootDir: project.dir, store: false });
+
+    const [finding] = result.findings;
+    expect(result.findings).toHaveLength(1);
+    expect(finding?.ruleId).toBe("BG-001");
+    // Reported where the value crosses, inside the helper, not at the call.
+    expect(finding?.line).toBe(4);
+    expect(
+      finding?.trace.map((s) => (typeof s === "string" ? s : s.text)),
+    ).toEqual([
+      "user.password_hash",
+      "user ← row (parameter of Row)",
+      "row ← await db.user.findUnique({ where: { id: 1 } })",
+      "db.user.findUnique({ where: { id: 1 } })",
+    ]);
+  });
+
+  it("leaves a helper alone when no caller in the file supplies a tainted value", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      "components/ClientCard.tsx":
+        '"use client";\nexport const ClientCard = (props: any) => null;\n',
+      "app/page.tsx": [
+        'import { ClientCard } from "../components/ClientCard";',
+        "",
+        "function Row({ user }: { user: any }) {",
+        "  return <ClientCard hash={user.password_hash} />;",
+        "}",
+        "",
+        "export default function Page() {",
+        '  return <Row user={{ name: "ada" }} />;',
+        "}",
+        "",
+      ].join("\n"),
+    });
+
+    result = await runScan({ rootDir: project.dir, store: false });
+
+    expect(result.findings).toEqual([]);
   });
 });

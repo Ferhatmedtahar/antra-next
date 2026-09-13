@@ -1,3 +1,8 @@
+import { execFile } from "child_process";
+import fs from "fs";
+import path from "path";
+import { promisify } from "util";
+
 import { classifySources } from "../classification/classify.js";
 import {
   DEFAULT_KEYWORDS,
@@ -5,7 +10,7 @@ import {
   DEFAULT_SANITIZERS,
 } from "../config/defaults.js";
 import type {
-  BoundaryGuardConfig,
+  AntraConfig,
   ContractSnapshot,
   ProviderConfig,
 } from "../config/types.js";
@@ -25,11 +30,24 @@ import type { Prompter } from "./prompter.js";
 
 export type { SkippedProvider } from "../schema/extract.js";
 
+/** Runs a codegen CLI (`supabase`, `npx prisma`, ...). Swappable in tests. */
+export type CodegenRunner = (
+  command: string,
+  args: string[],
+  options: { cwd: string },
+) => Promise<{ stdout: string }>;
+
+const execFileAsync = promisify(execFile);
+const defaultCodegenRunner: CodegenRunner = (command, args, options) =>
+  execFileAsync(command, args, options);
+
 export interface InitOptions {
   rootDir: string;
   prompter: Prompter;
   adapters: readonly FrameworkAdapter[];
   providers: readonly SchemaProvider[];
+  /** Executes codegen commands offered for missing schema files. Defaults to real child_process exec. */
+  exec?: CodegenRunner;
 }
 
 export interface ProviderDetection {
@@ -45,13 +63,15 @@ export type InitResult =
   | {
       status: "completed";
       frameworkAdapter: string;
-      config: BoundaryGuardConfig;
+      config: AntraConfig;
       snapshot: ContractSnapshot;
       configPath: string;
       snapshotPath: string;
       gitignore: GitignoreStatus;
       detections: ProviderDetection[];
       skipped: SkippedProvider[];
+      /** Things worth telling the human that don't fit InitResult's shape: declined/failed/succeeded codegen offers, skipped answers. */
+      notes: string[];
     };
 
 /**
@@ -60,7 +80,13 @@ export type InitResult =
  * the real prompter and prints the result.
  */
 export async function runInit(options: InitOptions): Promise<InitResult> {
-  const { rootDir, prompter, adapters, providers } = options;
+  const {
+    rootDir,
+    prompter,
+    adapters,
+    providers,
+    exec = defaultCodegenRunner,
+  } = options;
 
   const adapter = await requireFramework(rootDir, adapters);
 
@@ -80,10 +106,13 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     .filter((detection) => chosenIds.includes(detection.provider.id))
     .map((detection) => detection.provider);
 
+  const notes: string[] = [];
   const providerConfigs = await collectProviderConfigs(
     enabled,
     rootDir,
     prompter,
+    exec,
+    notes,
   );
 
   const { sources, skipped } = await extractSources(
@@ -102,7 +131,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     ignored: [],
   }).map((source) => source.origin);
 
-  const config: BoundaryGuardConfig = {
+  const config: AntraConfig = {
     version: 1,
     frameworkAdapter: adapter.id,
     providers: providerConfigs,
@@ -130,6 +159,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     gitignore: gitignore.status,
     detections,
     skipped,
+    notes,
   };
 }
 
@@ -169,7 +199,7 @@ async function chooseProviders(
   }));
   for (;;) {
     const chosen = await prompter.checkbox(
-      "Which data sources should boundary-guard trust as taint origins? (Space toggles, Enter submits; zero-schema heuristics are always on)",
+      "Which data sources should antra trust as taint origins? (Space toggles, Enter submits; zero-schema heuristics are always on)",
       choices,
     );
     if (chosen.length > 0) return chosen;
@@ -190,21 +220,177 @@ function describeDetection(detection: ProviderDetection): string {
   return provider.label;
 }
 
+/**
+ * Per-provider "no schema file? generate one" offer. Keyed by the
+ * configFields() field whose default is the conventional-but-missing path,
+ * so the offer only fires for that field, not e.g. Supabase's env-var
+ * fields. Each `run` calls a read-only introspection command (never one
+ * that mutates the remote database) and returns the path it wrote/updated.
+ */
+const CODEGEN: Record<
+  string,
+  {
+    fieldKey: string;
+    manualHint: string;
+    run(
+      rootDir: string,
+      prompter: Prompter,
+      exec: CodegenRunner,
+    ): Promise<string>;
+  }
+> = {
+  supabase: {
+    fieldKey: "typesPath",
+    manualHint:
+      "supabase gen types --local > types/database.types.ts   (or --linked / --project-id <ref> for a hosted project)",
+    async run(rootDir, prompter, exec) {
+      const mode = (
+        await prompter.input(
+          "Generate from: `local` dev DB, a `linked` project, or a project ref (paste it)?",
+          "local",
+        )
+      ).trim();
+      const args =
+        mode === "" || mode === "local"
+          ? ["gen", "types", "--local"]
+          : mode === "linked"
+            ? ["gen", "types", "--linked"]
+            : ["gen", "types", "--project-id", mode];
+      const outPath =
+        (
+          await prompter.input(
+            "Where should the generated types file be written?",
+            "types/database.types.ts",
+          )
+        ).trim() || "types/database.types.ts";
+      const { stdout } = await exec("supabase", args, { cwd: rootDir });
+      const absolute = path.resolve(rootDir, outPath);
+      await fs.promises.mkdir(path.dirname(absolute), { recursive: true });
+      await fs.promises.writeFile(absolute, stdout, "utf8");
+      return outPath;
+    },
+  },
+  prisma: {
+    fieldKey: "schemaPath",
+    manualHint:
+      "npx prisma db pull   (requires DATABASE_URL to be set; introspects your database into prisma/schema.prisma)",
+    async run(rootDir, _prompter, exec) {
+      await exec("npx", ["prisma", "db", "pull"], { cwd: rootDir });
+      return "prisma/schema.prisma";
+    },
+  },
+  drizzle: {
+    fieldKey: "glob",
+    manualHint:
+      "npx drizzle-kit pull   (requires drizzle.config.ts with dbCredentials configured; writes drizzle/schema.ts)",
+    async run(rootDir, _prompter, exec) {
+      await exec("npx", ["drizzle-kit", "pull"], { cwd: rootDir });
+      return "drizzle/schema.ts";
+    },
+  },
+};
+
+/** Words a human types at a path prompt that mean "no", never a real path. */
+const REFUSALS = new Set(["n", "no", "skip", "none"]);
+
+async function offerCodegen(
+  provider: SchemaProvider,
+  codegen: (typeof CODEGEN)[string],
+  rootDir: string,
+  prompter: Prompter,
+  exec: CodegenRunner,
+  notes: string[],
+): Promise<string | null> {
+  const manualFollowUp = `Generate it with:\n    ${codegen.manualHint}\n  then run \`antra init\` again and paste the file's path when asked.`;
+
+  const wants = await prompter.confirm(
+    `No ${provider.label} schema file was found. Generate one now using its CLI?`,
+    true,
+  );
+  if (!wants) {
+    notes.push(`${provider.label}: ${manualFollowUp}`);
+    return null;
+  }
+
+  try {
+    const generatedPath = await codegen.run(rootDir, prompter, exec);
+    notes.push(`${provider.label}: generated ${generatedPath}.`);
+    return generatedPath;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    notes.push(
+      `${provider.label}: generation failed (${message.split("\n")[0]}). ${manualFollowUp}`,
+    );
+    return null;
+  }
+}
+
 async function collectProviderConfigs(
   enabled: readonly SchemaProvider[],
   rootDir: string,
   prompter: Prompter,
+  exec: CodegenRunner,
+  notes: string[],
 ): Promise<ProviderConfig[]> {
   const configs: ProviderConfig[] = [];
   for (const provider of enabled) {
     const config: ProviderConfig = { id: provider.id };
     for (const field of await provider.configFields(rootDir)) {
-      config[field.key] = await prompter.input(
-        `${provider.label}: ${field.message}`,
-        field.defaultValue,
+      const codegen = CODEGEN[provider.id];
+      const isMissingConventionalFile =
+        codegen?.fieldKey === field.key &&
+        field.defaultValue !== "" &&
+        !fs.existsSync(path.resolve(rootDir, field.defaultValue));
+
+      if (isMissingConventionalFile) {
+        const generated = await offerCodegen(
+          provider,
+          codegen,
+          rootDir,
+          prompter,
+          exec,
+          notes,
+        );
+        if (generated !== null) {
+          config[field.key] = generated;
+          continue;
+        }
+      }
+
+      const raw = (
+        await prompter.input(
+          `${provider.label}: ${field.message}`,
+          field.defaultValue,
+        )
+      ).trim();
+      // A refusal word ("n", "skip", ...) is never a real path — treating it
+      // as one silently fed a literal "n" into config, which then surfaced
+      // as a confusing crash from extract() far away from this prompt.
+      const answer = REFUSALS.has(raw.toLowerCase()) ? "" : raw;
+      if (raw !== "" && answer === "") {
+        notes.push(
+          `${provider.label}: skipped "${field.key}" — you answered "${raw}". ${
+            codegen
+              ? `Generate it with:\n    ${codegen.manualHint}\n  then run \`antra init\` again and paste the file's path when asked.`
+              : "Provide a real path next time, or leave it empty to skip."
+          }`,
+        );
+      }
+      // An empty answer means "skip this one" — it must not land in the
+      // config as a blank key the provider would then try to honour.
+      if (answer !== "") config[field.key] = answer;
+    }
+    // No field got a real answer: the provider has nothing to extract from.
+    // Sending {id} alone to extract() throws a raw schema-validation error
+    // and aborts the whole run — dropping it here means zero-schema
+    // heuristics still apply instead of a crash.
+    if (Object.keys(config).length > 1) {
+      configs.push(config);
+    } else {
+      notes.push(
+        `${provider.label}: not configured for this run (zero-schema heuristics still apply).`,
       );
     }
-    configs.push(config);
   }
   return configs;
 }

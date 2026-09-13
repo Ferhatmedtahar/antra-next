@@ -130,43 +130,91 @@ describe("TaintResolver", () => {
     });
   });
 
-  it("stops at parameters and unknown calls (bounded by design)", () => {
+  it("stops at uncalled parameters and unknown calls (bounded by design)", () => {
     const file = parse(`
       function Comp({ user }: { user: any }) { return user.name; }
       const x = someHelper(process.env.SECRET);
       const y = JSON.parse(JSON.stringify(process.env.SECRET));
     `);
+    // Nothing in this file renders <Comp/>, so the parameter has no value.
     expect(resolver.resolve(expr(file, "user"))).toBeNull();
     expect(resolver.resolve(expr(file, "x"))).toBeNull();
     expect(resolver.resolve(expr(file, "y"))?.origin.kind).toBe("env");
   });
 
-  it("follows one level into a called function's return value", () => {
+  it("resolves a destructured prop from the JSX that renders the helper", () => {
     const file = parse(`
-      async function getCurrentUser() {
-        const { data } = await supabase.from("users").select("*").single();
-        return data;
+      function Row({ user }: { user: any }) {
+        return <ClientCard hash={user.password_hash} />;
       }
-      const loadKey = () => process.env.API_SECRET;
-      function unrelated() { const inner = () => fetch("/x"); return 1; }
-      const current = await getCurrentUser();
-      const key = loadKey();
-      const nothing = unrelated();
+      export default async function Page() {
+        const row = await db.user.findUnique({ where: { id: 1 } });
+        return <Row user={row} />;
+      }
     `);
-    expect(resolver.resolve(expr(file, "current"))).toMatchObject({
-      opaque: true,
-      trace: [
-        "current ← await getCurrentUser()",
-        "getCurrentUser() returns",
-        'data ← await supabase.from("users").select("*").single()',
-        'supabase.from("users").select("*").single()',
-      ],
+    const taint = resolver.resolve(expr(file, "user.password_hash"));
+    expect(taint?.origin).toEqual({
+      kind: "schema-field",
+      field: "password_hash",
+      origins: ["prisma:User.password_hash"],
     });
-    expect(resolver.resolve(expr(file, "key"))?.origin).toEqual({
-      kind: "env",
-      name: "API_SECRET",
-    });
-    expect(resolver.resolve(expr(file, "nothing"))).toBeNull();
+    expect(taint?.trace.map((s) => s.text)).toEqual([
+      "user.password_hash",
+      "user ← row (parameter of Row)",
+      "row ← await db.user.findUnique({ where: { id: 1 } })",
+      "db.user.findUnique({ where: { id: 1 } })",
+    ]);
+  });
+
+  it("resolves a positional parameter from a plain call, and a spread prop", () => {
+    const file = parse(`
+      function render(value: any) { return value.api_token; }
+      const out = render(await fetch("/u").then((r) => r.json()));
+
+      function Card({ user }: { user: any }) { return user.api_token; }
+      const props = { user: await fetch("/p").then((r) => r.json()) };
+      const el = <Card {...props} />;
+    `);
+    // A keyword-only field needs provenance, so these only resolve because
+    // the parameter walk reached the caller's fetch.
+    const positional = resolver.resolve(expr(file, "value.api_token"));
+    expect(positional?.origin).toEqual({ kind: "lexical", field: "api_token" });
+    expect(positional?.trace.map((s) => s.text)).toContain(
+      'value ← await fetch("/u").then((r) => r.json()) (parameter of render)',
+    );
+    const spread = resolver.resolve(expr(file, "user.api_token"));
+    expect(spread?.origin.kind).toBe("lexical");
+    expect(
+      spread?.trace.some((step) => step.text.includes("parameter of Card")),
+    ).toBe(true);
+  });
+
+  it("carries an opaque payload through a helper's props", () => {
+    const file = parse(`
+      function Panel({ user }: { user: any }) {
+        return <ClientPanel user={user} />;
+      }
+      export default async function Page() {
+        const data = await fetch("/api/me").then((r) => r.json());
+        return <Panel user={data} />;
+      }
+    `);
+    const taint = resolver.resolve(expr(file, "user"));
+    expect(taint?.opaque).toBe(true);
+    expect(taint?.origin.kind).toBe("ingress");
+  });
+
+  it("stops after one parameter hop", () => {
+    const file = parse(`
+      function Inner({ user }: { user: any }) { return <ClientCard user={user} />; }
+      function Outer({ person }: { person: any }) { return <Inner user={person} />; }
+      export default async function Page() {
+        const data = await fetch("/api/me").then((r) => r.json());
+        return <Outer person={data} />;
+      }
+    `);
+    // Inner's caller is Outer, whose own parameter would be a second hop.
+    expect(resolver.resolve(expr(file, "user"))).toBeNull();
   });
 
   it("requires provenance for keyword-only matches", () => {

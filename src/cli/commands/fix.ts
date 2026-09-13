@@ -24,7 +24,7 @@ export async function fixCommand(
   const rootDir = path.resolve(targetPath);
 
   if (options.suppress === undefined) {
-    console.log(chalk.blue.bold("boundary-guard fix"));
+    console.log(chalk.blue.bold("antra fix"));
     console.log(
       [
         "",
@@ -34,7 +34,7 @@ export async function fixCommand(
         "    --dry-run                                  print the planned edits without writing",
         "",
         "  Not automated (yet): scaffolding validators for BG-002 and projecting props for BG-003 —",
-        "  those need to know the shape of your data. `boundary-guard trace <file:line>` shows the path to fix by hand.",
+        "  those need to know the shape of your data. `antra trace <file:line>` shows the path to fix by hand.",
       ].join("\n"),
     );
     process.exitCode = 2;
@@ -85,7 +85,7 @@ export async function fixCommand(
       (options.file === undefined ||
         path.relative(rootDir, finding.filePath).includes(options.file)),
   );
-  console.log(chalk.blue.bold("boundary-guard fix"));
+  console.log(chalk.blue.bold("antra fix"));
   console.log(chalk.gray(`project: ${rootDir}\n`));
   if (targets.length === 0) {
     const accepted = result.baselined.filter(
@@ -129,7 +129,7 @@ export async function fixCommand(
   );
   console.log(
     chalk.gray(
-      "  Review the diff, then `boundary-guard scan` — these findings now report as suppressed.",
+      "  Review the diff, then `antra scan` — these findings now report as suppressed.",
     ),
   );
 }

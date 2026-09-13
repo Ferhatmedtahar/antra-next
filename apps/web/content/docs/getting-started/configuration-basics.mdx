@@ -1,0 +1,48 @@
+---
+title: Configuration basics
+description: What the config file is for, and when you need to touch it.
+order: 40
+---
+
+`antra init` writes a `antra.config.json` at your project root. For
+many projects it never needs editing — the defaults are the analysis as
+designed, and the file exists so that the parts which depend on _your_ project
+can be stated rather than guessed.
+
+## The three things you will actually change
+
+**Which fields are sensitive.** The analysis needs to know what counts as a
+value that must not cross. Schema providers cover the common case by reading
+your data layer; `sensitiveFields` is the escape hatch for names that live
+outside it.
+
+**Which sanitizers you use.** When a value has already been validated, the
+analysis should stay quiet. It recognizes sanitizers by name, so a helper of
+yours that it does not know about is a finding you will keep seeing until it is
+declared.
+
+**Which rules run.** If a rule is wrong for your project, say so in config
+rather than suppressing findings one at a time.
+
+## Editing it safely
+
+The file is JSON, validated on load. [`antra doctor`](/docs/commands/doctor)
+reads it and tells you whether it parses, which is faster than discovering the
+problem from a scan that returns nothing useful.
+
+```bash
+antra doctor
+antra doctor --format json
+```
+
+## Field reference
+
+The full field list — `version`, `frameworkAdapter`, `providers`, `keywords`,
+`sensitiveFields`, `sanitizers`, and `rules` — is in the
+[configuration reference](/docs/configuration/reference).
+
+<Note type="warning">
+  A config that fails to load is not the same as a project with no findings. If
+  a scan comes back empty on code you expect to be flagged, run `doctor` before
+  believing it.
+</Note>

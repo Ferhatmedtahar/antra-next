@@ -1,0 +1,45 @@
+---
+title: antra watch
+description: Run continuous analysis on local file changes.
+order: 270
+---
+
+Re-analyzes as you edit, so a crossing shows up while the file is still open.
+
+## Usage
+
+```bash
+antra watch [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+```bash
+antra watch
+antra watch --rule BG-001
+antra watch --full
+```
+
+## Flags
+
+| Flag              | Default    | What it does                               |
+| ----------------- | ---------- | ------------------------------------------ |
+| `--full`          | off        | Rescans the whole project on every change. |
+| `--rule <ruleId>` | every rule | Runs a single rule, for example `BG-001`.  |
+
+## Incremental by default
+
+`watch` re-analyzes what changed. `--full` throws that away and rescans
+everything on each edit — slower, and worth it only when you suspect the
+incremental result is stale, for example after a schema snapshot changed under
+it.
+
+## When to prefer a one-shot scan
+
+`watch` holds a process open. In an editor you can run instead:
+
+```bash
+antra scan --staged
+```
+
+which is bounded, finishes, and can be wired into a pre-commit hook.

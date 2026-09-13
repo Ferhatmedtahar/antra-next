@@ -68,7 +68,7 @@ export async function scanCommand(
 
   // --staged / --diff: rules run only on the changed files. The whole
   // project is still parsed, so cross-file taint resolves; the scan is
-  // partial, so it isn't recorded in findings.sqlite.
+  // partial, so it isn't recorded in antra-findings.sqlite.
   let scope: { onlyFiles: string[]; scopeLabel: string } | null = null;
   if (options.staged || options.diff) {
     const mode: ChangeMode = options.staged ? "staged" : "diff";
@@ -124,11 +124,10 @@ export async function scanCommand(
         ? { onlyRules: [options.rule] }
         : {}),
     });
-    spinner.succeed(
-      `Scanned ${result.classifications.length} files in ${(result.durationMs / 1000).toFixed(1)}s`,
-    );
+    spinner.succeed();
   } catch (error) {
-    spinner.fail("Scan failed");
+    // Mark the step that was in flight red before the error explains it.
+    spinner.fail();
     if (error instanceof FrameworkNotDetectedError) {
       console.error(chalk.red(error.message));
       process.exitCode = 1;
@@ -158,5 +157,15 @@ export async function scanCommand(
   const violated =
     result.findings.length > 0 ||
     ((options.strict ?? false) && !result.configPresent);
-  if (gate && violated) process.exitCode = 1;
+  if (gate && violated) {
+    process.exitCode = 1;
+    // Say why, so a red CI step is readable without opening the log header.
+    if (format === "pretty") {
+      const why =
+        result.findings.length > 0
+          ? `${result.findings.length} finding(s) to fix`
+          : "no schema snapshot (--strict)";
+      console.log(chalk.red(`✖ exit 1 — ${why}`));
+    }
+  }
 }

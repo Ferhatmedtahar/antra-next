@@ -1,0 +1,43 @@
+---
+title: antra trace
+description: Print the full dataflow path from a database source to a client sink.
+order: 260
+---
+
+Explains _why_ a finding fired, by printing the path the value took.
+
+## Usage
+
+```bash
+antra trace <target> [path]
+```
+
+- `target` is required: a file, or a `file:line` pair such as
+  `app/page.tsx:85`.
+- `path` is the Next.js app root and defaults to `.`.
+
+```bash
+antra trace app/page.tsx:85
+antra trace app/account/page.tsx:42 ./apps/dashboard
+antra trace app/page.tsx:85 --format json
+```
+
+## Flags
+
+| Flag              | Default  | What it does        |
+| ----------------- | -------- | ------------------- |
+| `--format <type>` | `pretty` | `pretty` or `json`. |
+
+## Reading the output
+
+The path runs from the source — the point where the value entered your
+program, usually a database read — to the sink, the boundary crossing that
+triggered the finding. Each hop is a place the value passed through.
+
+This is the command to run when a finding looks wrong. Either the path shows a
+step you did not expect, which is a real bug, or it shows a sanitizer the
+analysis did not recognize, which is a configuration problem for
+`antra.config.json`.
+
+Findings carry a provenance list in their own right, sourced from the same
+analysis `trace` walks — nearest-to-sink first.

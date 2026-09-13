@@ -1,10 +1,10 @@
 # Epic 06: Studio — local web dashboard
 
-**Status: done (v1).** `boundary-guard studio` serves a React SPA over the same SQLite file the CLI writes, and edits the same `boundary-guard.config.json` the CLI reads.
+**Status: done (v1).** `antra studio` serves a React SPA over the same SQLite file the CLI writes, and edits the same `antra.config.json` the CLI reads.
 
 ## Story
 
-As the developer who runs `boundary-guard` on a project, I want to _see_ what crosses the boundary — with the code frame and the path the value took — and to tune what counts as sensitive (pin a field, ignore a false positive, switch a rule off) without hand-editing JSON, then re-scan from the same screen.
+As the developer who runs `antra` on a project, I want to _see_ what crosses the boundary — with the code frame and the path the value took — and to tune what counts as sensitive (pin a field, ignore a false positive, switch a rule off) without hand-editing JSON, then re-scan from the same screen.
 
 ## Decisions
 

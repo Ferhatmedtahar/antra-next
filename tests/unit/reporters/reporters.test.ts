@@ -59,9 +59,9 @@ describe("terminal reporter", () => {
     const text = getReporter("pretty").render(result, ctx());
 
     expect(text).toContain(
-      "taint sources:     1 sensitive of 1 schema field(s)",
+      "taint sources     1 sensitive of 1 schema field(s)",
     );
-    expect(text).toContain("files scanned:     8");
+    expect(text).toContain("files scanned     8");
     expect(text).toContain(
       "✖ 10 finding(s)  [BG-001 ×5, BG-002 ×2, BG-003 ×2, BG-004 ×1]",
     );
@@ -131,7 +131,7 @@ describe("sarif reporter", () => {
 
     expect(log.version).toBe("2.1.0");
     const run = log.runs[0];
-    expect(run?.tool.driver.name).toBe("boundary-guard");
+    expect(run?.tool.driver.name).toBe("antra");
     expect(
       run?.tool.driver.rules.map((r) => [r.id, r.defaultConfiguration.level]),
     ).toEqual([
@@ -160,7 +160,7 @@ describe("sarif reporter", () => {
         },
       ],
     });
-    expect(first?.partialFingerprints["boundaryGuard/v1"]).toHaveLength(16);
+    expect(first?.partialFingerprints["antra/v1"]).toHaveLength(16);
     expect(first?.baselineState).toBeUndefined();
 
     const suppressed = run?.results.find((r) => r.suppressions);

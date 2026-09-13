@@ -4,7 +4,7 @@
 
 ## Story
 
-As a developer adding `boundary-guard` to a Next.js App Router project, I run `boundary-guard init` once so the tool knows which framework conventions apply and which data source(s) to trust as taint origins — without hand-writing JSON myself.
+As a developer adding `antra` to a Next.js App Router project, I run `antra init` once so the tool knows which framework conventions apply and which data source(s) to trust as taint origins — without hand-writing JSON myself.
 
 ## Scope decided during design (see chat/ADR references below)
 
@@ -24,8 +24,8 @@ Full reasoning: [ADR-002](../../adr/0002-schema-optional-ingestion-and-trust-tie
 - **FR-INIT-2:** Auto-detect candidate schema providers by filesystem presence: `schema.prisma` (Prisma), a Drizzle config file, `database.types.ts` (Supabase generated types), `openapi.json`/`swagger.json` (OpenAPI). Each detected candidate is offered to the user, not silently assumed. Additionally check `package.json` dependencies (`@prisma/client`, `@supabase/supabase-js`/`@supabase/ssr`) as a secondary signal — if a dependency is present but its schema/types file isn't found at the default location, surface that explicitly (e.g. "found Supabase but no generated types file — run `supabase gen types typescript ...` or point me at one") rather than treating it the same as "no evidence of a schema source at all."
 - **FR-INIT-3:** Prompt the user to multi-select which detected provider(s) to enable — multiple can be enabled at once, their extracted fields merge (see "Multiple enabled providers merge" above). If none are detected, ask whether they have an OpenAPI spec (file path or URL) or a shared Zod schema location to point at manually. Only fall back to zero-schema mode once both auto-detection and the dependency nudge (FR-INIT-2) come up empty and the user declines to point at anything manually — `init` never refuses to finish for lack of a schema, but it also never gives up on a schema-backed source too eagerly.
 - **FR-INIT-4:** For each enabled provider, prompt for any provider-specific config it needs (e.g. a non-default `schema.prisma` path, an OpenAPI file path or URL, a glob for shared Zod DTOs).
-- **FR-INIT-5:** Run each enabled provider's `extract()` once and write the resulting `TaintSource[]` to `.boundary-guard/contract-snapshot.json`.
-- **FR-INIT-6:** Write `boundary-guard.config.json`: framework adapter id, enabled provider ids + their config, default sensitivity keyword list (with room for user include/exclude overrides later), default rule toggles (BG-001–004 on), default sanitizer registry (Zod, `next-safe-action` recognized out of the box).
+- **FR-INIT-5:** Run each enabled provider's `extract()` once and write the resulting `TaintSource[]` to `.antra/contract-snapshot.json`.
+- **FR-INIT-6:** Write `antra.config.json`: framework adapter id, enabled provider ids + their config, default sensitivity keyword list (with room for user include/exclude overrides later), default rule toggles (BG-001–004 on), default sanitizer registry (Zod, `next-safe-action` recognized out of the box).
 - **FR-INIT-7:** Idempotent. Re-running `init` on an already-configured project asks for confirmation before overwriting — never silently clobbers an existing config.
 - **FR-INIT-8:** No step in this flow requires a live database connection or credentials.
 

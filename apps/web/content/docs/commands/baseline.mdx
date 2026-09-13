@@ -1,0 +1,34 @@
+---
+title: antra baseline
+description: Record current violations so only new leaks trigger warnings.
+order: 250
+---
+
+Adopting a linter on an existing codebase means the first scan finds everything
+at once. `baseline` records that first report so it stops being the thing you
+look at.
+
+## Usage
+
+```bash
+antra baseline [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+## How it changes what you see
+
+Run `baseline` once, on a commit you accept as your starting point. From then
+on, the violations captured in the baseline are known, and a scan surfaces the
+ones you have introduced since.
+
+## Flags
+
+`baseline` takes no options beyond the optional path.
+
+## Caveat
+
+A baseline is a snapshot, not a fix. The recorded violations are still in your
+code — they have simply stopped being reported, which is exactly the trade you
+are making: a clean report today in exchange for a backlog you intend to work
+down.

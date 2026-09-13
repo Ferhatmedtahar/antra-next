@@ -1,0 +1,38 @@
+name: False positive / false negative
+description: A finding that shouldn't be there, or a leak that wasn't caught.
+labels: [rule-accuracy]
+body:
+  - type: dropdown
+    attributes:
+      label: Which
+      options:
+        - False positive (flagged, but not a leak)
+        - False negative (a leak, not flagged)
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Rule
+      placeholder: BG-003
+  - type: textarea
+    attributes:
+      label: The finding as printed (or the line you expected one on)
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal snippet
+      description: The server file, the client component, and how the value is produced. Reduce it as far as you can.
+      render: tsx
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What the value actually is
+      description: Where it comes from and why it is / isn't sensitive.
+  - type: textarea
+    attributes:
+      label: Config
+      description: Your antra.config.json, secrets removed.
+      render: json

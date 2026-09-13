@@ -16,7 +16,7 @@ import { watchCommand } from "./commands/watch.js";
 export const program = new Command();
 
 program
-  .name("boundary-guard")
+  .name("antra")
   .description(
     "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
   )
@@ -49,7 +49,7 @@ program
   .option("--output <file>", "write the report to a file instead of stdout")
   .option(
     "--no-store",
-    "don't record this scan in .boundary-guard/findings.sqlite",
+    "don't record this scan in .antra/antra-findings.sqlite",
   )
   .action(scanCommand);
 
@@ -110,7 +110,7 @@ program
 
 program
   .command("studio")
-  .description("Launch the local web dashboard over findings.sqlite")
+  .description("Launch the local web dashboard over antra-findings.sqlite")
   .argument("[path]", "Next.js app root", ".")
   .option("--port <port>", "port to listen on (localhost only)", "8080")
   .option("--no-open", "don't open the browser")

@@ -11,7 +11,7 @@ export interface TempProject {
 export function makeTempProject(
   files: Record<string, string> = {},
 ): TempProject {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "boundary-guard-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "antra-"));
   for (const [relativePath, content] of Object.entries(files)) {
     const absolute = path.join(dir, relativePath);
     fs.mkdirSync(path.dirname(absolute), { recursive: true });
@@ -31,7 +31,7 @@ export function copyFixture(name: string): TempProject {
     "fixtures",
     name,
   );
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `boundary-guard-${name}-`));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `antra-${name}-`));
   fs.cpSync(source, dir, { recursive: true });
   return {
     dir,

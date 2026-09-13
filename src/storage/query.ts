@@ -7,7 +7,7 @@ import { dbPath } from "./db.js";
 export class DatabaseNotFoundError extends Error {
   constructor(filePath: string) {
     super(
-      `${filePath} doesn't exist — run \`boundary-guard scan\` once to record a scan.`,
+      `${filePath} doesn't exist — run \`antra scan\` once to record a scan.`,
     );
     this.name = "DatabaseNotFoundError";
   }
@@ -29,7 +29,7 @@ function openReadonly(rootDir: string): Database.Database {
   return new Database(file, { readonly: true, fileMustExist: true });
 }
 
-/** Ad-hoc SQL over findings.sqlite. Read-only connection: writes throw. */
+/** Ad-hoc SQL over antra-findings.sqlite. Read-only connection: writes throw. */
 export function runQuery(rootDir: string, sql: string): QueryResult {
   const db = openReadonly(rootDir);
   try {

@@ -1,4 +1,4 @@
-import type { BoundaryGuardConfig } from "../config/types.js";
+import type { AntraConfig } from "../config/types.js";
 import type { TaintSource } from "../schema/types.js";
 
 export interface SensitivityConfig {
@@ -12,7 +12,7 @@ export interface SensitivityConfig {
 
 /** Builds the classifier input from a config; folds the legacy keywords.exclude into ignored. */
 export function sensitivityFromConfig(
-  config: Pick<BoundaryGuardConfig, "keywords" | "sensitiveFields">,
+  config: Pick<AntraConfig, "keywords" | "sensitiveFields">,
 ): SensitivityConfig {
   return {
     keywords: config.keywords.include,

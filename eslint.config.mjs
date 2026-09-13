@@ -11,7 +11,7 @@ const eslintConfig = defineConfig([
           allowDefaultProject: [
             "eslint.config.mjs",
             "commitlint.config.js",
-            "bin/boundary-guard.js",
+            "bin/antra.js",
           ],
         },
         tsconfigRootDir: import.meta.dirname,
@@ -40,6 +40,8 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "coverage/**",
     "tests/fixtures/**",
+    "apps/**",
+    ".worktrees/**",
   ]),
 ]);
 

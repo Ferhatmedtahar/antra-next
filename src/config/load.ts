@@ -1,18 +1,16 @@
 import fs from "fs";
 
 import {
-  boundaryGuardConfigSchema,
+  antraConfigSchema,
   contractSnapshotSchema,
-  type BoundaryGuardConfig,
+  type AntraConfig,
   type ContractSnapshot,
 } from "./types.js";
 import { CONFIG_FILENAME, configPath, snapshotPath } from "./write.js";
 
 export class ConfigNotFoundError extends Error {
   constructor(rootDir: string) {
-    super(
-      `No ${CONFIG_FILENAME} in ${rootDir} — run \`boundary-guard init\` first.`,
-    );
+    super(`No ${CONFIG_FILENAME} in ${rootDir} — run \`antra init\` first.`);
     this.name = "ConfigNotFoundError";
   }
 }
@@ -29,19 +27,17 @@ function upgradeLegacyKeys(raw: unknown): unknown {
 }
 
 /** Reads + validates the config. Throws ConfigNotFoundError when absent. */
-export async function loadConfig(
-  rootDir: string,
-): Promise<BoundaryGuardConfig> {
+export async function loadConfig(rootDir: string): Promise<AntraConfig> {
   const target = configPath(rootDir);
   if (!fs.existsSync(target)) throw new ConfigNotFoundError(rootDir);
   const raw: unknown = JSON.parse(await fs.promises.readFile(target, "utf8"));
-  return boundaryGuardConfigSchema.parse(upgradeLegacyKeys(raw));
+  return antraConfigSchema.parse(upgradeLegacyKeys(raw));
 }
 
 /** Like loadConfig, but null when the project was never initialized. */
 export async function loadConfigIfPresent(
   rootDir: string,
-): Promise<BoundaryGuardConfig | null> {
+): Promise<AntraConfig | null> {
   return fs.existsSync(configPath(rootDir)) ? loadConfig(rootDir) : null;
 }
 

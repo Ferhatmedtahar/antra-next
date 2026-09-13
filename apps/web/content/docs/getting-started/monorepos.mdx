@@ -1,0 +1,109 @@
+---
+title: Monorepos
+description: Point Antra at the app, not at the repository root.
+order: 50
+---
+
+The short version: **the scan root has to be the Next.js app root.** In a
+monorepo that means `apps/web`, not the repository root.
+
+## Why
+
+Framework detection runs against the directory you pass, and it requires three
+things to be true _of that directory_:
+
+- a `next.config.js`, `next.config.ts`, `next.config.mjs`, or `next.config.cjs`
+- an `app/` or `src/app/` directory
+- `next` in that directory's `package.json`
+
+A monorepo root normally has none of them — the `next.config.*` and the `app/`
+directory live one level down in the app. Point Antra at the root and detection
+fails; there is a check for exactly this, and v1 supports the App Router and
+nothing else.
+
+`antra init` warns you the same way, because it uses the same detection.
+
+## A workspace, end to end
+
+For a layout like this:
+
+```text
+repo/
+  apps/
+    web/          # next.config.ts, app/, next in package.json
+    admin/        # next.config.ts, app/, next in package.json
+  packages/
+    ui/
+  package.json
+```
+
+each app is configured and scanned on its own:
+
+```bash
+antra init apps/web
+antra scan apps/web
+
+antra init apps/admin
+antra scan apps/admin
+```
+
+Each app keeps its own state under its own directory:
+`apps/web/.antra/` and `apps/admin/.antra/`. There is no
+shared database, so a scan of one app cannot answer questions about the other.
+
+## Git modes are monorepo-aware
+
+This is the part that does work from a subdirectory. `--diff` and `--staged` do
+not assume the scan root is the repository root: they ask Git for the repository
+top-level, resolve every changed path against it, and then keep only the files
+that fall under the app being scanned.
+
+So both of these do what you want, with changes elsewhere in the monorepo
+ignored — touching `packages/ui` does not make `apps/web` look dirty:
+
+```bash
+antra scan apps/web --diff
+antra scan apps/web --staged
+```
+
+`--base` resolves the same way, falling back through `origin/main`, `main`,
+`origin/master`, and `master`. Pass it explicitly in CI:
+
+```bash
+antra scan apps/web --diff --base origin/main
+```
+
+A directory that is not inside a Git repository at all is a hard error for
+`--diff` and `--staged` — those modes need Git, and there is no silent
+fallback to a full scan.
+
+## Scanning every app in CI
+
+There is no "scan the whole workspace" flag. Each app is its own scan root, so
+enumerate them — a matrix, or a loop:
+
+```yaml
+strategy:
+  matrix:
+    app: [apps/web, apps/admin]
+steps:
+  - run: pnpm install --frozen-lockfile
+  - run: pnpm exec antra scan ${{ matrix.app }} --format sarif --output antra.sarif --fail-on-violation
+```
+
+A recursive `pnpm -r exec antra scan` also runs in every workspace package,
+which is usually wrong: the CLI's own package is not a Next app, and detection
+will fail there. Name the apps instead.
+
+## When the app is at the root
+
+If the Next.js app _is_ the repository root — no `apps/` directory, the
+`next.config.*` at the top level — then scan the root as normal. The constraint
+is not "don't scan a monorepo", it is "scan the directory that is actually the
+app".
+
+<Note type="warning">
+  Config does not merge across a workspace. Each app's `antra.config.json` is
+  its own; a sanitizer declared in `apps/web` is not known to `apps/admin`. If
+  two apps share a validation helper, declare it in both.
+</Note>

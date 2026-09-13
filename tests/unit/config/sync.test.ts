@@ -8,7 +8,7 @@ import {
   loadSnapshot,
 } from "../../../src/config/load.js";
 import { runSync } from "../../../src/config/sync.js";
-import type { BoundaryGuardConfig } from "../../../src/config/types.js";
+import type { AntraConfig } from "../../../src/config/types.js";
 import { writeConfig } from "../../../src/config/write.js";
 import {
   makeTempProject,
@@ -16,9 +16,7 @@ import {
   type TempProject,
 } from "../../helpers/fixture.js";
 
-const configFor = (
-  providers: BoundaryGuardConfig["providers"],
-): BoundaryGuardConfig => ({
+const configFor = (providers: AntraConfig["providers"]): AntraConfig => ({
   version: 1,
   frameworkAdapter: "nextjs-app-router",
   providers,
@@ -49,7 +47,7 @@ describe("config loading", () => {
   it("upgrades the legacy `fields` key to `sensitiveFields`", async () => {
     project = makeTempProject({
       ...NEXT_APP_FILES,
-      "boundary-guard.config.json": JSON.stringify({
+      "antra.config.json": JSON.stringify({
         ...configFor([]),
         sensitiveFields: undefined,
         fields: { include: ["iban"], exclude: [] },
@@ -65,7 +63,7 @@ describe("config loading", () => {
   it("rejects a config that fails the schema", async () => {
     project = makeTempProject({
       ...NEXT_APP_FILES,
-      "boundary-guard.config.json": '{"version": 2}\n',
+      "antra.config.json": '{"version": 2}\n',
     });
 
     await expect(loadConfig(project.dir)).rejects.toThrow();

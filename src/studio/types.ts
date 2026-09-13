@@ -27,6 +27,12 @@ export interface CodeFrame {
   lines: string[];
 }
 
+export interface TraceStep {
+  text: string;
+  file?: string;
+  line?: number;
+}
+
 export interface FindingDetail {
   id: number;
   ruleId: RuleId;
@@ -36,7 +42,7 @@ export interface FindingDetail {
   column: number;
   message: string;
   snippet: string;
-  trace: string[];
+  trace: (TraceStep | string)[];
   fingerprint: string;
   status: FindingStatus;
   suppressReason: string | null;
@@ -110,4 +116,41 @@ export interface RuleInfo {
   id: RuleId;
   severity: Severity;
   description: string;
+}
+
+export type GraphNodeKind = "server" | "client" | "action" | "route";
+export type GraphEdgeKind = "renders" | "calls-action";
+
+export interface GraphNode {
+  /** The relative path — also the id. */
+  id: string;
+  path: string;
+  kind: GraphNodeKind;
+  boundary: "server" | "client";
+  serverActions: string[];
+  routeMethods: string[];
+  /** Non-suppressed findings in this file. */
+  findings: number;
+  newFindings: number;
+}
+
+export interface GraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  kind: GraphEdgeKind;
+  /** Component tags or action names carried by the edge. */
+  names: string[];
+  count: number;
+  /** Server → client render, or a client file calling a server action. */
+  crossing: boolean;
+  /** BG-001/BG-003 findings whose sink is a component on this edge. */
+  findings: number;
+  newFindings: number;
+}
+
+export interface GraphResponse {
+  scanId: number;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }

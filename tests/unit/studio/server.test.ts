@@ -159,7 +159,7 @@ describe("studio api", () => {
     const baseline = await app.request("/api/baseline", { method: "POST" });
     const recorded = (await baseline.json()) as BaselineResponse;
     expect(recorded.recorded).toBe(9);
-    expect(recorded.file).toBe(".boundary-guard/baseline.json");
+    expect(recorded.file).toBe(".antra/baseline.json");
 
     const again = (await (
       await app.request("/api/scan", { method: "POST" })

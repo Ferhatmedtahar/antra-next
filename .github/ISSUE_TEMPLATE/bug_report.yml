@@ -1,0 +1,30 @@
+name: Bug report
+description: Something crashed, hung, or printed the wrong thing.
+labels: [bug]
+body:
+  - type: input
+    attributes:
+      label: Command
+      placeholder: antra scan . --format sarif
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What happened
+      description: Paste the output. Include the stack trace if there was one.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What you expected
+  - type: textarea
+    attributes:
+      label: Output of `antra doctor --format json`
+      render: json
+  - type: input
+    attributes:
+      label: Versions
+      placeholder: antra 0.1.0 · Node 22.16 · Next 15.3 · Linux
+    validations:
+      required: true

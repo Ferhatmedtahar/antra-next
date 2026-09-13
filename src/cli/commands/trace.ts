@@ -110,7 +110,7 @@ export async function traceCommand(
   }
 
   const c = new Chalk();
-  console.log(chalk.blue.bold("boundary-guard trace"));
+  console.log(chalk.blue.bold("antra trace"));
   console.log(
     chalk.gray(`target: ${relative}${line === null ? "" : `:${line}`}\n`),
   );
@@ -160,7 +160,12 @@ export async function traceCommand(
       console.log(chalk.gray("\n  Path, origin → sink:"));
       const steps = [...finding.trace].reverse();
       steps.forEach((step, stepIndex) => {
-        console.log(`    ${chalk.gray(`${stepIndex + 1}.`)} ${step}`);
+        const text = typeof step === "string" ? step : step.text;
+        const loc =
+          typeof step === "object" && step.file
+            ? chalk.gray(` (${step.file}${step.line ? `:${step.line}` : ""})`)
+            : "";
+        console.log(`    ${chalk.gray(`${stepIndex + 1}.`)} ${text}${loc}`);
       });
       console.log(`    ${chalk.gray("↳ sink")} ${chalk.bold(finding.snippet)}`);
     }

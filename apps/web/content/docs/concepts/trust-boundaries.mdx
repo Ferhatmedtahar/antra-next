@@ -1,0 +1,63 @@
+---
+title: Trust boundaries
+description: The model the rules are built on — where a value stops being safe.
+order: 110
+---
+
+A **trust boundary** is a place where a value leaves the context that validated
+it. The rules do not look for dangerous functions; they look for values crossing
+those places.
+
+## The boundaries that matter here
+
+In a Next.js App Router project, three crossings account for most of the risk:
+
+**Server Component → Client Component.** Props you return from a Server
+Component are serialized into the React Flight payload and travel to the
+browser. Anything reachable from that object goes with them.
+
+**Server Action input.** A Server Action is a public endpoint. Its parameters
+arrive from the network, whether or not the component that calls it is behind a
+login.
+
+**Server-rendered markup.** A value interpolated into markup is in the HTML
+response, in the same place a value in props is.
+
+## Why the type system doesn't catch it
+
+An object crossing into client props is well-typed either way. `User` is `User`
+whether it carries an email, a hashed password, or an internal risk score.
+Types describe shape; the question here is about _provenance_ — where the value
+came from and what has happened to it since.
+
+## Taint tracking
+
+That is what the analysis actually does. It treats values from a source as
+tainted, follows them through assignments, calls, and returns, and reports when
+a tainted value reaches a sink — a boundary crossing — without passing through
+something that clears it.
+
+- **Source** — where a value enters, typically a database read through your
+  data layer.
+- **Sink** — the crossing that fires the finding.
+- **Sanitizer** — a step that clears taint. Recognized by name, so the ones
+  your project uses have to be declared in
+  [`antra.config.json`](/docs/configuration/reference).
+
+## Reading a finding
+
+A finding is the sink, plus the path the value took to get there. The path is
+the interesting part: it is what tells you whether the crossing is a bug or a
+sanitizer the analysis did not know about.
+
+```bash
+antra trace app/account/page.tsx:42
+```
+
+## Where this leaves false positives
+
+A static analysis of provenance cannot know your intent. It can only know that
+a value from a source reached a sink without a recognized step in between — so
+the two ways to silence a finding are to add the missing sanitizer declaration,
+which fixes every instance at once, or to
+[suppress this one with a reason](/docs/concepts/suppressions-and-baselines).

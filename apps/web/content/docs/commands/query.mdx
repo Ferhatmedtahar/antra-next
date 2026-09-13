@@ -1,0 +1,44 @@
+---
+title: antra query
+description: Query the local SQLite analysis database.
+order: 290
+---
+
+Read-only SQL over the findings database that scans record into.
+
+## Usage
+
+```bash
+antra query [sql] [path]
+```
+
+Omit `sql` and the command prints the database schema and a few example
+queries — the fastest way to learn the shape of the data.
+
+```bash
+antra query
+antra query "select ruleId, count(*) from findings group by ruleId"
+antra query "select * from findings limit 20" --format csv
+```
+
+## Flags
+
+| Flag              | Default | What it does               |
+| ----------------- | ------- | -------------------------- |
+| `--format <type>` | `table` | `table`, `json`, or `csv`. |
+
+## What is in there
+
+`.antra/antra-findings.sqlite` holds the findings that
+[`antra scan`](/docs/commands/scan) recorded. A scan is stored unless you pass
+`--no-store`, so the database is a history of what the analysis has seen, not
+just its latest state.
+
+`antra query` is the escape hatch for questions the other commands do not
+answer: which rules fire most, whether a file is getting better or worse across
+recent scans, what the largest trace is.
+
+<Note>
+  The statement is read-only by intent. Reach for the SQLite file directly if
+  you need to inspect or reset it — `query` is for reading.
+</Note>

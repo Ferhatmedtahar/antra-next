@@ -1,0 +1,37 @@
+---
+title: antra init
+description: Initialize config, introspect the database, and generate a schema snapshot.
+order: 210
+---
+
+Sets a project up for analysis. Run it once, in the app you want scanned.
+
+## Usage
+
+```bash
+antra init [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+## What it writes
+
+- an `antra.config.json` at the project root
+- a static schema snapshot, so later scans know which fields are sensitive
+  without talking to your database again
+
+The schema snapshot step is what makes the analysis schema-aware: it reads the
+structure of your data layer once, and every scan after that uses the snapshot.
+
+## Flags
+
+`init` takes no options beyond the optional path.
+
+## Next
+
+```bash
+antra scan
+```
+
+If the snapshot needs refreshing later — a migration added a column, say — run
+[`antra sync`](/docs/commands/sync) rather than `init` again.

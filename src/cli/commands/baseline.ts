@@ -13,7 +13,7 @@ import { scanSpinner } from "../progress.js";
  */
 export async function baselineCommand(targetPath: string): Promise<void> {
   const rootDir = path.resolve(targetPath);
-  console.log(chalk.blue.bold("boundary-guard baseline"));
+  console.log(chalk.blue.bold("antra baseline"));
   console.log(chalk.gray(`project: ${rootDir}\n`));
 
   const { spinner, onPhase } = scanSpinner();

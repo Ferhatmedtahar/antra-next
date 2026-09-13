@@ -1,0 +1,163 @@
+---
+title: Configuration reference
+description: Every field in antra.config.json.
+order: 510
+---
+
+`antra.config.json`, read from your project root. It is validated on
+load against a schema, so a malformed file is reported rather than silently
+half-applied.
+
+`antra init` writes it. For most projects the only fields worth editing are
+`sensitiveFields`, `sanitizers`, and `rules`.
+
+## Fields
+
+| Field              | Type     | Required | Default                            | What it holds                                                                          |
+| ------------------ | -------- | -------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `version`          | `1`      | yes      | —                                  | Schema version. The literal `1`.                                                       |
+| `frameworkAdapter` | string   | yes      | —                                  | Which framework adapter to analyze with. v1 ships one: `nextjs-app-router`. Non-empty. |
+| `providers`        | object[] | yes      | —                                  | Schema providers to read sensitive fields from.                                        |
+| `keywords`         | object   | yes      | —                                  | Name patterns used to spot sensitive fields.                                           |
+| `sensitiveFields`  | object   | no       | `{ "include": [], "exclude": [] }` | The explicit sensitive-field list.                                                     |
+| `sanitizers`       | string[] | yes      | —                                  | Function names that clear taint.                                                       |
+| `rules`            | object   | yes      | —                                  | Rule id to boolean, enabling or disabling each rule.                                   |
+
+## `keywords`
+
+```json
+"keywords": {
+  "include": ["password", "iban", "ssn"],
+  "exclude": ["password_reset_token"]
+}
+```
+
+`include` holds name patterns. The matching rule depends on the pattern's
+length: patterns of four characters or more match as substrings, and patterns of
+three characters or fewer match as whole words. That asymmetry is what keeps a
+three-letter pattern from matching half your codebase, and it applies to names
+in any language.
+
+`keywords.exclude` is accepted but is a legacy alias for
+`sensitiveFields.exclude` — prefer the latter.
+
+## `sensitiveFields`
+
+```json
+"sensitiveFields": {
+  "include": ["supabase:public.users.iban", "internal_risk_score"],
+  "exclude": ["public_uuid"]
+}
+```
+
+Entries are matched either by exact origin or by exact field name. An origin
+looks like `supabase:public.users.iban` — provider, path, field.
+
+- `include` — always sensitive.
+- `exclude` — never sensitive, and it wins over everything else, including
+  `include` and the keyword patterns.
+
+`antra init` seeds `include` with the fields the keyword scan found, and you
+edit from there. That is why the file is worth reading once after `init`: it is
+a proposal, not a verdict.
+
+## `providers`
+
+Each provider entry has an `id` selecting the provider; every other key in that
+object is the provider's own settings.
+
+```json
+"providers": [
+  { "id": "prisma", "schemaPath": "prisma/schema.prisma" },
+  { "id": "openapi", "spec": "openapi.json" }
+]
+```
+
+The entry is deliberately loose — each provider validates its own shape when it
+runs, so the config file does not need to know every provider's settings. See
+[Schema providers](/docs/concepts/schema-providers) for what each one reads.
+
+<Note type="warning">
+  Provider settings are not validated at load time, only when the provider runs.
+  A typo in `schemaPath` shows up as a provider that extracts nothing, not as a
+  config error — so if a scan stops finding schema-derived fields, run `antra
+  doctor` and check the snapshot.
+</Note>
+
+## `rules`
+
+```json
+"rules": {
+  "BG-001": true,
+  "BG-002": true,
+  "BG-003": true,
+  "BG-004": true
+}
+```
+
+Each key is a rule id and the boolean turns it on or off. Turning a rule off
+here is a project-level decision — it applies to everyone, stays out of the
+diff, and is the honest way to say "this rule is wrong for this codebase".
+Prefer it to a pile of per-line suppressions. The rules are documented at
+[BG-001](/docs/rules/bg-001), [BG-002](/docs/rules/bg-002),
+[BG-003](/docs/rules/bg-003), and [BG-004](/docs/rules/bg-004).
+
+## `sanitizers`
+
+```json
+"sanitizers": ["parseUser", "CreateUserSchema.parse"]
+```
+
+Function names that clear taint. When the analysis sees a call to one of these
+between a source and a sink, it stops reporting.
+
+This list is the single highest-leverage thing to fix when a scan is noisy but
+your code is right. A validator your project uses but the config doesn't name
+produces a finding per crossing — declaring it once removes all of them, and
+unlike a baseline it removes them because they were never real.
+
+## A complete example
+
+```json
+{
+  "version": 1,
+  "frameworkAdapter": "nextjs-app-router",
+  "providers": [{ "id": "prisma", "schemaPath": "prisma/schema.prisma" }],
+  "keywords": {
+    "include": ["password", "iban", "ssn", "secret", "token"]
+  },
+  "sensitiveFields": {
+    "include": ["supabase:public.users.iban"],
+    "exclude": ["public_uuid"]
+  },
+  "sanitizers": ["parseUser", "CreateUserSchema.parse"],
+  "rules": {
+    "BG-001": true,
+    "BG-002": true,
+    "BG-003": true,
+    "BG-004": true
+  }
+}
+```
+
+## Validating changes
+
+```bash
+antra doctor
+```
+
+Checks that the file parses and validates, that the rules load, and that the
+parser is ready. Run it after editing rather than drawing conclusions from a
+scan that behaves oddly.
+
+## State written beside your project
+
+Antra keeps its own state under `.antra/`:
+
+| Path                            | Written by                 | Holds                                                                                  |
+| ------------------------------- | -------------------------- | -------------------------------------------------------------------------------------- |
+| `.antra/antra-findings.sqlite`  | `antra scan`               | Scan history; read by `antra query` and Studio.                                        |
+| `.antra/contract-snapshot.json` | `antra init`, `antra sync` | The extracted taint sources — a generation timestamp and a list of field/origin pairs. |
+
+Add `.antra/` to `.gitignore`. It is derived state, regenerated from
+your code and your data layer.

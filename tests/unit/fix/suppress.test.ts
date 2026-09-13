@@ -20,7 +20,7 @@ describe("suppression codemod", () => {
   });
 
   it("picks the comment form the surrounding syntax allows", () => {
-    const d = "boundary-guard-disable-next-line BG-001";
+    const d = "antra-disable-next-line BG-001";
     expect(commentFor(d, ["<main>", "  <Card a={x} />"], 2)).toBe(
       `{/* ${d} */}`,
     );
@@ -53,7 +53,7 @@ describe("suppression codemod", () => {
       (edit) => edit.filePath === page && edit.line === 16,
     );
     expect(jsxEdit?.text).toBe(
-      "      {/* boundary-guard-disable-next-line BG-001 reason=\"legacy 'card' props\" */}",
+      "      {/* antra-disable-next-line BG-001 reason=\"legacy 'card' props\" */}",
     );
 
     const { files, inserted } = await applySuppressionEdits(edits);
@@ -69,7 +69,7 @@ describe("suppression codemod", () => {
       before.findings.filter((f) => f.ruleId !== "BG-001").length,
     );
     expect(fs.readFileSync(page, "utf8")).toContain(
-      "boundary-guard-disable-next-line BG-001",
+      "antra-disable-next-line BG-001",
     );
   });
 });

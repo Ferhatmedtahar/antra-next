@@ -11,8 +11,8 @@ export const providerConfigSchema = z.looseObject({
 });
 export type ProviderConfig = z.infer<typeof providerConfigSchema>;
 
-/** `boundary-guard.config.json` — the user's decisions (FR-INIT-6). */
-export const boundaryGuardConfigSchema = z.object({
+/** `antra.config.json` — the user's decisions (FR-INIT-6). */
+export const antraConfigSchema = z.object({
   version: z.literal(1),
   frameworkAdapter: z.string().min(1),
   providers: z.array(providerConfigSchema),
@@ -37,14 +37,14 @@ export const boundaryGuardConfigSchema = z.object({
   sanitizers: z.array(z.string()),
   rules: z.record(z.string(), z.boolean()),
 });
-export type BoundaryGuardConfig = z.infer<typeof boundaryGuardConfigSchema>;
+export type AntraConfig = z.infer<typeof antraConfigSchema>;
 
 export const taintSourceSchema = z.object({
   field: z.string().min(1),
   origin: z.string().min(1),
 });
 
-/** `.boundary-guard/contract-snapshot.json` — extracted data (FR-INIT-5). */
+/** `.antra/contract-snapshot.json` — extracted data (FR-INIT-5). */
 export const contractSnapshotSchema = z.object({
   generatedAt: z.string(),
   sources: z.array(taintSourceSchema),

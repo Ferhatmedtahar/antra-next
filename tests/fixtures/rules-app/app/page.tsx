@@ -24,7 +24,7 @@ export default async function Page() {
       <ClientCard {...rest} />
       <ServerBadge value={user.password_hash} />
       <p>{user.password_hash}</p>
-      {/* boundary-guard-disable-next-line BG-001 reason="public share token" */}
+      {/* antra-disable-next-line BG-001 reason="public share token" */}
       <ClientCard token={user.share_token} />
       <ClientCard>{user.password_hash}</ClientCard>
     </main>

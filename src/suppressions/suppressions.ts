@@ -1,15 +1,15 @@
 import type { Finding, RuleId } from "../rules/types.js";
 
 /**
- * `// boundary-guard-disable-next-line BG-001, BG-003 reason="why"` on the
- * line above a finding, or `boundary-guard-disable-line` on the same line.
+ * `// antra-disable-next-line BG-001, BG-003 reason="why"` on the
+ * line above a finding, or `antra-disable-line` on the same line.
  * Works inside JSX comments too (`{/* ... *\/}`) — it's a plain text match.
  * Rule list optional (none = all rules); reason optional but recorded.
  */
 const NEXT_LINE =
-  /boundary-guard-disable-next-line(?:\s+([A-Z]+-\d+(?:\s*,\s*[A-Z]+-\d+)*))?(?:\s+reason=(?:"([^"]*)"|'([^']*)'))?/;
+  /antra-disable-next-line(?:\s+([A-Z]+-\d+(?:\s*,\s*[A-Z]+-\d+)*))?(?:\s+reason=(?:"([^"]*)"|'([^']*)'))?/;
 const SAME_LINE =
-  /boundary-guard-disable-line(?:\s+([A-Z]+-\d+(?:\s*,\s*[A-Z]+-\d+)*))?(?:\s+reason=(?:"([^"]*)"|'([^']*)'))?/;
+  /antra-disable-line(?:\s+([A-Z]+-\d+(?:\s*,\s*[A-Z]+-\d+)*))?(?:\s+reason=(?:"([^"]*)"|'([^']*)'))?/;
 
 export interface SuppressionResult {
   active: Finding[];

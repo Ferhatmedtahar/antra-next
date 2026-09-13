@@ -1,0 +1,437 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans:
+    "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-cal: "Cal Sans", sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-icon: 10px;
+  --radius-mid: 12px;
+  --radius-big: 16px;
+  --radius-huge: 24px;
+  --radius-giant: 32px;
+
+  /* --- PALETTE: Primary (neutral ink) --- */
+  --color-primary-100: #1c1c1e;
+  --color-primary-200: #2c2c2e;
+  --color-primary-300: #3a3a3c;
+  --color-primary-400: #48484a;
+  --color-primary-500: #636366;
+  --color-primary-600: #8e8e93;
+  --color-primary-700: #aeaeb2;
+  --color-primary-800: #c7c7cc;
+  --color-primary-900: #d1d1d6;
+  --color-primary-1000: #e5e5ea;
+  --color-primary-1100: #f2f2f7;
+  --color-primary-1200: #ffffff;
+
+  /* --- PALETTE: Secondary (warm paper surfaces) --- */
+  --color-secondary-100: #3b3a35;
+  --color-secondary-200: #615e59;
+  --color-secondary-300: #7b7771;
+  --color-secondary-400: #918e89;
+  --color-secondary-500: #b5b2ad;
+  --color-secondary-600: #c0bdb9;
+  --color-secondary-700: #ceccc7;
+  --color-secondary-800: #dfddd9;
+  --color-secondary-900: #eae9e6;
+  --color-secondary-1000: #f1f0ed;
+  --color-secondary-1100: #f7f6f2;
+  --color-secondary-1200: #fbfaf8;
+
+  /* --- PALETTE: Tertiary (Brand Blue) --- */
+  --color-tertiary-100: #082082;
+  --color-tertiary-200: #0a2594;
+  --color-tertiary-300: #1031b8;
+  --color-tertiary-400: #153cdb;
+  --color-tertiary-500: #1a47ff;
+  --color-tertiary-600: #4166ff;
+  --color-tertiary-700: #7993ff;
+  --color-tertiary-800: #a0b3ff;
+  --color-tertiary-900: #bdcaff;
+  --color-tertiary-1000: #d9e0fa;
+  --color-tertiary-1100: #f0f3ff;
+  --color-tertiary-1200: #f8f9fd;
+
+  /* --- PALETTE: Attention / Nudge --- */
+  --color-attention-100: #705e00;
+  --color-attention-200: #856f00;
+  --color-attention-300: #ad9200;
+  --color-attention-400: #d6b400;
+  --color-attention-500: #ffd600;
+  --color-attention-600: #ffdd29;
+  --color-attention-700: #ffe352;
+  --color-attention-800: #ffea7a;
+  --color-attention-900: #ffed8f;
+  --color-attention-1000: #fff0a3;
+  --color-attention-1100: #fff4b8;
+  --color-attention-1200: #fff7cc;
+
+  /* --- PALETTE: Success --- */
+  --color-success-100: #00701f;
+  --color-success-200: #008525;
+  --color-success-300: #00ad30;
+  --color-success-400: #00d63c;
+  --color-success-500: #00ff47;
+  --color-success-600: #29ff64;
+  --color-success-700: #52ff82;
+  --color-success-800: #7aff9f;
+  --color-success-900: #8fffae;
+  --color-success-1000: #a3ffbd;
+  --color-success-1100: #b8ffcb;
+  --color-success-1200: #ccffda;
+
+  /* --- PALETTE: Warning --- */
+  --color-warning-100: #aa4013;
+  --color-warning-200: #b64819;
+  --color-warning-300: #cf5826;
+  --color-warning-400: #e76832;
+  --color-warning-500: #ff783f;
+  --color-warning-600: #ff9264;
+  --color-warning-700: #ffac89;
+  --color-warning-800: #ffc5ad;
+  --color-warning-900: #ffd2c0;
+  --color-warning-1000: #ffdfd2;
+  --color-warning-1100: #ffece5;
+  --color-warning-1200: #fff9f7;
+
+  /* --- PALETTE: Error / Danger --- */
+  --color-error-100: #700007;
+  --color-error-200: #850009;
+  --color-error-300: #ad000b;
+  --color-error-400: #d6000e;
+  --color-error-500: #ff0011;
+  --color-error-600: #ff2937;
+  --color-error-700: #ff525d;
+  --color-error-800: #ff7a83;
+  --color-error-900: #ff8f96;
+  --color-error-1000: #ffa3a9;
+  --color-error-1100: #ffb8bc;
+  --color-error-1200: #ffcccf;
+
+  /* Semantic utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-surface-soft: var(--surface-soft);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-nudge: var(--nudge);
+  --color-link: var(--link);
+  --color-divider-subtle: var(--divider-subtle);
+  --color-surface-elevated: var(--surface-elevated);
+}
+
+:root {
+  --background: #fbfaf8;
+  --foreground: #1c1c1e;
+  --card: #ffffff;
+  --card-foreground: #1c1c1e;
+  --surface-soft: #f1f0ed;
+  --popover: #ffffff;
+  --popover-foreground: #1c1c1e;
+  --primary: #1c1c1e;
+  --primary-foreground: #fbfaf8;
+  --secondary: #f7f6f2;
+  --secondary-foreground: #1c1c1e;
+  --muted: #f1f0ed;
+  --muted-foreground: #636366;
+  --accent: #f1f0ed;
+  --accent-foreground: #1c1c1e;
+  --destructive: #d6000e;
+  --destructive-foreground: #ffffff;
+  --warning: #cf5826;
+  --success: #00ad30;
+  --nudge: #ad9200;
+  --link: #1a47ff;
+  --ring: #1a47ff;
+  --border: rgba(28, 28, 30, 0.08);
+  /* Hairlines and rails. Structure, not an outline — kept below --border. */
+  --divider-subtle: rgba(28, 28, 30, 0.1);
+  /* Panels floating above a canvas, so they must lift off --background. */
+  --surface-elevated: #ffffff;
+  --input: #f1f0ed;
+  --sidebar: #f7f6f2;
+  --sidebar-foreground: #1c1c1e;
+  --sidebar-primary: #1a47ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eae9e6;
+  --sidebar-accent-foreground: #1c1c1e;
+  --sidebar-border: transparent;
+  --sidebar-ring: #1a47ff;
+  --radius: 1rem;
+}
+
+.dark {
+  --background: #141416;
+  --foreground: #f2f2f7;
+  --card: #1c1c1e;
+  --card-foreground: #f2f2f7;
+  --surface-soft: #2c2c2e;
+  --popover: #1c1c1e;
+  --popover-foreground: #f2f2f7;
+  --primary: #f2f2f7;
+  --primary-foreground: #141416;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f2f2f7;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #2c2c2e;
+  --accent-foreground: #f2f2f7;
+  --destructive: #ff525d;
+  --destructive-foreground: #ffffff;
+  --warning: #ff9264;
+  --success: #37d67a;
+  --nudge: #ffe352;
+  --link: #4166ff;
+  --ring: #4166ff;
+  --border: rgba(255, 255, 255, 0.08);
+  --divider-subtle: rgba(255, 255, 255, 0.1);
+  --surface-elevated: #2c2c2e;
+  --input: #2c2c2e;
+  --sidebar: #141416;
+  --sidebar-foreground: #f2f2f7;
+  --sidebar-primary: #1a47ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2c2c2e;
+  --sidebar-accent-foreground: #f2f2f7;
+  --sidebar-border: transparent;
+  --sidebar-ring: #4166ff;
+}
+
+@layer base {
+  * {
+    @apply outline-ring/50;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  input,
+  textarea,
+  [contenteditable="true"] {
+    caret-color: var(--color-tertiary-500);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Accessible focus ring */
+  .focus-ring,
+  .focus-ring-inset {
+    outline: 2px solid transparent;
+    transition: outline-color 150ms ease;
+  }
+  .focus-ring {
+    outline-offset: 2px;
+  }
+  .focus-ring-inset {
+    outline-offset: -2px;
+  }
+  .focus-ring:focus-visible,
+  .focus-ring-inset:focus-visible {
+    outline-color: var(--color-tertiary-500);
+  }
+  .dark .focus-ring:focus-visible,
+  .dark .focus-ring-inset:focus-visible {
+    outline-color: var(--color-tertiary-600);
+  }
+
+  /* Radii */
+  .rounded-icon {
+    border-radius: var(--radius-icon);
+  }
+  .rounded-mid {
+    border-radius: var(--radius-mid);
+  }
+  .rounded-big {
+    border-radius: var(--radius-big);
+  }
+  .rounded-huge {
+    border-radius: var(--radius-huge);
+  }
+  .rounded-giant {
+    border-radius: var(--radius-giant);
+  }
+
+  /* --- iPractis Typography Utilities --- */
+  /* Heading */
+  .text-heading-4-b {
+    @apply text-[48px] font-bold tracking-tight;
+  }
+  .text-heading-3-sb {
+    @apply text-[36px] font-semibold tracking-tight;
+  }
+  .text-heading-2-sb {
+    @apply text-[24px] font-semibold tracking-tight;
+  }
+  .text-heading-1-sb {
+    @apply text-[18px] font-semibold;
+  }
+
+  /* Body */
+  .text-body-3-sb {
+    @apply text-[16px] leading-5 font-semibold;
+  }
+  .text-body-3-m {
+    @apply text-[16px] leading-5.5 font-medium;
+  }
+  .text-body-3-r {
+    @apply text-[16px] leading-5.5 font-normal;
+  }
+  .text-body-2-m {
+    @apply text-[14px] leading-5 font-medium;
+  }
+  .text-body-2-r {
+    @apply text-[14px] leading-5 font-normal;
+  }
+  .text-body-1-m {
+    @apply text-[12px] leading-4 font-medium;
+  }
+  .text-body-1-r {
+    @apply text-[12px] leading-4 font-normal;
+  }
+
+  /* Label */
+  .text-label-3-sb {
+    @apply text-[13px] leading-4.5 font-semibold;
+  }
+  .text-label-3-m {
+    @apply text-[13px] leading-4.5 font-medium;
+  }
+  .text-label-2-sb {
+    @apply text-[11px] leading-3.5 font-semibold;
+  }
+  .text-label-2-m {
+    @apply text-[11px] leading-3.5 font-medium;
+  }
+  .text-label-1-sb {
+    @apply text-[10px] font-semibold tracking-[0.6px];
+  }
+  .text-label-1-m {
+    @apply text-[10px] leading-3.5 font-medium tracking-[0.6px];
+  }
+
+  /* Display & Code */
+  .text-display {
+    font-family: var(--font-cal);
+    font-size: 30px;
+    line-height: 34px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .text-stat {
+    font-family: var(--font-cal);
+    font-size: 40px;
+    line-height: 40px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-title {
+    font-family: var(--font-cal);
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .text-code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 18px;
+    font-weight: 400;
+  }
+}
+
+/*
+ * Scrollbars.
+ *
+ * The node panel on /graph, the file lists, and the finding tables all scroll
+ * constantly, and the platform default is a hard grey rail with a square thumb
+ * that fights every surface it lands on — loudest of all over the graph, where
+ * a light thumb cuts across the dark canvas.
+ *
+ * Both syntaxes are needed and neither replaces the other: `scrollbar-width`
+ * and `scrollbar-color` are what Firefox honours, the `::-webkit-scrollbar`
+ * pseudo-elements are what Chromium and Safari honour. A rule that sets only
+ * one leaves the other browser on the default.
+ *
+ * The thumb is mixed from `--muted-foreground` rather than set to a fixed grey
+ * so it re-tints with the theme, and it is held well below full strength so it
+ * reads as a rail you can grab rather than as an outline around the content.
+ * `background-clip: content-box` plus the transparent border is what insets the
+ * thumb inside its track — without it the thumb is a flush 10px column.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent)
+    transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--muted-foreground) 40%,
+    transparent
+  );
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--muted-foreground) 70%,
+    transparent
+  );
+}

@@ -2,16 +2,16 @@ import fs from "fs";
 import path from "path";
 
 export const GITIGNORE_MARKER =
-  "# boundary-guard (managed block — the snapshot and baseline are meant to be committed)";
+  "# antra (managed block — the snapshot and baseline are meant to be committed)";
 
 /** Local-only artifacts. NOT the snapshot: CI reads it, so it stays in git (ADR-001 NFR3). */
 export const GITIGNORE_ENTRIES: readonly string[] = [
-  ".boundary-guard/*.sqlite",
-  ".boundary-guard/*.sqlite-journal",
-  ".boundary-guard/*.sqlite-wal",
-  ".boundary-guard/*.sqlite-shm",
-  ".boundary-guard/scan.json",
-  ".boundary-guard/cache/",
+  ".antra/*.sqlite",
+  ".antra/*.sqlite-journal",
+  ".antra/*.sqlite-wal",
+  ".antra/*.sqlite-shm",
+  ".antra/scan.json",
+  ".antra/cache/",
 ];
 
 export type GitignoreStatus = "created" | "appended" | "unchanged";
