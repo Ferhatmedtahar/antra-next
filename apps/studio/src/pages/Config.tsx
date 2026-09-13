@@ -169,8 +169,8 @@ export function Config() {
             <CardHeader>
               <SectionHeader
                 glyph={<IconPin />}
-                title="Pinned fields"
-                description="Always sensitive — exact field names or origins the keywords miss."
+                title="Pinned sensitive fields"
+                description="Always sensitive secrets. Enter an exact property name (e.g. iban, ssn) or a full origin (e.g. supabase:public.users.iban)."
               />
             </CardHeader>
             <CardContent>
@@ -182,7 +182,7 @@ export function Config() {
                     sensitiveFields: { ...draft.sensitiveFields, include },
                   })
                 }
-                placeholder="iban or supabase:public.users.iban"
+                placeholder="Type field name (e.g. iban) and press Enter..."
               />
             </CardContent>
           </Card>
@@ -190,8 +190,8 @@ export function Config() {
             <CardHeader>
               <SectionHeader
                 glyph={<IconBan />}
-                title="Ignored fields"
-                description="Never sensitive. Ignore wins over pins and keywords."
+                title="Ignored fields (False positives)"
+                description="Never sensitive. Exclude harmless fields matching keywords (e.g. source_hash, public_id). Ignore wins over keywords."
               />
             </CardHeader>
             <CardContent>
@@ -203,7 +203,7 @@ export function Config() {
                     sensitiveFields: { ...draft.sensitiveFields, exclude },
                   })
                 }
-                placeholder="source_hash"
+                placeholder="Type field to ignore (e.g. source_hash) and press Enter..."
               />
             </CardContent>
           </Card>
@@ -213,8 +213,8 @@ export function Config() {
           <CardHeader>
             <SectionHeader
               glyph={<IconWand />}
-              title="Sanitizers"
-              description="A call to one of these breaks the taint chain and counts as validation for BG-002. Known: zod, valibot, yup, joi, arktype, next-safe-action — anything else matches as a function or method name."
+              title="Sanitizers &amp; Validators"
+              description="Functions or schema libraries that validate untrusted input (clearing BG-002 errors) or clean sensitive database objects. Built-in: zod, valibot, yup, joi, arktype, next-safe-action. You can also type custom function names (e.g. sanitizeUser)."
             />
           </CardHeader>
           <CardContent>
@@ -222,7 +222,7 @@ export function Config() {
               mono
               values={draft.sanitizers}
               onChange={(sanitizers) => patch({ sanitizers })}
-              placeholder="sanitizeUser"
+              placeholder="Type schema library or custom validator (e.g. sanitizeUser) and press Enter..."
             />
           </CardContent>
         </Card>

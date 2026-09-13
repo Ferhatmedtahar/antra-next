@@ -466,10 +466,19 @@ export function ChipEditor({
         onBlur={add}
         placeholder={placeholder}
         className={cn(
-          "placeholder:text-muted-foreground h-7 min-w-40 flex-1 border-none bg-transparent px-1.5 text-body-2-m outline-none",
+          "placeholder:text-muted-foreground h-7 min-w-56 flex-1 border-none bg-transparent px-1.5 text-body-2-m outline-none",
           mono && "font-mono",
         )}
       />
+      {draft.trim() ? (
+        <button
+          type="button"
+          onClick={add}
+          className="text-[11px] font-sans font-medium text-foreground bg-card hover:bg-surface-soft px-2 py-0.5 rounded-sm border border-border flex items-center gap-1 cursor-pointer transition-colors"
+        >
+          Add <kbd className="text-[9px] text-muted-foreground">↵</kbd>
+        </button>
+      ) : null}
     </div>
   );
 }

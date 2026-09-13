@@ -105,16 +105,20 @@ Prefer it to a pile of per-line suppressions. The rules are documented at
 ## `sanitizers`
 
 ```json
-"sanitizers": ["parseUser", "CreateUserSchema.parse"]
+"sanitizers": ["zod", "validateEmail", "parseUser"]
 ```
 
-Function names that clear taint. When the analysis sees a call to one of these
-between a source and a sink, it stops reporting.
+Functions or schema libraries that act as **security checkpoints**. When Antra detects that data passes through any call to these names, it clears the taint and validates the input:
 
-This list is the single highest-leverage thing to fix when a scan is noisy but
-your code is right. A validator your project uses but the config doesn't name
-produces a finding per crossing — declaring it once removes all of them, and
-unlike a baseline it removes them because they were never real.
+- **Resolves BG-002 (Unvalidated Input):** Server Actions and Route Handlers that call a registered sanitizer count as validated.
+- **Resolves BG-003 (Opaque Object Pass):** Ingress data cleaned or validated through a sanitizer is recognized as safe before crossing to the client.
+
+### Built-in Libraries vs Custom Functions
+
+1. **Popular Schema Libraries (Pre-configured):**
+   Antra recognizes `zod`, `valibot`, `yup`, `joi`, `arktype`, and `next-safe-action` out of the box.
+2. **Zero-Dependency Custom Functions (No Downloads Needed):**
+   You don't need any third-party package. You can write your own validation function (e.g. `function validateInput(data) { ... }`) and simply add its name (`"validateInput"`) to this list. When Antra sees `validateInput(params)`, it marks the data as verified.
 
 ## A complete example
 
