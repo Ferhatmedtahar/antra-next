@@ -5,7 +5,7 @@ Status: approved, moving to implementation plan
 
 ## Context
 
-`boundary-guard` (rebranding to "Antra") is a static-analysis security linter for
+`antra` (rebranding to "Antra") is a static-analysis security linter for
 React Server Components / the Next.js App Router. It needs a public landing page
 and a docs site. A design import exists at `designai/` (Claude Design export,
 `Antra Landing.dc.html` + `Antra Docs.dc.html`, design system "Modernist" at
@@ -36,7 +36,7 @@ and config schema (`src/config/types.ts`).
 
 ## Non-goals
 
-- Renaming the actual `boundary-guard` package/bin to `antra` (explicitly out of
+- Renaming the actual `antra` package/bin to `antra` (explicitly out of
   scope — user will do this separately).
 - Migrating `studio/` to Next.js or extracting a shared `packages/ui` (only one
   new app exists; premature).
@@ -172,7 +172,7 @@ Nav groups and real source of truth per group:
 | Core Concepts   | trust-boundaries, findings-and-severity, schema-providers, suppressions-and-baselines | `src/rules/*`, `src/schema/*`, `src/config/types.ts`                                                     |
 | Commands        | one page per real command                                                             | `src/cli/index.ts` (verbatim flags below)                                                                |
 | Antra Studio    | introduction, launching, reading-the-graph                                            | `src/studio/**`, `studio/src/pages/*` (Overview, Graph, Files, triage panel — no fictional chat feature) |
-| Configuration   | config-reference                                                                      | `src/config/types.ts` (`boundaryGuardConfigSchema`)                                                      |
+| Configuration   | config-reference                                                                      | `src/config/types.ts` (`antraConfigSchema`)                                                              |
 | Rules           | BG-001..BG-004                                                                        | `src/rules/bg-00{1..4}.ts` descriptions                                                                  |
 | CI              | github-actions                                                                        | real `scan` flags                                                                                        |
 
@@ -203,7 +203,7 @@ Real rules (from `src/rules/bg-*.ts`):
   Component
 - `BG-004` (error) — sensitive value rendered directly into markup
 
-Real config schema (`boundary-guard.config.json`, `boundaryGuardConfigSchema`
+Real config schema (`antra.config.json`, `antraConfigSchema`
 in `src/config/types.ts`): `version: 1`, `frameworkAdapter`, `providers[]`
 (each with `id`), `keywords.{include,exclude}`,
 `sensitiveFields.{include,exclude}`, `sanitizers[]`, `rules: Record<string,

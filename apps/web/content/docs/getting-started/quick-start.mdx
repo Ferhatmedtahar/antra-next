@@ -1,0 +1,60 @@
+---
+title: Quick start
+description: init, scan, studio — the whole loop on one project.
+order: 30
+---
+
+Three commands, run from the root of the Next.js app you want to scan.
+
+## 1. Initialize
+
+```bash
+antra init
+```
+
+Writes `antra.config.json` and generates a static schema snapshot, so
+the analysis knows which fields in your data layer are sensitive without asking
+your database again on every run.
+
+## 2. Scan
+
+```bash
+antra scan
+```
+
+Parses the project, classifies each file's boundary role, and follows concrete
+values to the boundaries they cross. The report names the rule, the location,
+the sink expression, and the path the value travelled.
+
+On a project with a lot of existing code, the first report can be long. That is
+expected — [baseline](/docs/commands/baseline) is the command for turning it
+into something you can act on.
+
+## 3. Read it in Studio
+
+```bash
+antra studio
+```
+
+Opens a local dashboard over `.antra/antra-findings.sqlite`, the database
+your scans recorded into. It binds to localhost on port 8080 by default.
+
+## The loop after that
+
+- Editing code continuously? `antra watch` re-analyzes on change.
+- Want to know why a finding fired? `antra trace app/page.tsx:85` prints the
+  full path from source to sink.
+- Too noisy to adopt? `antra baseline` records the current report so only new
+  crossings surface.
+- Ready for CI? `antra scan --format sarif --fail-on-violation`.
+
+## Where the state lives
+
+Everything Antra writes goes under `.antra/` in your project —
+`antra-findings.sqlite` for scan history, and `contract-snapshot.json` for the schema
+snapshot `init` generated. Add that directory to `.gitignore`.
+
+## Next
+
+- [Configuration basics](/docs/getting-started/configuration-basics)
+- [Command reference](/docs/commands/scan)

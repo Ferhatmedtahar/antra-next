@@ -1,0 +1,53 @@
+---
+title: Introduction
+description: A static analysis security linter for React Server Components and the Next.js App Router.
+order: 10
+---
+
+Antra is a static analysis security linter for React Server Components and the
+Next.js App Router. It finds the point where a value crosses a trust boundary
+without validation.
+
+## The problem it targets
+
+The App Router makes it easy to move a value from the server to the client, and
+easy to do it by accident. A field read from your data layer gets returned from
+a Server Component, or handed to a Server Action, or interpolated into markup —
+and each of those is a boundary where "the server already checked that" stops
+being true.
+
+Nothing in the type system catches this. An object crossing into client props
+is well-typed whether or not the fields inside it were meant to travel.
+
+## What Antra does
+
+It parses your project into syntax trees, classifies what each file is, and
+follows concrete values from where they enter your program to the boundary they
+cross. The result is a finding that names the rule, the file and line, the sink
+expression, and the path the value took to get there.
+
+Because the analysis is static, it runs locally: no network calls, no code
+leaving the machine, no running application to instrument.
+
+## The pipeline
+
+1. **Scan** — parse the project and classify every file's boundary role.
+2. **Detect** — trace values across the React Flight boundary, Server Actions,
+   and route handlers.
+3. **Understand** — read the path a value took, per finding.
+4. **Fix** — sanitize, suppress with a reason, or baseline what you accept.
+
+## Scope
+
+Antra looks at how values move across boundaries in your own code. It is not a
+dependency scanner, not a secrets scanner, and not an infrastructure audit.
+Being clear about that matters more than a longer feature list — see
+[what it does and does not do](/docs/concepts/findings-and-severity) before you
+decide where it fits in your pipeline.
+
+## Where to go next
+
+- [Installation](/docs/getting-started/installation)
+- [Quick start](/docs/getting-started/quick-start) — init, scan, studio
+- [Trust boundaries](/docs/concepts/trust-boundaries) — the model the rules
+  are built on

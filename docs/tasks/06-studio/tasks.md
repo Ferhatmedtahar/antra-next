@@ -11,5 +11,5 @@
 
 Not in v1 (candidates for a follow-up):
 
-- `query` command (ad-hoc SQL over `findings.sqlite`) — Studio covers the common questions.
+- `query` command (ad-hoc SQL over `antra-findings.sqlite`) — Studio covers the common questions.
 - Screenshot-based visual regression tests.

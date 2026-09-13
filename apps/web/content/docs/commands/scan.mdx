@@ -1,0 +1,84 @@
+---
+title: antra scan
+description: Run static AST taint analysis across React Flight boundaries.
+order: 220
+---
+
+Runs the analysis and reports the findings it can prove from your source.
+
+## Usage
+
+```bash
+antra scan [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+```bash
+antra scan
+antra scan ./apps/dashboard
+antra scan --format sarif --output report.sarif
+```
+
+## Flags
+
+| Flag                  | Default                                               | What it does                                               |
+| --------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| `-s, --strict`        | off                                                   | Treats warnings as errors and requires a valid schema.     |
+| `--diff`              | off                                                   | Scans only files changed relative to the base branch.      |
+| `--staged`            | off                                                   | Scans only git-staged files.                               |
+| `--base <ref>`        | `origin/main`, then `main`, `origin/master`, `master` | Base ref used by `--diff`.                                 |
+| `--fail-on-violation` | off                                                   | Exits 1 if unsanitized boundary leaks are found.           |
+| `--format <type>`     | `pretty`                                              | `pretty`, `json`, or `sarif`.                              |
+| `--rule <ruleId>`     | every rule                                            | Runs a single rule, for example `BG-001`.                  |
+| `--verbose`           | off                                                   | Prints every file instead of the first 10 per section.     |
+| `--output <file>`     | stdout                                                | Writes the report to a file.                               |
+| `--no-store`          | off                                                   | Doesn't record the scan in `.antra/antra-findings.sqlite`. |
+
+## Choosing a format
+
+`pretty` is for a terminal. `json` is for a script that wants the finding
+objects. `sarif` is what a code host understands — it is the format to reach
+for in CI, because the host can then annotate the diff.
+
+## Scoping a scan
+
+`--diff` and `--staged` exist so you can run the analysis over the part of the
+project you are actually touching. `--diff` compares against `--base`, falling
+back through `origin/main`, `main`, `origin/master`, and `master` until it finds
+a ref that resolves.
+
+```bash
+antra scan --diff --base origin/main
+antra scan --staged
+```
+
+## Exiting non-zero in CI
+
+A scan that finds something still exits 0 by default, so it never breaks a
+build you didn't ask it to break. Add `--fail-on-violation` when you want the
+step to fail:
+
+```bash
+antra scan --format sarif --output antra.sarif --fail-on-violation
+```
+
+<Note type="warning">
+  `--strict` is broader than `--fail-on-violation` — it also treats warnings as
+  errors and requires a valid schema snapshot, so it can fail a build for
+  reasons that are not leaks.
+</Note>
+
+## Where results go
+
+A full scan is recorded in `.antra/antra-findings.sqlite` unless you pass
+`--no-store`. That database is what [`antra query`](/docs/commands/query) reads
+and what [`antra studio`](/docs/commands/studio) displays.
+
+<Note type="warning">
+  A partial scan is **not** recorded. When you pass `--diff` or `--staged`, the
+  whole project is still parsed — so cross-file taint still resolves — but only
+  the changed files are reported against, and that partial result is
+  deliberately kept out of the database. Studio will not show it, and `antra
+  query` will not have it. Run a full scan when you want the run on the record.
+</Note>

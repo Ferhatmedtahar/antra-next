@@ -1,0 +1,42 @@
+---
+title: antra doctor
+description: Validate configuration, rules, and parser readiness.
+order: 240
+---
+
+Checks that the tool is in a state where a scan can be trusted.
+
+## Usage
+
+```bash
+antra doctor [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+```bash
+antra doctor
+antra doctor --format json
+```
+
+## Flags
+
+| Flag              | Default  | What it does        |
+| ----------------- | -------- | ------------------- |
+| `--format <type>` | `pretty` | `pretty` or `json`. |
+
+## When to run it
+
+`doctor` is the first thing to reach for when a scan behaves in a way you did
+not expect — an empty report on a project you know has crossings, or a rule that
+never fires.
+
+It validates three things: the configuration file parses and is valid, the
+rules load, and the parser is ready. `json` output is for when you want to read
+the same result from a script rather than your eyes.
+
+<Note type="warning">
+  `doctor` reports on readiness, not on your code. A clean run does not mean the
+  project is free of boundary crossings — it means the tooling is in a position
+  to tell you about them.
+</Note>

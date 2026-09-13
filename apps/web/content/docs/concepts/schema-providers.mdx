@@ -1,0 +1,68 @@
+---
+title: Schema providers
+description: How the analysis learns which fields are sensitive.
+order: 130
+---
+
+The rules need to know which values must not cross a boundary. That answer lives
+in your data layer, and it is different for every project — so Antra reads it
+from a **provider** instead of asking you to write it out by hand.
+
+## How it works
+
+A provider detects the shape of your data layer and extracts the field names
+that are sensitive. `antra init` writes that extraction to a static snapshot,
+and every later scan reads the snapshot rather than your database.
+
+That is why `init` and `sync` are separate from `scan`: the schema is read once,
+and the analysis stays a purely local operation with no connection to your
+database at scan time.
+
+## Providers
+
+| Provider    | `id`          | Reads                                                          |
+| ----------- | ------------- | -------------------------------------------------------------- |
+| Prisma      | `prisma`      | Your Prisma schema                                             |
+| Zod         | `zod`         | Zod schemas, where field names and intent are declared in code |
+| Supabase    | `supabase`    | Supabase table definitions                                     |
+| OpenAPI     | `openapi`     | An OpenAPI document describing your API's fields               |
+| Drizzle     | `drizzle`     | Your Drizzle table definitions                                 |
+| Zero-schema | `zero-schema` | Nothing — the fallback for projects with no schema to read     |
+
+Providers are declared under `providers` in
+[`antra.config.json`](/docs/configuration/reference), each entry
+carrying its `id` from the table above.
+
+## Refreshing the snapshot
+
+Run [`antra sync`](/docs/commands/sync) after anything that changes which fields
+exist or which are sensitive:
+
+```bash
+antra sync
+```
+
+A stale snapshot is the quiet failure mode of schema-aware analysis. It does not
+produce an error — it produces a scan that is confident about an outdated
+picture of your data, missing fields that were added and flagging ones that were
+renamed away.
+
+## When the provider can't see it
+
+Some sensitive names live outside any schema — a field assembled in a helper, a
+value computed at runtime. For those, list them under `sensitiveFields` in the
+config. That is the escape hatch, and it is deliberately explicit: a name the
+analysis was told to treat as sensitive, rather than one it inferred.
+
+## When there is no schema at all
+
+A project with no schema to introspect — a backend-for-frontend, or anything
+that fetches from an API you do not own — still gets analyzed. The
+`zero-schema` provider reads nothing, and the analysis falls back to heuristics
+on names and on the shape of the code. That is the mode
+[BG-003](/docs/rules/bg-003) is built for: it needs no schema, because it fires
+on the pattern of an unprojected result being handed to a client rather than on
+the knowledge of which fields are sensitive.
+
+A scan run with no `antra.config.json` at all reports this state
+explicitly — zero taint sources, heuristics only.

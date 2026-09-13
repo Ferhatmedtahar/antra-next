@@ -1,0 +1,49 @@
+---
+title: "BG-001: Server-to-client leak"
+description: A sensitive value is handed to a Client Component from the server.
+order: 610
+---
+
+**Severity:** `error`
+
+A concrete sensitive value is handed to a Client Component as a prop, a spread,
+or children, from a Server Component.
+
+## Why it fires
+
+That value crosses the React Flight boundary as serialized data the browser can
+read. The rule looks at Server Components specifically, finds JSX sinks whose
+target file is classified as a client boundary, and checks the attributes being
+passed.
+
+## What counts as sensitive
+
+The analysis treats a value as sensitive when it is:
+
+- a field named by your schema, through a configured provider
+- a field name matching a configured keyword
+- a `process.env` value
+
+`process.env` is in that list because a server-side environment variable read
+into a prop is a leak regardless of what your schema says — the schema was never
+asked about it.
+
+## The mistake to avoid
+
+Serializing the value is not the same as needing it on the client. An object
+crossing into client props is well-typed either way; the question is whether
+those fields were meant to travel.
+
+## Fixing it
+
+Project the fields the client actually needs into a new object before the
+crossing. When the crossing is intentional and the value is safe, record the
+decision at the line:
+
+```ts
+// antra-disable-next-line
+return <AccountCard account={account} />;
+```
+
+For a whole report at once, [`antra baseline`](/docs/commands/baseline) records
+the current violations instead.

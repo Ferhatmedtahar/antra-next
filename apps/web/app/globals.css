@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-heading: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Brand blue #1a47ff sits at 500. The ramp keeps hue 228 throughout and is
+     fully saturated at 500-600, easing off toward the darker stops — so the
+     primary button, accent text, and the mark all draw from one blue. */
+  --color-accent-100: #eef1ff;
+  --color-accent-200: #d5deff;
+  --color-accent-300: #b0c0ff;
+  --color-accent-400: #6e8bff;
+  --color-accent-500: #1a47ff;
+  --color-accent-600: #0f37d9;
+  --color-accent-700: #0b2db5;
+  --color-accent-800: #082393;
+  --color-accent-900: #061a75;
+
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-ink: #201e1d;
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+}
+
+.dark {
+  --color-bg: #1a1918;
+  --color-surface: #242322;
+  --color-ink: #f1efee;
+  --color-divider: color-mix(in srgb, #f1efee 24%, transparent);
+}
+
+html {
+  /* The nav is sticky, so an anchor jump (/#how-it-works, a docs sidebar link)
+     would otherwise land with the heading tucked under it. The offset clears
+     the nav's height plus the two-pixel rule beneath it. */
+  scroll-padding-top: 5.5rem;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/*
+ * Hover wash for the landing-page grid cells.
+ *
+ * One definition serves every numbered grid — Before you push, How it works,
+ * Checks, Workflow — because they all render through GridCell. Pale tints in
+ * light, deep shades in dark, both read from the accent ramp, so the wash can
+ * never drift from the brand blue and re-theming the ramp re-themes the hover.
+ *
+ * Authored CSS rather than utility chains: the effect is a two-state pseudo
+ * layer with a dark override and a reduced-motion escape, which reads better
+ * here than as a long arbitrary-value class list. `cell-wash-host` owns the
+ * hover; `cell-wash` is the layer it fades in. Any element can use the pair.
+ */
+.cell-wash-host {
+  position: relative;
+  isolation: isolate;
+}
+
+.cell-wash {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent-100),
+    var(--color-accent-200) 50%,
+    var(--color-accent-300)
+  );
+  transition: opacity 300ms ease;
+}
+
+.cell-wash-host:hover .cell-wash,
+.cell-wash-host:focus-within .cell-wash {
+  opacity: 1;
+}
+
+.dark .cell-wash {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent-900),
+    var(--color-accent-800) 50%,
+    var(--color-accent-700)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .cell-wash {
+    transition: none;
+  }
+}

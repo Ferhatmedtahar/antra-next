@@ -1,0 +1,52 @@
+---
+title: "BG-002: Unvalidated input"
+description: A Server Action or route handler accepts input without validation.
+order: 620
+---
+
+**Severity:** `error`
+
+A Server Action that accepts parameters, or a route handler that reads the
+request body, with no call to a configured validator anywhere in its body.
+
+## Why it fires
+
+Client input is untrusted by definition. A Server Action is a public endpoint,
+whether or not the component calling it sits behind a login — so "it's only
+reachable from our own page" is not a defence the analysis can act on.
+
+## What it checks
+
+For a Server Action, the rule looks at whether the action accepts parameters at
+all. For a route handler, it looks for a body read:
+
+- a call to `.json()`, `.formData()`, or `.text()`
+- a direct read of `req.body` / `request.body`
+
+It then searches the handler's body for a call to a validator you have
+configured under `sanitizers`. If there is one, no finding. If there is not,
+there is.
+
+`GET`, `HEAD`, and `OPTIONS` are exempt — they have no body to validate.
+
+## Why the trace is empty
+
+Most findings carry the path a value took. BG-002 does not, and that is
+deliberate: it is about the _shape of the interface_ — parameters accepted, no
+validation — not about a particular value's journey through your code. There is
+no path to report.
+
+## Fixing it
+
+Validate the input with a parser, and make sure that parser is declared in the
+config so the analysis recognizes it:
+
+```ts
+const parsed = CreateUserSchema.parse(await req.json());
+```
+
+If you validate through a helper the analysis doesn't know about, the finding is
+correct about the interface and wrong about your code — declare the helper under
+`sanitizers` in
+[`antra.config.json`](/docs/configuration/reference) rather than
+suppressing it once per handler.

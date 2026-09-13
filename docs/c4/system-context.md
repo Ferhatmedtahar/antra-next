@@ -1,6 +1,6 @@
 # System Context — Schema-Optional Ingestion
 
-Settled architecture for `boundary-guard`'s scan pipeline. Generalizes ingestion from "Prisma schema" to "any data contract, or none" (BFF / Express / NestJS backends, zero-schema `fetch()`-only apps). See [ADR-002](../adr/0002-schema-optional-ingestion-and-trust-tiers.md) for the reasoning and known limitations behind this shape.
+Settled architecture for `antra`'s scan pipeline. Generalizes ingestion from "Prisma schema" to "any data contract, or none" (BFF / Express / NestJS backends, zero-schema `fetch()`-only apps). See [ADR-002](../adr/0002-schema-optional-ingestion-and-trust-tiers.md) for the reasoning and known limitations behind this shape.
 
 Two additions versus the diagram this was drafted from:
 
@@ -27,9 +27,9 @@ flowchart TB
   end
  subgraph Zone2["2. Policy & Contract Ingestion"]
         B1["CLI Dispatcher (scan, init, studio)"]
-        B2["boundary-guard.config.json<br>(Keywords, Sanitizers, Policies)"]
+        B2["antra.config.json<br>(Keywords, Sanitizers, Policies)"]
         B3["Contract Ingestor Adapter<br>(Normalizes Prisma, OpenAPI, or Zod to TaintSources)"]
-        B4["Schema / Contract Snapshot<br>.boundary-guard/contract-snapshot.json"]
+        B4["Schema / Contract Snapshot<br>.antra/contract-snapshot.json"]
   end
  subgraph TaintSources["Origin Identifiers"]
         S1["DB / Contract Fields (from Zone 2)"]
@@ -51,8 +51,8 @@ flowchart TB
         RulesEngine
   end
  subgraph Zone4["4. Storage & Egress"]
-        E1["Suppressions & Baseline Filter<br>(inline disables + .boundary-guard-baseline.json)"]
-        D1[("SQLite Store<br>findings.sqlite")]
+        E1["Suppressions & Baseline Filter<br>(inline disables + .antra-baseline.json)"]
+        D1[("SQLite Store<br>antra-findings.sqlite")]
         D2["Terminal Reporter"]
         D3["SARIF / CI PR Gate (Exit 0/1)"]
         D4["Studio Visualizer (:8080)"]

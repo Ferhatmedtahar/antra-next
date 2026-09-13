@@ -10,10 +10,10 @@ Read this whole file before touching code. Work the phases in order — phase 1
 
 ## 0. Brief
 
-**Product.** `boundary-guard` Studio: the local web dashboard for a static-analysis
+**Product.** `antra` Studio: the local web dashboard for a static-analysis
 linter that finds server → client boundary violations in the Next.js App Router.
 
-**Audience.** Next.js developers, running `boundary-guard studio` on localhost,
+**Audience.** Next.js developers, running `antra studio` on localhost,
 usually mid-task, usually in dark mode, usually next to a terminal.
 
 **Job.** Answer three questions fast: _did anything cross the boundary?_ _what

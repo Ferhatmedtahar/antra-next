@@ -1,0 +1,63 @@
+---
+title: Suppressions and baselines
+description: Two ways to silence a finding, and how they differ.
+order: 140
+---
+
+There are two ways to stop a finding being reported, and they solve different
+problems. Reaching for the wrong one is how a backlog becomes invisible rather
+than solved.
+
+## Suppressing one finding
+
+A suppression is a directive placed at the crossing, carrying a reason:
+
+```ts
+// antra-disable-next-line
+return <AccountCard account={account} />;
+```
+
+This is a statement about _this line_: the analysis is right that a value
+crosses here, and a human has decided it is acceptable. The reason is the point
+— it is what the next person reads when they wonder whether the decision still
+holds.
+
+[`antra fix`](/docs/commands/fix) inserts these mechanically when you pass a
+rule and a reason:
+
+```bash
+antra fix --suppress BG-001 --reason "account is projected before this point"
+```
+
+## Baselining a report
+
+A baseline is a statement about _a moment in your codebase_. It records the
+current violations, and from then on a scan reports only what has appeared
+since.
+
+```bash
+antra baseline
+```
+
+This is the answer to adopting a linter on a repository with years of history:
+without it, the first report is unusable and the second never happens.
+
+## Which one to use
+
+|                      | Suppression                   | Baseline                    |
+| -------------------- | ----------------------------- | --------------------------- |
+| Scope                | One crossing                  | Every current violation     |
+| Written to           | Your source, next to the code | Local state under `.antra/` |
+| Records a reason     | Yes, required by `antra fix`  | No                          |
+| Reviewed in a diff   | Yes                           | No                          |
+| Survives a line move | Via the directive's placement | Via finding fingerprints    |
+
+Use a suppression when you have looked at a specific crossing and made a
+judgement you want a reviewer to see. Use a baseline when the volume is the
+problem and your intent is to work the list down.
+
+## The honest caveat
+
+Neither one fixes anything. Both are ways of deciding when to look — and a
+baseline in particular makes a real backlog stop being reported, which is the
+trade you are making when you run it.

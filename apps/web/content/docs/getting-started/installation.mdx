@@ -1,0 +1,46 @@
+---
+title: Installation
+description: Add the CLI to a project and confirm it can see your code.
+order: 20
+---
+
+Antra is a CLI. There is nothing to host and nothing to install on a server.
+
+## Requirements
+
+- Node.js with a version new enough for the toolchain you already build with
+- a Next.js App Router project to point it at
+- Git, for the `--diff` and `--staged` scan modes
+
+## Add it to a project
+
+```bash
+pnpm add -D antra
+```
+
+## Confirm it works
+
+From your project root:
+
+```bash
+antra doctor
+```
+
+`doctor` validates the configuration, loads the rules, and checks that the
+parser is ready. It is the cheapest way to find out that something in the
+environment is wrong before you draw conclusions from an empty scan report.
+
+## Initialize
+
+```bash
+antra init
+```
+
+This writes `antra.config.json` and generates the static schema
+snapshot that makes later scans schema-aware. You only need to run it once per
+project.
+
+## Next
+
+[Quick start](/docs/getting-started/quick-start) walks the whole loop —
+`init`, `scan`, `studio` — on a project you have just set up.

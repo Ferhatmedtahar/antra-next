@@ -1,0 +1,32 @@
+---
+title: antra sync
+description: Refresh the static schema snapshot from your database, Prisma, or Supabase.
+order: 230
+---
+
+Re-reads your data layer and rewrites the schema snapshot that
+[`antra init`](/docs/commands/init) created.
+
+## Usage
+
+```bash
+antra sync [path]
+```
+
+`path` is the Next.js app root and defaults to `.`.
+
+## When to run it
+
+Run `sync` after a change that alters which fields exist or which of them are
+sensitive:
+
+- a migration added or renamed a column
+- a Prisma schema changed
+- a Supabase table gained a column
+
+Without a fresh snapshot, a scan is judging your code against a stale picture
+of the schema, which is how you get both false positives and quiet misses.
+
+## Flags
+
+`sync` takes no options beyond the optional path.

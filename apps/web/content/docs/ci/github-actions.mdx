@@ -1,0 +1,81 @@
+---
+title: GitHub Actions
+description: A CI job that fails the build on new boundary crossings.
+order: 710
+---
+
+The scan is a process that exits once, which is all a CI step needs. Nothing
+has to be installed on a runner beyond your project's own dependencies.
+
+```yaml
+name: antra
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # --diff needs history to resolve the base ref
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec antra init
+      - run: pnpm exec antra scan --format sarif --output antra.sarif --fail-on-violation
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: antra.sarif
+```
+
+## Why each piece is there
+
+**`fetch-depth: 0`** — `--diff` compares against a base ref, which needs the
+history to resolve one. A shallow checkout makes that fall back or fail.
+
+**`--format sarif`** — SARIF is what the code host understands, so findings
+land as annotations on the pull request instead of as log lines someone has to
+scroll for.
+
+**`--fail-on-violation`** — without it a scan that finds something still exits
+0, by design. Add it on the step where you want the build to stop.
+
+**`if: always()` on the upload** — you want the report even when the scan
+failed the job, which is precisely the case where you need to read it.
+
+## Scoping to the diff
+
+On a large repository, scanning everything on every pull request is wasteful:
+
+```bash
+antra scan --diff --base origin/main --format sarif --output antra.sarif --fail-on-violation
+```
+
+`--base` falls back through `origin/main`, `main`, `origin/master`, and `master`
+if it is not given.
+
+## Making it adoptable
+
+A repository with years of code will not pass on the first run, and a CI step
+that is red from the day it lands gets deleted. Two ways out:
+
+- `antra baseline` once on a commit you accept, so only new crossings fail.
+- `--format json` and a script that counts findings, if you would rather track
+  a number going down than gate on zero.
+
+<Note type="warning">
+  Don't reach for `antra fix --suppress all` to get a green build. It silences
+  the report rather than the problem, and the suppressed findings stop being
+  visible to anyone reading the code later.
+</Note>

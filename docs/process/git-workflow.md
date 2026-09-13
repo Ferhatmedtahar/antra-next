@@ -42,7 +42,7 @@ Reach for a regular (non-squash) merge only when a branch's individual commits a
 
 ## Tags / releases
 
-Not relevant yet — nothing is published. When `boundary-guard` starts shipping to npm, tag releases (`v0.1.0`, ...) off `main` and reconsider whether a tool like Changesets (already used in the ipractis reference repo this project's tooling was modeled on) is worth adding. Don't wire that up before there's a first release to cut — it's dead process until then.
+Not relevant yet — nothing is published. When `antra` starts shipping to npm, tag releases (`v0.1.0`, ...) off `main` and reconsider whether a tool like Changesets (already used in the ipractis reference repo this project's tooling was modeled on) is worth adding. Don't wire that up before there's a first release to cut — it's dead process until then.
 
 ## Where things stand right now
 
