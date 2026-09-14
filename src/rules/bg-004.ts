@@ -2,7 +2,7 @@ import type { SourceFile } from "ts-morph";
 
 import {
   collectJsxSinks,
-  describeOrigin,
+  describeSubject,
   type Taint,
 } from "../ast/render-graph.js";
 import {
@@ -46,7 +46,7 @@ export const bg004: Rule = {
           findingAt(
             bg004,
             attribute.node,
-            `${capitalize(describeOrigin(taint.origin))} is rendered into attribute "${attribute.name}" of ${tag}`,
+            `${describeSubject(taint.origin)} is rendered into attribute "${attribute.name}" of ${tag}`,
             taint.trace,
           ),
         );
@@ -58,7 +58,7 @@ export const bg004: Rule = {
           findingAt(
             bg004,
             child,
-            `${capitalize(describeOrigin(taint.origin))} is rendered as text inside ${tag}`,
+            `${describeSubject(taint.origin)} is rendered as text inside ${tag}`,
             taint.trace,
           ),
         );
@@ -74,8 +74,4 @@ function isConcreteLeak(
 ): taint is Taint {
   if (!taint || taint.opaque) return false;
   return !(isClient && taint.origin.kind === "env");
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

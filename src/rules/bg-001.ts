@@ -1,6 +1,11 @@
 import type { SourceFile } from "ts-morph";
 
-import { collectJsxSinks, describeOrigin } from "../ast/render-graph.js";
+import {
+  collectJsxSinks,
+  collectResponseSinks,
+  describeSink,
+  describeSubject,
+} from "../ast/render-graph.js";
 import {
   findingAt,
   type Finding,
@@ -10,19 +15,19 @@ import {
 
 /**
  * BG-001 server-to-client-leak: a concrete sensitive value (schema field,
- * keyword-named field, or process.env) is handed to a Client Component as a
- * prop, spread, or children from a Server Component. That value crosses the
- * Flight boundary as serialized data the browser can read.
+ * keyword-named field, or env var) leaves the server readable by the
+ * browser — as a Client Component prop, spread or children, as a Server
+ * Action's return value, or in a route handler's response body.
  */
 export const bg001: Rule = {
   id: "BG-001",
   severity: "error",
-  description: "Sensitive value passed to a Client Component from the server",
+  description:
+    "Sensitive value crosses to the client (Client Component prop, Server Action return, route response)",
 
   run(file: SourceFile, ctx: RuleContext): Finding[] {
-    if (ctx.classifications.get(file.getFilePath())?.boundary !== "server") {
-      return [];
-    }
+    const classification = ctx.classifications.get(file.getFilePath());
+    if (classification?.boundary !== "server") return [];
     const findings: Finding[] = [];
 
     for (const sink of collectJsxSinks(file)) {
@@ -40,7 +45,7 @@ export const bg001: Rule = {
           findingAt(
             bg001,
             attribute.node,
-            `${capitalize(describeOrigin(taint.origin))} is passed as prop "${attribute.name}" to client component ${tag}`,
+            `${describeSubject(taint.origin)} is passed as prop "${attribute.name}" to client component ${tag}`,
             taint.trace,
           ),
         );
@@ -52,7 +57,7 @@ export const bg001: Rule = {
           findingAt(
             bg001,
             child,
-            `${capitalize(describeOrigin(taint.origin))} is rendered as children of client component ${tag}`,
+            `${describeSubject(taint.origin)} is rendered as children of client component ${tag}`,
             taint.trace,
           ),
         );
@@ -64,16 +69,25 @@ export const bg001: Rule = {
           findingAt(
             bg001,
             spread,
-            `${capitalize(describeOrigin(taint.origin))} is spread into client component ${tag}`,
+            `${describeSubject(taint.origin)} is spread into client component ${tag}`,
             taint.trace,
           ),
         );
       }
     }
+
+    for (const sink of collectResponseSinks(file, classification)) {
+      const taint = ctx.resolver.resolve(sink.node);
+      if (!taint || taint.opaque) continue;
+      findings.push(
+        findingAt(
+          bg001,
+          sink.node,
+          `${describeSubject(taint.origin)} is ${describeSink(sink)}`,
+          taint.trace,
+        ),
+      );
+    }
     return findings;
   },
 };
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
