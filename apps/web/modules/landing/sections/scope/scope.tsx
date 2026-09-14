@@ -9,7 +9,7 @@ const DOES = [
   "Read sensitive-field names from your own schema providers",
   "Trace taint from a source to the crossing it reaches",
   "Respect sanitizers and suppressions you have already written",
-  "Report on your source, with no network access",
+  "Scan your source with no network access",
 ];
 
 const DOES_NOT = [

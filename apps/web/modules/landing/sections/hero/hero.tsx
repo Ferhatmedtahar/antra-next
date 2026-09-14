@@ -18,7 +18,7 @@ const DETAIL_WIDTH = 30;
  * the scanner does not run — no dependency audit, no env or secrets scan.
  */
 const step = (label: string, detail: string, seconds: string) =>
-  `  ✓ ${label.padEnd(LABEL_WIDTH)}  ${detail.padEnd(DETAIL_WIDTH)}${seconds}s`;
+  `  ✓ ${label.padEnd(LABEL_WIDTH)}  ${detail.padEnd(DETAIL_WIDTH)} ${seconds}s`;
 
 const SCAN_LINES = [
   { text: "$ antra scan", className: "text-code-ink" },
@@ -28,9 +28,9 @@ const SCAN_LINES = [
     text: step("Load config and snapshot", "antra.config.json", "0.03"),
   },
   { text: step("Parse project", "989 files", "17.30") },
-  { text: step("Classify boundaries", "", "0.41") },
+  { text: step("Classify boundaries", "12 client", "0.41") },
   { text: step("Link render graph", "412 edges", "0.05") },
-  { text: step("Run rules", "", "1.20") },
+  { text: step("Run rules", "BG-001, BG-002, BG-003, BG-004", "1.20") },
   { text: step("Record findings", "", "0.01") },
   { text: " " },
   { text: "  project    ~/projects/checkout-app" },
@@ -55,17 +55,17 @@ export function Hero() {
       >
         <AstroriskIcon className="size-72 md:size-96  animate-[spin_60s_linear_infinite] motion-reduce:animate-none" />
       </div>
-      <div className="mx-auto max-w-6xl px-6 pt-16">
-        <div className="mb-6 flex items-center gap-2 text-accent-500">
+      <div className="mx-auto max-w-6xl px-6 pt-20 md:pt-28">
+        <div className="mb-8 flex items-center gap-2 text-accent-500">
           <span className="font-heading text-sm font-extrabold text-[var(--color-ink)]">
             Developer security scanner
           </span>
         </div>
-        <h1 className="mb-5 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight">
+        <h1 className="mb-6 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight md:mb-8">
           Catch security issues before they{" "}
           <span className="text-accent-text">cross the boundary.</span>
         </h1>
-        <div className="flex flex-wrap items-center gap-x-10 gap-y-6 pb-8">
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-8 pb-12 md:pb-16">
           <p className="max-w-[56ch] flex-1 basis-110 text-lg leading-relaxed">
             {site.description}
           </p>
@@ -78,7 +78,7 @@ export function Hero() {
         </div>
       </div>
       <div className="border-t-2 border-divider">
-        <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mx-auto max-w-6xl px-6 py-14 md:py-16">
           <div className="flex flex-wrap gap-8">
             <div className="flex-none basis-40">
               <div className="text-[11px] uppercase tracking-wide text-ink/55">

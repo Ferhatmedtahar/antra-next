@@ -101,7 +101,7 @@ The snapshot (`.antra/contract-snapshot.json`) stores **every** field your provi
 
 - **`keywords.include`** — name patterns, any language. ≥4 chars match as a substring (`token` catches `accessToken`); ≤3 chars match whole words only (`ssn` doesn't fire inside `previous_snapshot`).
 - **`sensitiveFields.include`** — exact field name (case/separator-insensitive) or exact origin. Seeded by `init`; add what keywords can't know: your language, your domain (`iban`, `salary`). Removing an entry here does **not** un-flag it if a keyword still matches — use `sensitiveFields.exclude` for that.
-- **`sensitiveFields.exclude`** — same matching, wins over everything. The one way to say "never". For the false positives substring matching buys (`source_hash`).
+- **`sensitiveFields.exclude`** — same matching, wins over everything. The one way to say "never". For the false positives name matching buys (`source_hash`).
 
 `sync` and `init` print the full current list, so the loop is: run `sync`, read the list, pin or ignore, `scan`.
 

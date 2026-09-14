@@ -27,6 +27,12 @@ Intrinsic elements only: the tags that render to actual HTML. It looks at both
 child content and attribute values, since an attribute is as readable as the
 text next to it.
 
+A condition is not a rendered value, so `{process.env.NODE_ENV === "development" && <pre />}`
+does not fire. In `"use client"` files, environment variables are ignored (a
+non-public one is `undefined` in the browser), and a field only counts when its
+value traces back to a fetch or database call, so form state such as
+`values.password` stays quiet.
+
 ## Fixing it
 
 Almost always by removing the render rather than sanitizing it. A sensitive

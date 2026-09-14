@@ -69,7 +69,7 @@ Antra operates as an intelligent boundary guard through five core capabilities:
 1. Automatic Schema Discovery: Antra reads your existing schemas from Prisma, Supabase, Drizzle, Zod, and OpenAPI to learn exactly which database columns and types exist.
 2. Sensitivity Identification: Antra marks confidential fields by examining schema definitions, custom configurations, and industry standard naming patterns such as tokens, secrets, credentials, and passwords.
 3. AST Dataflow Tracing: Antra parses your TypeScript code and tracks values through assignments, variable declarations, object destructuring, function returns, and component invocations.
-4. Boundary Crossing Verification: Whenever a confidential value crosses from a server file into a client component prop or is rendered directly into public markup, Antra flags it as a violation.
+4. Boundary Crossing Verification: Whenever a confidential value crosses from a server file into a client component prop, is returned from a Server Action, is sent in a route handler response, or is rendered directly into public markup, Antra flags it as a violation.
 5. Interactive Visual Studio: Antra includes a built in local web application that displays your application dependency graph, route trees, and exact source code frames for every finding.
 
 ## Quick Start
@@ -79,20 +79,24 @@ You can install and run Antra in your project in less than two minutes.
 ### Step 1: Install Antra as a Development Dependency
 
 ```bash
-npm install --save-dev antra
+npm install --save-dev antra-sec
 ```
 
 If you use pnpm:
 
 ```bash
-pnpm add -D antra
+pnpm add -D antra-sec
 ```
 
 If you use yarn:
 
 ```bash
-yarn add -D antra
+yarn add -D antra-sec
 ```
+
+The package is named `antra-sec`; the command it installs is `antra`. Install it
+first: running `npx antra` without installing would fetch an unrelated package
+that already owns that name on npm.
 
 ### Step 2: Initialize Your Project
 
@@ -136,7 +140,7 @@ Antra checks your codebase against four specialized security rules:
 
 Severity: Error
 
-This rule triggers when a sensitive value (such as a database password hash, secret token, or private environment variable) is passed as a prop, spread attribute, or child element into a component marked with "use client".
+This rule triggers when a sensitive value (such as a database password hash, secret token, or private environment variable) leaves the server where the browser can read it: as a prop, spread attribute, or child element of a component marked with "use client", as the return value of a Server Action, or in a route handler response (`Response.json`, `NextResponse.json`, `new Response(...)`).
 
 Why this matters: Any prop passed into a client component is sent in clear text in the network payload to the browser.
 
@@ -144,7 +148,7 @@ Why this matters: Any prop passed into a client component is sent in clear text 
 
 Severity: Error
 
-This rule triggers when a Server Action or Route Handler accepts incoming user parameters (such as form data, query strings, or request bodies) and uses them without passing them through an approved validation library like Zod, Valibot, Yup, Joi, or ArkType.
+This rule triggers when a Server Action accepts parameters, or a Route Handler reads its request body, and that input is never passed to a configured validator (Zod and next-safe-action by default; Valibot, Yup, Joi, ArkType or your own function names when added under `sanitizers`). Query strings and route params are not checked.
 
 Why this matters: Server actions and route handlers are public HTTP endpoints. Unvalidated inputs can lead to injection attacks and logic flaws.
 
@@ -152,7 +156,7 @@ Why this matters: Server actions and route handlers are public HTTP endpoints. U
 
 Severity: Warning
 
-This rule triggers when a complete database query result or raw fetch response is passed whole into a client component rather than projecting only the specific properties required by the user interface.
+This rule triggers when a complete database query result or raw fetch response is sent whole to the client (as a client component prop, a Server Action return value, or a route handler response) rather than projecting only the specific properties required by the user interface.
 
 Why this matters: Even if a database model does not currently contain secret columns, future schema migrations that add private fields will automatically leak them if whole records are passed blindly.
 
@@ -172,7 +176,7 @@ Here is an example terminal output:
 
 ```
 app/page.tsx:16:19  BG-001  error  new
-  Field "password_hash" matches a sensitivity keyword is passed as prop "hash" to client component <ClientCard>
+  Field "password_hash" (keyword match) is passed as prop "hash" to client component <ClientCard>
 
     15 |     <main>
   > 16 |       <ClientCard hash={user.password_hash} />
@@ -332,8 +336,9 @@ Useful command line flags for continuous integration:
 To be completely clear and transparent about current boundaries:
 
 1. Target Framework: Antra is currently designed specifically for Next.js App Router projects. It does not support Pages Router or other meta frameworks.
-2. Hop Tracking Depth: Antra traces values through assignments, destructuring, object properties, function returns, and one level of parameter passing within the same file. It intentionally bounds cross-module interprocedural analysis for performance and deterministic execution speed.
-3. Keyword Matching: Custom domain-specific abbreviations for confidential data (such as internal project codenames) must be declared in your configuration keywords list so Antra knows to track them.
+2. Hop Tracking Depth: Antra traces values through assignments, destructuring, object properties, function returns (including wrappers such as `cache()` and `unstable_cache`), up to three hops through named imports, and one level of parameter passing, including into an exported component's props from another file. It intentionally bounds interprocedural analysis beyond that for performance and deterministic execution speed. A component imported under an alias is not followed.
+3. Network Access: `antra scan` makes no network calls. `init` and `sync` only reach out when you configure a Supabase project or an OpenAPI spec URL.
+4. Keyword Matching: Custom domain-specific abbreviations for confidential data (such as internal project codenames) must be declared in your configuration keywords list so Antra knows to track them.
 
 ## Contributing
 

@@ -1,5 +1,5 @@
 {
-  "name": "antra",
+  "name": "antra-sec",
   "version": "0.1.0",
   "description": "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
   "keywords": [
