@@ -48,6 +48,14 @@ export function Footer() {
           >
             GitHub
           </a>
+          <a
+            href={site.npmUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={LINK}
+          >
+            npm
+          </a>
         </nav>
       </div>
 

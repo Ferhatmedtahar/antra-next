@@ -1,3 +1,4 @@
+import { Footer } from "@/components/shared/footer";
 import { NavBar } from "@/components/shared/nav-bar";
 import { getDocsNav } from "@/lib/get-docs-nav";
 import { DocsMenu, DocsSidebar } from "@/modules/docs/sidebar";
@@ -28,6 +29,7 @@ export default function DocsLayout({
         <DocsSidebar groups={groups} />
         <div className="min-w-0 flex-1 basis-[480px]">{children}</div>
       </div>
+      <Footer />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { Button } from "@/components/shared/button";
+import { NpmIcon } from "@/components/shared/icons";
 import { AstroriskIcon } from "@/components/shared/shapes";
 import { Terminal } from "@/components/shared/terminal";
 import { site } from "@/config/site";
@@ -56,10 +57,19 @@ export function Hero() {
         <AstroriskIcon className="size-72 md:size-96  animate-[spin_60s_linear_infinite] motion-reduce:animate-none" />
       </div>
       <div className="mx-auto max-w-6xl px-6 pt-20 md:pt-28">
-        <div className="mb-8 flex items-center gap-2 text-accent-500">
+        <div className="mb-8 flex flex-wrap items-center gap-3">
           <span className="font-heading text-sm font-extrabold text-[var(--color-ink)]">
             Developer security scanner
           </span>
+          <a
+            href={site.npmUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 border border-[var(--color-divider)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-mono text-[var(--color-ink)]/75 hover:border-[var(--color-ink)]/40 hover:text-accent-text transition-colors"
+          >
+            <NpmIcon className="size-3.5" />
+            <span>antra-sec</span>
+          </a>
         </div>
         <h1 className="mb-6 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight md:mb-8">
           Catch security issues before they{" "}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { Button } from "@/components/shared/button";
+import { buttonClass, Button } from "@/components/shared/button";
+import { NpmIcon } from "@/components/shared/icons";
 import { Logo } from "@/components/shared/logo";
 import { MobileMenu } from "@/components/shared/mobile-menu";
 import { StarButton } from "@/components/shared/star-button";
@@ -35,6 +36,16 @@ export function NavBar() {
           How it works
         </Link>
         <StarButton />
+        <a
+          href={site.npmUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="npm package antra-sec"
+          className={buttonClass()}
+        >
+          <NpmIcon className="size-4" />
+          npm
+        </a>
         <ThemeToggle />
         <Button href={site.quickStart} variant="primary">
           Get Started
