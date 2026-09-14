@@ -98,6 +98,22 @@ The package is named `antra-sec`; the command it installs is `antra`. Install it
 first: running `npx antra` without installing would fetch an unrelated package
 that already owns that name on npm.
 
+With pnpm 10 or newer, allow the SQLite dependency to build once, or `antra`
+will refuse to start:
+
+```bash
+pnpm approve-builds   # select better-sqlite3
+```
+
+or add it to `pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  better-sqlite3: true
+```
+
+npm needs no extra step.
+
 ### Step 2: Initialize Your Project
 
 Run the initialization wizard in your project root:
