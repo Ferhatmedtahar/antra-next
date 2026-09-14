@@ -17,8 +17,8 @@ Before working on the codebase, please ensure you have the following installed o
 To clone the repository and install all workspace dependencies, execute the following commands in your terminal:
 
 ```bash
-git clone https://github.com/Ferhatmedtahar/Antra.git
-cd Antra
+git clone https://github.com/Ferhatmedtahar/antra-sec.git
+cd antra-sec
 pnpm install
 pnpm test
 ```

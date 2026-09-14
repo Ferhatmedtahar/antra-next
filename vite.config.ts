@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-/** The Studio SPA. Built into dist/studio, served by `boundary-guard studio`. */
+/** The Studio SPA. Built into dist/studio, served by `antra studio`. */
 export default defineConfig({
   root: "studio",
   plugins: [react(), tailwindcss()],

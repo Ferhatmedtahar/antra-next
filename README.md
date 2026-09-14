@@ -13,8 +13,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Ferhatmedtahar/Antra/actions/workflows/ci.yml">
-    <img src="https://github.com/Ferhatmedtahar/Antra/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  <a href="https://github.com/Ferhatmedtahar/antra-sec/actions/workflows/ci.yml">
+    <img src="https://github.com/Ferhatmedtahar/antra-sec/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />

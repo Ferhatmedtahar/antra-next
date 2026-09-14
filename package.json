@@ -13,13 +13,13 @@
     "supabase",
     "sarif"
   ],
-  "homepage": "https://github.com/Ferhatmedtahar/Antra#readme",
+  "homepage": "https://github.com/Ferhatmedtahar/antra-sec#readme",
   "bugs": {
-    "url": "https://github.com/Ferhatmedtahar/Antra/issues"
+    "url": "https://github.com/Ferhatmedtahar/antra-sec/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ferhatmedtahar/Antra.git"
+    "url": "git+https://github.com/Ferhatmedtahar/antra-sec.git"
   },
   "author": "Ferhat Mohamed Tahar",
   "type": "module",

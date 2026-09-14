@@ -8,11 +8,7 @@ const eslintConfig = defineConfig([
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: [
-            "eslint.config.mjs",
-            "commitlint.config.js",
-            "bin/antra.js",
-          ],
+          allowDefaultProject: ["eslint.config.mjs", "commitlint.config.js"],
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -25,6 +21,12 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
     },
+  },
+  {
+    // The launcher imports ../dist, which doesn't exist until `pnpm build`.
+    // CI lints before it builds, so type-aware rules can't resolve it there.
+    files: ["bin/**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
   },
   {
     files: ["tests/**/*.ts"],
