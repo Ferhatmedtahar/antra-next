@@ -49,12 +49,6 @@ export function Hero() {
   return (
     <section id="top" className="relative isolate overflow-hidden">
       <div className="grid-backdrop" aria-hidden />
-      {/*
-        Ambient geometry, bleeding off the top-right corner. `-z-10` puts it
-        under the headline and the terminal, `blur-[2px]` stops the crisp edges
-        from competing with the type, and the section's `overflow-hidden` is
-        what keeps the overhang from adding a horizontal scrollbar.
-      */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-16 -right-16 -z-10 select-none text-accent-text opacity-10 blur-[2px] md:-right-30"
@@ -67,11 +61,11 @@ export function Hero() {
             Developer security scanner
           </span>
         </div>
-        <h1 className="mb-7 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight">
+        <h1 className="mb-5 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight">
           Catch security issues before they{" "}
           <span className="text-accent-text">cross the boundary.</span>
         </h1>
-        <div className="flex flex-wrap items-end gap-8 pb-8">
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-6 pb-8">
           <p className="max-w-[56ch] flex-1 basis-110 text-lg leading-relaxed">
             {site.description}
           </p>

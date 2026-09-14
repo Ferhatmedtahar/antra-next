@@ -7,6 +7,12 @@
   --font-body: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
+  /* The navbar wordmark, and nowhere else — hence the name. Indirected through
+     `--font-anton` (set by next/font on <html>) rather than restating the
+     family, so this token can never shadow the generated one or depend on
+     stylesheet order to win. */
+  --font-wordmark: var(--font-anton), ui-sans-serif, system-ui, sans-serif;
+
   /* Brand blue #1a47ff sits at 500. The ramp keeps hue 228 throughout and is
      fully saturated at 500-600, easing off toward the darker stops — so the
      primary button, accent text, and the mark all draw from one blue. */
@@ -112,8 +118,8 @@
   z-index: -10;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, var(--color-divider) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-divider) 1px, transparent 1px);
+    linear-gradient(to right, var(--color-divider) 1px, transparent 0.5px),
+    linear-gradient(to bottom, var(--color-divider) 1px, transparent 0.5px);
   background-size: 64px 64px;
   -webkit-mask-image: radial-gradient(
     ellipse 70% 60% at 50% 0%,
