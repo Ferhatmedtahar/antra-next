@@ -24,7 +24,7 @@ export function NavBar() {
     <nav className="sticky top-0 z-50 flex items-center gap-5 border-b-2 border-[var(--color-divider)] bg-[var(--color-bg)] px-6 py-3.5">
       <Link
         href="/"
-        className="mr-auto flex items-center gap-2.5 font-wordmark text-lg tracking-tight"
+        className=" mr-auto flex items-center gap-2.5 font-wordmark text-lg tracking-wide"
       >
         <Logo className="h-5 w-10" />
         {site.name}

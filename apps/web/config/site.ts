@@ -4,6 +4,7 @@ export const site = {
   description:
     "Antra is a static analysis security linter for React Server Components and the Next.js App Router. It finds the exact point where a value crosses a trust boundary without validation.",
   githubUrl: "https://github.com/Ferhatmedtahar/Antra",
+  licenseUrl: "https://github.com/Ferhatmedtahar/Antra/blob/main/LICENSE",
   /** `owner/name`, read by the star count in the nav. */
   githubRepo: "Ferhatmedtahar/Antra",
   docsHome: "/docs/getting-started/introduction",

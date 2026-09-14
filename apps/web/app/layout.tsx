@@ -46,6 +46,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${archivo.variable} ${plexMono.variable} ${anton.variable} scrollbar-sleek`}
+      // Pairs with `scroll-behavior: smooth` in globals.css. Without it Next.js
+      // has no way to tell that a smooth reset is unintended, so a route change
+      // animates against a mid-transition page height; with it, Next.js forces
+      // `scroll-behavior: auto` for the length of the transition and leaves the
+      // animation to anchor jumps, which is where it was wanted.
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>

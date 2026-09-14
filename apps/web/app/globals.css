@@ -134,19 +134,13 @@
 }
 
 html {
-  /* The nav is sticky, so an anchor jump (/#how-it-works, a docs sidebar link)
-     would otherwise land with the heading tucked under it. The offset clears
-     the nav's height plus the two-pixel rule beneath it. */
-  scroll-padding-top: 5.5rem;
+  scroll-padding-top: 2.5rem;
+}
 
-  /* No `scroll-behavior: smooth` here, deliberately. It is a property of the
-     scrolling box, so it governs the router's own scroll reset as well as the
-     anchor jumps it was meant for — and the reset is animated against whatever
-     height the page has mid-transition, which is how a route change ends up
-     parked at the bottom of the page it just navigated to. Anchor jumps are
-     instant, which is what the rest of the web does and what a route change
-     should be. Add `scroll-behavior: smooth` back on a scroll container that
-     opts in (`scrollbar-sleek` style) if a specific one wants it. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
