@@ -1,6 +1,10 @@
 import type { SourceFile } from "ts-morph";
 
-import { collectJsxSinks, describeOrigin } from "../ast/render-graph.js";
+import {
+  collectJsxSinks,
+  describeSubject,
+  type Taint,
+} from "../ast/render-graph.js";
 import {
   findingAt,
   type Finding,
@@ -21,6 +25,14 @@ export const bg004: Rule = {
 
   run(file: SourceFile, ctx: RuleContext): Finding[] {
     const findings: Finding[] = [];
+    // In the browser, a non-public env var is undefined and a schema-named
+    // property is usually form state — only a traced source counts there.
+    const isClient =
+      ctx.classifications.get(file.getFilePath())?.boundary === "client";
+    const resolve = (node: Parameters<typeof ctx.resolver.resolve>[0]) => {
+      const taint = ctx.resolver.resolve(node, { requireProvenance: isClient });
+      return isConcreteLeak(taint, isClient) ? taint : null;
+    };
 
     for (const sink of collectJsxSinks(file)) {
       if (!sink.intrinsic) continue;
@@ -28,25 +40,25 @@ export const bg004: Rule = {
 
       for (const attribute of sink.attributes) {
         if (!attribute.value) continue;
-        const taint = ctx.resolver.resolve(attribute.value);
-        if (!taint || taint.opaque) continue;
+        const taint = resolve(attribute.value);
+        if (!taint) continue;
         findings.push(
           findingAt(
             bg004,
             attribute.node,
-            `${capitalize(describeOrigin(taint.origin))} is rendered into attribute "${attribute.name}" of ${tag}`,
+            `${describeSubject(taint.origin)} is rendered into attribute "${attribute.name}" of ${tag}`,
             taint.trace,
           ),
         );
       }
       for (const child of sink.children) {
-        const taint = ctx.resolver.resolve(child);
-        if (!taint || taint.opaque) continue;
+        const taint = resolve(child);
+        if (!taint) continue;
         findings.push(
           findingAt(
             bg004,
             child,
-            `${capitalize(describeOrigin(taint.origin))} is rendered as text inside ${tag}`,
+            `${describeSubject(taint.origin)} is rendered as text inside ${tag}`,
             taint.trace,
           ),
         );
@@ -56,6 +68,10 @@ export const bg004: Rule = {
   },
 };
 
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
+function isConcreteLeak(
+  taint: Taint | null,
+  isClient: boolean,
+): taint is Taint {
+  if (!taint || taint.opaque) return false;
+  return !(isClient && taint.origin.kind === "env");
 }

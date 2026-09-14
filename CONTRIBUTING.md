@@ -9,7 +9,7 @@ We welcome contributions from developers of all backgrounds. This guide will wal
 Before working on the codebase, please ensure you have the following installed on your machine:
 
 1. Node.js version 20 or higher.
-2. pnpm package manager (version 9 or newer).
+2. pnpm package manager (version 11.24 or newer; `corepack enable` picks up the pinned version).
 3. Git version control.
 
 ## Setting Up Your Local Environment
@@ -18,7 +18,7 @@ To clone the repository and install all workspace dependencies, execute the foll
 
 ```bash
 git clone https://github.com/Ferhatmedtahar/Antra.git
-cd boundary-guard
+cd Antra
 pnpm install
 pnpm test
 ```
@@ -48,7 +48,7 @@ The following commands are available from the root of the repository:
 | Command                       | Purpose                                                                                              |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `pnpm dev <command>`          | Runs the CLI directly from TypeScript source code. Example: `pnpm dev scan tests/fixtures/rules-app` |
-| `pnpm test`                   | Runs the entire test suite across all 31 test files using Vitest.                                    |
+| `pnpm test`                   | Runs the entire test suite using Vitest.                                                             |
 | `pnpm typecheck`              | Runs TypeScript type checking across both the CLI engine and the Studio SPA.                         |
 | `pnpm build`                  | Compiles the CLI engine with tsup and builds the Studio SPA into dist/.                              |
 | `pnpm --filter studio dev`    | Starts the Studio frontend development server on port 5173 with hot module replacement.              |
@@ -93,8 +93,10 @@ False positive reports are extremely valuable. If Antra flags a value that is sa
 Before submitting a pull request:
 
 1. Run `pnpm typecheck` and ensure there are zero type errors.
-2. Run `pnpm test` and ensure all tests pass.
-3. Keep pull requests focused on a single feature or fix.
-4. Maintain high documentation standards without using emojis or dashes.
+2. Run `pnpm lint` and `pnpm format:check`; CI runs both.
+3. Run `pnpm test` and ensure all tests pass.
+4. Use conventional commit messages (`feat(engine): ...`, `fix(studio): ...`); commitlint checks them on every pull request.
+5. Keep pull requests focused on a single feature or fix.
+6. Maintain high documentation standards without using emojis or dashes.
 
 Antra is maintained by Ferhat (Ferhatmedtahar) and the open source community. Thank you for making React and Next.js applications more secure.

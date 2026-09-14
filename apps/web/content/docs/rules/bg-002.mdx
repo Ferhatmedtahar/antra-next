@@ -7,7 +7,7 @@ order: 620
 **Severity:** `error`
 
 A Server Action that accepts parameters, or a route handler that reads the
-request body, with no call to a configured validator anywhere in its body.
+request body, where no configured validator is ever given that input.
 
 ## Why it fires
 
@@ -18,14 +18,29 @@ reachable from our own page" is not a defence the analysis can act on.
 ## What it checks
 
 For a Server Action, the rule looks at whether the action accepts parameters at
-all. For a route handler, it looks for a body read:
+all. For a route handler, it looks for a read of the handler's own request (its
+first parameter):
 
-- a call to `.json()`, `.formData()`, or `.text()`
-- a direct read of `req.body` / `request.body`
+- a call to `.json()`, `.formData()`, `.text()`, `.arrayBuffer()`, or `.blob()`
+- a direct read of `request.body`
 
-It then searches the handler's body for a call to a validator you have
-configured under `sanitizers`. If there is one, no finding. If there is not,
-there is.
+Calling `.json()` on the response of an outgoing `fetch` is not a body read.
+Handlers wrapped in a higher-order function are unwrapped too:
+
+```ts
+export const POST = withAuth(async (req: Request) => {
+  const body = await req.json();
+  // ...
+});
+```
+
+It then looks for a call to a validator you have configured under `sanitizers`
+that receives the input: a parameter, the body, or a variable derived from
+them, such as `Object.fromEntries(formData)`. A validator called on something
+else does not count, and neither do parsers that decode rather than validate
+(`JSON.parse`, `Date.parse`, `URL.parse`, `path.parse`, `qs.parse`, ...).
+
+Query strings and route params are not checked by this rule.
 
 `GET`, `HEAD`, and `OPTIONS` are exempt, since they have no body to validate.
 
@@ -87,7 +102,10 @@ Then register the function name in `antra.config.json`, or in Studio under
 Once the name is declared, Antra treats a call to it as an approved checkpoint:
 
 ```ts
-export async function uploadChatAttachmentAction(formData: FormData, conversationId: string) {
+export async function uploadChatAttachmentAction(
+  formData: FormData,
+  conversationId: string,
+) {
   "use server";
   const validId = validateConversationId(conversationId);
   // ...

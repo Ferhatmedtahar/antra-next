@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -7,16 +10,19 @@ import {
 import { writeConfig, writeSnapshot } from "../../../src/config/write.js";
 import { runScan } from "../../../src/engine.js";
 import { createStudioApp } from "../../../src/studio/server.js";
-import type {
-  BaselineResponse,
-  ProjectInfo,
-  ScanDetail,
-  ScanRunResponse,
-  ScanSummary,
-  SourcesResponse,
-  StudioConfig,
+import {
+  STUDIO_REQUEST_HEADER,
+  type BaselineResponse,
+  type ProjectInfo,
+  type ScanDetail,
+  type ScanRunResponse,
+  type ScanSummary,
+  type SourcesResponse,
+  type StudioConfig,
 } from "../../../src/studio/types.js";
 import { copyFixture, type TempProject } from "../../helpers/fixture.js";
+
+const STUDIO_HEADERS = { [STUDIO_REQUEST_HEADER]: "1" };
 
 let project: TempProject;
 let app: ReturnType<typeof createStudioApp>;
@@ -35,7 +41,7 @@ beforeAll(async () => {
       frameworkAdapter: "nextjs-app-router",
       providers: [],
       keywords: { include: [...DEFAULT_KEYWORDS] },
-      sensitiveFields: { include: [], exclude: ["source_hash"] },
+      sensitiveFields: { include: [], exclude: ["source_token"] },
       sanitizers: [...DEFAULT_SANITIZERS],
       rules: {},
     },
@@ -46,7 +52,7 @@ beforeAll(async () => {
     sources: [
       { field: "password_hash", origin: "prisma:User.password_hash" },
       { field: "email", origin: "prisma:User.email" },
-      { field: "source_hash", origin: "prisma:Doc.source_hash" },
+      { field: "source_token", origin: "prisma:Doc.source_token" },
     ],
   });
   await runScan({ rootDir: project.dir });
@@ -106,7 +112,7 @@ describe("studio api", () => {
       sensitive: false,
       keywordHit: false,
     });
-    expect(byField["source_hash"]).toMatchObject({
+    expect(byField["source_token"]).toMatchObject({
       sensitive: false,
       keywordHit: true,
       ignored: true,
@@ -125,7 +131,7 @@ describe("studio api", () => {
     const saved = await app.request("/api/config", {
       method: "PUT",
       body: JSON.stringify(next),
-      headers: { "Content-Type": "application/json" },
+      headers: { ...STUDIO_HEADERS, "Content-Type": "application/json" },
     });
     expect(saved.status).toBe(200);
 
@@ -140,7 +146,7 @@ describe("studio api", () => {
     const bad = await app.request("/api/config", {
       method: "PUT",
       body: JSON.stringify({ version: 2 }),
-      headers: { "Content-Type": "application/json" },
+      headers: { ...STUDIO_HEADERS, "Content-Type": "application/json" },
     });
     expect(bad.status).toBe(400);
     expect(((await bad.json()) as { error: string }).error).toBe(
@@ -149,22 +155,55 @@ describe("studio api", () => {
   });
 
   it("runs a scan honouring the saved config, and records a baseline", async () => {
-    const run = await app.request("/api/scan", { method: "POST" });
+    const run = await app.request("/api/scan", {
+      method: "POST",
+      headers: STUDIO_HEADERS,
+    });
     const body = (await run.json()) as ScanRunResponse;
     expect(body.scanId).toBe(2);
     // BG-002 was switched off (−2) and `email` pinned (+1: `user={safe}` now
     // carries a sensitive field) in the previous test — the saved config drives the scan.
     expect(body.findings).toBe(9);
 
-    const baseline = await app.request("/api/baseline", { method: "POST" });
+    const baseline = await app.request("/api/baseline", {
+      method: "POST",
+      headers: STUDIO_HEADERS,
+    });
     const recorded = (await baseline.json()) as BaselineResponse;
     expect(recorded.recorded).toBe(9);
     expect(recorded.file).toBe(".antra/baseline.json");
 
     const again = (await (
-      await app.request("/api/scan", { method: "POST" })
+      await app.request("/api/scan", {
+        method: "POST",
+        headers: STUDIO_HEADERS,
+      })
     ).json()) as ScanRunResponse;
     expect(again).toMatchObject({ scanId: 3, findings: 0, baselined: 9 });
+  });
+
+  it("refuses cross-origin and rebinding requests to the API", async () => {
+    const baselineFile = path.join(project.dir, ".antra", "baseline.json");
+    fs.rmSync(baselineFile, { force: true });
+
+    const noHeader = await app.request("/api/baseline", { method: "POST" });
+    expect(noHeader.status).toBe(403);
+    expect(fs.existsSync(baselineFile)).toBe(false);
+
+    const foreignOrigin = await app.request("/api/scan", {
+      method: "POST",
+      headers: { ...STUDIO_HEADERS, Origin: "http://evil.test" },
+    });
+    expect(foreignOrigin.status).toBe(403);
+
+    const rebound = await app.request("http://evil.test:8080/api/scans");
+    expect(rebound.status).toBe(403);
+
+    const localOrigin = await app.request("/api/scan", {
+      method: "POST",
+      headers: { ...STUDIO_HEADERS, Origin: "http://localhost:5173" },
+    });
+    expect(localOrigin.status).toBe(200);
   });
 
   it("serves the SPA index for unknown paths, or a clear 503 when assets aren't built", async () => {

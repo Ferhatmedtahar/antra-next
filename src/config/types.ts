@@ -16,7 +16,7 @@ export const antraConfigSchema = z.object({
   version: z.literal(1),
   frameworkAdapter: z.string().min(1),
   providers: z.array(providerConfigSchema),
-  /** Name patterns: substring (≥4 chars) or whole-word (≤3) — any language. */
+  /** Name patterns: substring, or whole-word for ≤3 chars and weak words (token, secret…) — any language. */
   keywords: z.object({
     include: z.array(z.string()),
     /** Legacy alias for sensitiveFields.exclude. */

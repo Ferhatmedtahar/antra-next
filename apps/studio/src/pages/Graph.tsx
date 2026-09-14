@@ -545,7 +545,11 @@ function FilterSwitch({
     <Tooltip>
       <TooltipTrigger asChild>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+          <Switch
+            checked={checked}
+            onCheckedChange={onChange}
+            aria-label={label}
+          />
           <span>{label}</span>
           {tooltip ? (
             <IconInfoCircle className="size-3.5 text-muted-foreground" />

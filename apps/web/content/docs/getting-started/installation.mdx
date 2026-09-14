@@ -8,15 +8,23 @@ Antra is a CLI. There is nothing to host and nothing to install on a server.
 
 ## Requirements
 
-- Node.js with a version new enough for the toolchain you already build with
+- Node.js 20 or newer
 - a Next.js App Router project to point it at
 - Git, for the `--diff` and `--staged` scan modes
 
 ## Add it to a project
 
 ```bash
-pnpm add -D antra
+pnpm add -D antra-sec
 ```
+
+The package is named `antra-sec`; the command it installs is `antra`. Install it
+first: running `npx antra` without installing would fetch an unrelated package
+that already owns that name on npm.
+
+A dev dependency's command is not on your shell's `PATH`, so run it through your
+package manager (`pnpm exec antra`, `npx antra`) or from a `package.json` script.
+The examples below write it as plain `antra`.
 
 ## Confirm it works
 

@@ -40,6 +40,9 @@ export interface DoctorReport {
 
 const MIN_NODE_MAJOR = 20;
 
+/** Keywords older configs were seeded with that now cause more noise than signal. */
+const BROAD_KEYWORDS = new Set(["hash"]);
+
 /** Provider settings that name a file the extractor will open. */
 function providerPaths(provider: Record<string, unknown>): string[] {
   return Object.entries(provider).flatMap(([key, value]) =>
@@ -118,6 +121,18 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         status: "ok",
         detail: `${CONFIG_FILENAME} · ${config.providers.length} provider(s) · ${config.keywords.include.length} keyword(s) · ${config.sensitiveFields.include.length} pinned · ${config.sensitiveFields.exclude.length} ignored`,
       });
+      const broad = config.keywords.include.filter((keyword) =>
+        BROAD_KEYWORDS.has(keyword.toLowerCase()),
+      );
+      if (broad.length > 0) {
+        add({
+          id: "keywords",
+          label: "Keywords",
+          status: "warn",
+          detail: `broad keyword(s): ${broad.join(", ")} — matches commit/content/file hashes too`,
+          hint: "Remove it from keywords.include and pin the exact fields in sensitiveFields.include instead.",
+        });
+      }
     } catch (error) {
       add({
         id: "config",

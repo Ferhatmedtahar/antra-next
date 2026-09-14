@@ -1,13 +1,14 @@
 ---
 title: "BG-003: Opaque object pass"
-description: An unprojected fetch or database result is passed whole to a Client Component.
+description: An unprojected fetch or database result is sent whole to the client.
 order: 630
 ---
 
 **Severity:** `warning`
 
-The raw, unprojected result of a fetch or database call is handed whole to a
-Client Component.
+The raw, unprojected result of a fetch or database call is handed whole to the
+client: as a Client Component prop, as a Server Action's return value, or as a
+route handler's response body.
 
 ## Why it fires
 
@@ -62,7 +63,8 @@ clears the value:
 
 ```tsx
 const safeUser = publicStudentSchema.parse(studentUser);
-<StudentProfileScreen user={safeUser} />
+
+return <StudentProfileScreen user={safeUser} />;
 ```
 
 ### Suppress it when you have checked the query
@@ -71,6 +73,10 @@ If you have read the query and know that every column is safe and intended for
 the browser, record that at the crossing:
 
 ```tsx
-{/* antra-disable-next-line BG-003 reason="public student profile DTO verified" */}
-<StudentProfileScreen user={studentUser} />
+return (
+  <main>
+    {/* antra-disable-next-line BG-003 reason="public profile DTO verified" */}
+    <StudentProfileScreen user={studentUser} />
+  </main>
+);
 ```

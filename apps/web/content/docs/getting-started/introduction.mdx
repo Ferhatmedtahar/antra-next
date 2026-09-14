@@ -26,14 +26,17 @@ follows concrete values from where they enter your program to the boundary they
 cross. The result is a finding that names the rule, the file and line, the sink
 expression, and the path the value took to get there.
 
-Because the analysis is static, it runs locally: no network calls, no code
-leaving the machine, no running application to instrument.
+Because the analysis is static, it runs locally: a scan makes no network calls,
+sends no code off the machine, and needs no running application to instrument.
+Only `init` and `sync` may reach out, and only to a Supabase project or OpenAPI
+URL you configure.
 
 ## The pipeline
 
 1. **Scan**: parse the project and classify every file's boundary role.
-2. **Detect**: trace values across the React Flight boundary, Server Actions,
-   and route handlers.
+2. **Detect**: trace values into Client Component props, Server Action return
+   values, and route handler responses, and check what Server Actions and route
+   handlers accept.
 3. **Understand**: read the path a value took, per finding.
 4. **Fix**: sanitize, suppress with a reason, or baseline what you accept.
 

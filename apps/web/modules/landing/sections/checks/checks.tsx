@@ -16,7 +16,7 @@ const CHECKS = [
   },
   {
     title: "Taint tracking",
-    body: "Follows a value from its source through the call graph to the boundary it crosses.",
+    body: "Follows a value from its source through assignments, function returns, component props and up to three imports to the boundary it crosses.",
   },
   {
     title: "Sanitizer-aware suppression",
@@ -30,7 +30,7 @@ export function Checks() {
       id="checks"
       kicker="Checks"
       title="What Antra actually looks for."
-      lede="Antra is a static analysis security linter. Every check below runs on your source, locally, with no network calls and no code leaving the machine."
+      lede="Antra is a static analysis security linter. Every check below runs on your source, locally: a scan makes no network calls and no code leaves the machine."
     >
       <div
         aria-hidden

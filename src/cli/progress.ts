@@ -152,7 +152,7 @@ class StepList implements ProgressHandle {
     const label = fit(STEP_LABEL[step.phase], LABEL_WIDTH);
     const detail = fit(step.detail ?? "", DETAIL_WIDTH);
     this.out.write(
-      `  ${paint(mark)} ${label}  ${this.c.gray(`${detail}${elapsed.toFixed(2)}s`)}\n`,
+      `  ${paint(mark)} ${label}  ${this.c.gray(`${detail} ${elapsed.toFixed(2)}s`)}\n`,
     );
   }
 }

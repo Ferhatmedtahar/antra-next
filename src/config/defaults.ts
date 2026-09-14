@@ -14,7 +14,6 @@ export const DEFAULT_KEYWORDS: readonly string[] = [
   "private_key",
   "credential",
   "ssn",
-  "hash",
   "salt",
   "otp",
 ];

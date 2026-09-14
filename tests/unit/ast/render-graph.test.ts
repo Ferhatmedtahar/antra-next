@@ -17,9 +17,9 @@ const resolver = new TaintResolver({
   sanitizer: createSanitizerMatcher(["zod", "sanitizeUser"]),
 });
 
-function parse(code: string): SourceFile {
+function parse(code: string, fileName = "a.tsx"): SourceFile {
   return new Project({ useInMemoryFileSystem: true }).createSourceFile(
-    "a.tsx",
+    fileName,
     code,
   );
 }
@@ -226,6 +226,92 @@ describe("TaintResolver", () => {
     `);
     expect(resolver.resolve(expr(file, "msg"))).toBeNull();
     expect(resolver.resolve(expr(file, "real"))?.origin.kind).toBe("lexical");
+  });
+});
+
+describe("TaintResolver — precision", () => {
+  it("never treats a comparison or an && guard as the rendered value", () => {
+    const file = parse(`
+      const user = await db.user.findUnique({});
+      const g1 = process.env.SECRET === "x";
+      const g2 = process.env.SECRET && "shown";
+      const g3 = user.password_hash !== null;
+      const g4 = ok && user.password_hash;
+      const g5 = user.api_key || "none";
+      const g6 = "prefix-" + process.env.SECRET;
+    `);
+    expect(resolver.resolve(expr(file, "g1"))).toBeNull();
+    expect(resolver.resolve(expr(file, "g2"))).toBeNull();
+    expect(resolver.resolve(expr(file, "g3"))).toBeNull();
+    expect(resolver.resolve(expr(file, "g4"))?.origin.kind).toBe(
+      "schema-field",
+    );
+    expect(resolver.resolve(expr(file, "g5"))?.origin.kind).toBe("lexical");
+    expect(resolver.resolve(expr(file, "g6"))?.origin.kind).toBe("env");
+  });
+
+  it("treats build-time public env vars as public", () => {
+    const file = parse(`
+      const a = process.env.NODE_ENV;
+      const b = process.env.NEXT_RUNTIME;
+      const c = process.env.VERCEL_ENV;
+    `);
+    for (const name of ["a", "b", "c"]) {
+      expect(resolver.resolve(expr(file, name))).toBeNull();
+    }
+  });
+
+  it("never reports what the client itself sent: request bodies, action args, page params", () => {
+    const route = parse(
+      `
+      export async function POST(request: Request) {
+        const body = await request.json();
+        const echoed = body;
+        const pw = body.password_hash;
+      }
+    `,
+      "route.ts",
+    );
+    expect(resolver.resolve(expr(route, "echoed"))).toBeNull();
+    expect(resolver.resolve(expr(route, "body.password_hash"))).toBeNull();
+
+    const action = parse(`
+      "use server";
+      export async function save(data: any) {
+        const pw = data.password_hash;
+      }
+    `);
+    expect(resolver.resolve(expr(action, "data.password_hash"))).toBeNull();
+
+    const page = parse(
+      `
+      export default async function Page({ searchParams }: any) {
+        const sp = await searchParams;
+        const a = searchParams.password_hash;
+        const b = sp.password_hash;
+      }
+    `,
+      "page.tsx",
+    );
+    expect(
+      resolver.resolve(expr(page, "searchParams.password_hash")),
+    ).toBeNull();
+    expect(resolver.resolve(expr(page, "sp.password_hash"))).toBeNull();
+  });
+
+  it("can require provenance for schema-backed names too", () => {
+    const file = parse(`
+      const [values, setValues] = useState({ password_hash: "" });
+      const v = values.password_hash;
+    `);
+    expect(
+      resolver.resolve(expr(file, "values.password_hash"))?.origin.kind,
+    ).toBe("schema-field");
+    expect(
+      resolver.resolve(expr(file, "values.password_hash"), {
+        requireProvenance: true,
+      }),
+    ).toBeNull();
   });
 });
 

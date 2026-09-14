@@ -24,20 +24,21 @@ import {
   type StoredFile,
   type StoredFinding,
 } from "../storage/db.js";
-import type {
-  BaselineResponse,
-  CodeFrame,
-  FindingDetail,
-  GraphEdge,
-  GraphNode,
-  GraphResponse,
-  ProjectInfo,
-  RuleInfo,
-  ScanDetail,
-  ScanRunResponse,
-  ScanSummary,
-  SourcesResponse,
-  StudioConfig,
+import {
+  STUDIO_REQUEST_HEADER,
+  type BaselineResponse,
+  type CodeFrame,
+  type FindingDetail,
+  type GraphEdge,
+  type GraphNode,
+  type GraphResponse,
+  type ProjectInfo,
+  type RuleInfo,
+  type ScanDetail,
+  type ScanRunResponse,
+  type ScanSummary,
+  type SourcesResponse,
+  type StudioConfig,
 } from "./types.js";
 
 const FRAME_CONTEXT = 2;
@@ -108,6 +109,17 @@ function listedIn(
   );
 }
 
+const LOCAL_HOSTNAMES = new Set(["127.0.0.1", "localhost", "[::1]"]);
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isLocalUrl(url: string): boolean {
+  try {
+    return LOCAL_HOSTNAMES.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** Every route the Studio SPA talks to. Pure adapter over the engine — no logic of its own. */
 export function createStudioApp(rootDir: string): Hono {
   const app = new Hono();
@@ -117,6 +129,23 @@ export function createStudioApp(rootDir: string): Hono {
       return c.json({ error: "Invalid config", issues: error.issues }, 400);
     }
     return c.json({ error: error.message }, 500);
+  });
+
+  // Binding to 127.0.0.1 isn't enough on its own: any page in the user's
+  // browser can still send requests here. A non-local Host is DNS rebinding;
+  // a state change without the custom header (or from a foreign Origin) is
+  // CSRF — e.g. silently baselining every finding.
+  app.use("/api/*", async (c, next) => {
+    const origin = c.req.header("Origin");
+    const forbidden =
+      !isLocalUrl(c.req.url) ||
+      (origin !== undefined && !isLocalUrl(origin)) ||
+      (UNSAFE_METHODS.has(c.req.method) &&
+        c.req.header(STUDIO_REQUEST_HEADER) !== "1");
+    if (forbidden) {
+      return c.json({ error: "forbidden: cross-origin request" }, 403);
+    }
+    await next();
   });
 
   app.get("/api/project", async (c) => {

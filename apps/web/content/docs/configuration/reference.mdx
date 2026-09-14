@@ -32,11 +32,16 @@ half-applied.
 }
 ```
 
-`include` holds name patterns. The matching rule depends on the pattern's
-length: patterns of four characters or more match as substrings, and patterns of
-three characters or fewer match as whole words. That asymmetry is what keeps a
-three-letter pattern from matching half your codebase, and it applies to names
-in any language.
+`include` holds name patterns, matched against names with case and separators
+ignored (`passwordHash`, `password_hash`, `PASSWORD-HASH`). Most patterns match as
+substrings, so `password` catches `passwordhash` and `motdepasse` catches
+`mot_de_passe`. Patterns of three characters or fewer, and the common English
+words `token`, `secret`, `salt`, `hash`, `key` and `pin`, match whole words
+only: `accessToken` matches `token`, `totalTokens` and `secretaryName` do not.
+
+The default list no longer contains `hash`, which matched commit and content
+hashes. A password or token hash is still caught through `password` or
+`token`. `antra doctor` warns when an older config still has it.
 
 `keywords.exclude` is accepted, but it is a legacy alias for
 `sensitiveFields.exclude`. Prefer the latter.
@@ -166,9 +171,9 @@ scan that behaves oddly.
 
 Antra keeps its own state under `.antra/`:
 
-| Path                            | Written by                 | Holds                                                                                  |
-| ------------------------------- | -------------------------- | -------------------------------------------------------------------------------------- |
-| `.antra/antra-findings.sqlite`  | `antra scan`               | Scan history; read by `antra query` and Studio.                                        |
+| Path                            | Written by                 | Holds                                                                                 |
+| ------------------------------- | -------------------------- | ------------------------------------------------------------------------------------- |
+| `.antra/antra-findings.sqlite`  | `antra scan`               | Scan history; read by `antra query` and Studio.                                       |
 | `.antra/contract-snapshot.json` | `antra init`, `antra sync` | The extracted taint sources: a generation timestamp and a list of field/origin pairs. |
 
 Add `.antra/` to `.gitignore`. It is derived state, regenerated from
