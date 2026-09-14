@@ -109,8 +109,10 @@ export function DocsSidebar({ groups }: { groups: DocsNavGroup[] }) {
  * `transition-all` holds the flip of that property until the slide finishes
  * going the other way.
  *
- * The drawer covers the nav rather than sitting under it, so nothing needs to
- * know the nav's height — the same reason the bar itself is not sticky.
+ * The drawer covers the nav rather than sitting under it, so nothing here needs
+ * to know the nav's height. The bar travels with the nav instead of being
+ * sticky itself: `DocsLayout` puts both in one sticky box, which is what keeps
+ * the bar pinned under the nav without either knowing the other's height.
  */
 export function DocsMenu({ groups }: { groups: DocsNavGroup[] }) {
   const [open, setOpen] = useState(false);
