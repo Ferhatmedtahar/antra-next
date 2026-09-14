@@ -107,7 +107,7 @@ const GUIDANCE: Record<string, RuleGuidance> = {
   "BG-003": {
     title: "Opaque Ingress Object Pass",
     tagline:
-      "A raw database row or API response is passed whole into a Client Component without field projection.",
+      "A raw database row or API response is sent whole to the client (Client Component prop, Server Action return, or route response) without field projection.",
     isTypeError:
       "This is NOT a TypeScript typing error. TypeScript types are erased at compile time and provide zero runtime boundary protection. React Server Components serialize the entire runtime JavaScript object across the network via the Flight protocol. Even if your Client Component only renders a user's name, every extra column returned by the database (like emails, phone numbers, or future migration fields) is serialized and exposed in the browser's Network tab.",
     whyItMatters:
@@ -138,9 +138,9 @@ const GUIDANCE: Record<string, RuleGuidance> = {
   "BG-001": {
     title: "Server-to-Client Sensitive Field Leak",
     tagline:
-      "A specific sensitive field (from DB schema, env secret, or sensitive keyword) is passed to a Client Component.",
+      "A specific sensitive field (from DB schema, env secret, or sensitive keyword) reaches the client through a Client Component prop, a Server Action return, or a route response.",
     isTypeError:
-      "This is triggered by a concrete sensitive data source (e.g. password_hash, token, secret, stripe_id, or process.env secret) crossing from a Server Component to a Client Component.",
+      "This is triggered by a concrete sensitive data source (e.g. password_hash, token, secret, stripe_id, or process.env secret) leaving the server: as a Client Component prop, as a Server Action's return value, or in a route handler's response body.",
     whyItMatters:
       "Any prop passed into a 'use client' component is serialized into the initial HTML and Flight response. The client browser can read this value directly via browser DevTools or Network inspect.",
     options: [

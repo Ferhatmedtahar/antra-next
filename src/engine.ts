@@ -118,8 +118,13 @@ export async function runScan(options: ScanOptions): Promise<ScanResult> {
 
   phase("project");
   const { project, sourceFiles } = loadProject(rootDir);
-  phase("classify", `${sourceFiles.length} files`);
+  phase("project", `${sourceFiles.length} files`);
+  phase("classify");
   const classificationList = sourceFiles.map(classifyFile);
+  phase(
+    "classify",
+    `${classificationList.filter((entry) => entry.boundary === "client").length} client`,
+  );
   const classifications = new Map(
     classificationList.map((entry) => [entry.filePath, entry]),
   );
