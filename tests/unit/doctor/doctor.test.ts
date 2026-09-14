@@ -120,4 +120,28 @@ describe("runDoctor", () => {
     expect(status(report, "framework")).toBe("fail");
     expect(report.healthy).toBe(false);
   });
+
+  it("warns about a legacy broad keyword left in the config", async () => {
+    project = copyFixture("rules-app");
+    await writeConfig(
+      project.dir,
+      {
+        version: 1,
+        frameworkAdapter: "nextjs-app-router",
+        providers: [],
+        keywords: { include: ["password", "hash"] },
+        sensitiveFields: { include: [], exclude: [] },
+        sanitizers: ["zod"],
+        rules: {},
+      },
+      { overwrite: false },
+    );
+
+    const report = await runDoctor(project.dir);
+
+    expect(status(report, "keywords")).toBe("warn");
+    expect(
+      report.checks.find((check) => check.id === "keywords")?.detail,
+    ).toContain("hash");
+  });
 });

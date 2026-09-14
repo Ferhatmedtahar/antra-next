@@ -11,6 +11,35 @@ const KNOWN: Record<string, readonly RegExp[]> = {
   "next-safe-action": [/\.(?:schema|inputSchema|bindArgsSchemas)$/],
 };
 
+/**
+ * Receivers whose `.parse` is decoding, not validation. Without this,
+ * `Date.parse(input)` would satisfy the zod pattern and silence BG-002.
+ */
+const NOT_VALIDATORS = new Set([
+  "JSON",
+  "Date",
+  "URL",
+  "Number",
+  "BigInt",
+  "Math",
+  "path",
+  "url",
+  "querystring",
+  "qs",
+  "cookie",
+  "cookies",
+  "YAML",
+  "yaml",
+  "Papa",
+  "csv",
+  "marked",
+]);
+
+function receiverRoot(calleeText: string): string | null {
+  const dot = calleeText.indexOf(".");
+  return dot < 0 ? null : calleeText.slice(0, dot);
+}
+
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -26,8 +55,9 @@ export function createSanitizerMatcher(
   const patterns = names.flatMap(
     (name) => KNOWN[name] ?? [new RegExp(`(?:^|\\.)${escapeRegExp(name)}$`)],
   );
-  return (calleeText) =>
-    // JSON.parse is deserialization, not validation — never a sanitizer.
-    !calleeText.startsWith("JSON.") &&
-    patterns.some((pattern) => pattern.test(calleeText));
+  return (calleeText) => {
+    const root = receiverRoot(calleeText);
+    if (root !== null && NOT_VALIDATORS.has(root)) return false;
+    return patterns.some((pattern) => pattern.test(calleeText));
+  };
 }

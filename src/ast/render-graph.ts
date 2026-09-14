@@ -28,6 +28,7 @@ import {
 import type { SanitizerMatcher } from "../classification/sanitizers.js";
 import type { TraceStep } from "../rules/types.js";
 import type { TaintSource } from "../schema/types.js";
+import { isServerAction } from "./boundary-classifier.js";
 
 /**
  * P1 in docs/c4: binding provenance. Given an expression at a sink, walk
@@ -47,7 +48,14 @@ export type TaintOrigin =
   /** `process.env.X` (never NEXT_PUBLIC_*). */
   | { kind: "env"; name: string }
   /** Raw result of a network/DB call, still unprojected. */
-  | { kind: "ingress"; call: string };
+  | { kind: "ingress"; call: string }
+  /**
+   * Something the client sent: a request body, a Server Action argument, a
+   * page's `params`/`searchParams`. Never reported — handing the browser
+   * back its own input leaks nothing — but it stops a schema-named property
+   * read off it from looking like server data.
+   */
+  | { kind: "input"; source: string };
 
 export interface Taint {
   origin: TaintOrigin;
@@ -74,13 +82,64 @@ export function describeOrigin(origin: TaintOrigin): string {
       return `process.env.${origin.name}`;
     case "ingress":
       return `unprojected result of ${origin.call}`;
+    case "input":
+      return `client input (${origin.source})`;
   }
+}
+
+export interface ResolveOptions {
+  /**
+   * Treat schema-backed names like keyword-only ones: they need a traced
+   * source. Right for code that runs in the browser, where `values.password`
+   * is form state rather than a row.
+   */
+  requireProvenance?: boolean;
 }
 
 const MAX_DEPTH = 12;
 const MAX_FILE_HOPS = 1;
 /** One parameter hop: a helper's caller is checked, its caller's caller isn't. */
 const MAX_PARAM_HOPS = 1;
+/** `withAuth(withRateLimit(async (req) => …))` — how deep a wrapper call is unwrapped. */
+const MAX_WRAPPER_DEPTH = 2;
+
+/**
+ * Inlined at build time and harmless in the browser, so reading them is
+ * never a leak (`{process.env.NODE_ENV === "development" && …}`).
+ */
+const PUBLIC_ENV = new Set([
+  "NODE_ENV",
+  "NEXT_RUNTIME",
+  "NEXT_PHASE",
+  "CI",
+  "VERCEL_ENV",
+]);
+
+/** Operators whose result is a boolean, never the operand's value. */
+const BOOLEAN_OPERATORS = new Set<SyntaxKind>([
+  SyntaxKind.EqualsEqualsEqualsToken,
+  SyntaxKind.ExclamationEqualsEqualsToken,
+  SyntaxKind.EqualsEqualsToken,
+  SyntaxKind.ExclamationEqualsToken,
+  SyntaxKind.LessThanToken,
+  SyntaxKind.GreaterThanToken,
+  SyntaxKind.LessThanEqualsToken,
+  SyntaxKind.GreaterThanEqualsToken,
+  SyntaxKind.InstanceOfKeyword,
+  SyntaxKind.InKeyword,
+]);
+
+/** `request.json()` and friends: reading what the client sent. */
+const BODY_READERS = new Set([
+  "json",
+  "formData",
+  "text",
+  "arrayBuffer",
+  "blob",
+]);
+
+/** Files whose default export receives `params`/`searchParams` from the URL. */
+const ROUTE_SEGMENT_FILE = /^(?:page|layout|template|default)\.[jt]sx?$/;
 
 /** Properties that carry an opaque payload through unchanged (`const { data } = await ...`). */
 const PASSTHROUGH = new Set([
@@ -137,8 +196,17 @@ export function detectIngress(call: CallExpression): string | null {
 export type CallableNode =
   FunctionDeclaration | ArrowFunction | FunctionExpression | MethodDeclaration;
 
-/** The function behind a declaration: itself, or a variable's function initializer. */
-export function functionLikeOf(node: Node | undefined): CallableNode | null {
+/**
+ * The function behind a declaration: itself, a variable's function
+ * initializer, or the function a wrapper call was given —
+ * `cache(async () => …)`, `unstable_cache(load, keys)`,
+ * `withAuth(async (req) => …)`. Only ever asked about things that are
+ * called or exported as handlers, so a call initializer is a wrapper.
+ */
+export function functionLikeOf(
+  node: Node | undefined,
+  depth = 0,
+): CallableNode | null {
   if (!node) return null;
   if (
     Node.isFunctionDeclaration(node) ||
@@ -149,7 +217,20 @@ export function functionLikeOf(node: Node | undefined): CallableNode | null {
     return node;
   }
   if (Node.isVariableDeclaration(node) || Node.isPropertyAssignment(node)) {
-    return functionLikeOf(node.getInitializer());
+    return functionLikeOf(node.getInitializer(), depth);
+  }
+  if (Node.isParenthesizedExpression(node) || Node.isAsExpression(node)) {
+    return functionLikeOf(node.getExpression(), depth);
+  }
+  if (Node.isCallExpression(node) && depth < MAX_WRAPPER_DEPTH) {
+    for (const argument of node.getArguments()) {
+      const target = Node.isIdentifier(argument)
+        ? resolveDeclarations(argument)[0]
+        : argument;
+      if (target === node) continue;
+      const fn = functionLikeOf(target, depth + 1);
+      if (fn) return fn;
+    }
   }
   return null;
 }
@@ -169,6 +250,7 @@ interface WalkState {
   hops: number;
   paramHops: number;
   seen: Set<Node>;
+  requireProvenance: boolean;
 }
 
 /** The name call sites use for a function: its own, or the variable holding it. */
@@ -249,13 +331,15 @@ export class TaintResolver {
   /** Call expressions and JSX elements per file, indexed by the name they call. */
   private readonly callSiteIndex = new Map<SourceFile, Map<string, Node[]>>();
 
-  resolve(node: Node): Taint | null {
-    return this.visit(node, {
+  resolve(node: Node, options: ResolveOptions = {}): Taint | null {
+    const taint = this.visit(node, {
       depth: 0,
       hops: 0,
       paramHops: 0,
       seen: new Set(),
+      requireProvenance: options.requireProvenance ?? false,
     });
+    return taint && taint.origin.kind !== "input" ? taint : null;
   }
 
   /** schema-field beats lexical; both respect sensitiveFields.exclude via the classifier. */
@@ -326,6 +410,12 @@ export class TaintResolver {
       );
     }
     if (Node.isBinaryExpression(node)) {
+      const operator = node.getOperatorToken().getKind();
+      if (BOOLEAN_OPERATORS.has(operator)) return null;
+      // `a && b` renders `b`, or a falsy `a` — which carries nothing.
+      if (operator === SyntaxKind.AmpersandAmpersandToken) {
+        return this.visit(node.getRight(), next);
+      }
       return (
         this.visit(node.getLeft(), next) ?? this.visit(node.getRight(), next)
       );
@@ -341,9 +431,13 @@ export class TaintResolver {
   }
 
   private first(results: readonly (Taint | null)[]): Taint | null {
-    // Prefer a concrete sensitive value over an opaque blob when both appear.
+    // Prefer a concrete sensitive value over an opaque blob, and any server
+    // data over client input, when several appear.
     return (
       results.find((taint) => taint !== null && !taint.opaque) ??
+      results.find(
+        (taint) => taint !== null && taint.origin.kind !== "input",
+      ) ??
       results.find((taint) => taint !== null) ??
       null
     );
@@ -370,7 +464,7 @@ export class TaintResolver {
   ): Taint | null {
     const objectNode = node.getExpression();
     if (objectNode.getText() === "process.env") {
-      if (name.startsWith("NEXT_PUBLIC_")) return null;
+      if (name.startsWith("NEXT_PUBLIC_") || PUBLIC_ENV.has(name)) return null;
       return {
         origin: { kind: "env", name },
         opaque: false,
@@ -379,8 +473,9 @@ export class TaintResolver {
     }
     const byName = this.classifyName(name);
     const base = this.visit(objectNode, state);
-    if (byName)
-      return this.named(byName, base, this.step(node, node.getText()));
+    if (byName) {
+      return this.named(byName, base, this.step(node, node.getText()), state);
+    }
     if (base?.opaque && PASSTHROUGH.has(name)) {
       return {
         ...base,
@@ -400,8 +495,13 @@ export class TaintResolver {
     origin: TaintOrigin,
     base: Taint | null,
     step: TraceStep,
+    state: WalkState,
   ): Taint | null {
-    if (origin.kind === "lexical" && !base) return null;
+    // A field of what the client sent is the client's own data.
+    if (base?.origin.kind === "input") return null;
+    if (!base && (origin.kind === "lexical" || state.requireProvenance)) {
+      return null;
+    }
     return { origin, opaque: false, trace: [step, ...(base?.trace ?? [])] };
   }
 
@@ -413,6 +513,21 @@ export class TaintResolver {
       return argument ? this.visit(argument, state) : null;
     }
     if (this.ctx.sanitizer(callee)) return null; // sanitizer gate (FR7)
+    const calleeNode = call.getExpression();
+    if (
+      Node.isPropertyAccessExpression(calleeNode) &&
+      BODY_READERS.has(calleeNode.getName())
+    ) {
+      // `request.json()` reads the client's body; `res.json()` on a fetch
+      // response is ingress. Which one depends on where the receiver came from.
+      const receiver = this.visit(calleeNode.getExpression(), state);
+      if (receiver?.origin.kind === "input") {
+        return {
+          ...receiver,
+          trace: [this.step(call, callee), ...receiver.trace],
+        };
+      }
+    }
     const ingress = detectIngress(call);
     if (ingress) {
       return {
@@ -505,7 +620,7 @@ export class TaintResolver {
 
     if (!isRest) {
       const byName = this.classifyName(propertyName);
-      if (byName) return this.named(byName, base, step);
+      if (byName) return this.named(byName, base, step, state);
     }
     if (!base?.opaque) return null;
     if (isRest || PASSTHROUGH.has(propertyName)) {
@@ -527,12 +642,21 @@ export class TaintResolver {
     propertyName: string | null,
     state: WalkState,
   ): Taint | null {
+    const fn = asCallable(parameter.getParent());
+    if (!fn) return null;
+    const input = clientInputSource(fn, parameter);
+    if (input) {
+      return {
+        origin: { kind: "input", source: input },
+        opaque: true,
+        trace: [this.step(parameter, `${parameter.getName()} (${input})`)],
+      };
+    }
+
     if (state.paramHops >= MAX_PARAM_HOPS) return null;
     if (state.seen.has(parameter)) return null;
     state.seen.add(parameter);
 
-    const fn = asCallable(parameter.getParent());
-    if (!fn) return null;
     const name = callableName(fn);
     if (name === null) return null;
     const index = fn.getParameters().indexOf(parameter);
@@ -685,7 +809,7 @@ export class TaintResolver {
     }
     const base = this.visit(object, state);
     const byName = this.classifyName(propertyName);
-    if (byName) return this.named(byName, base, step);
+    if (byName) return this.named(byName, base, step, state);
     if (base?.opaque && PASSTHROUGH.has(propertyName)) {
       return { ...base, trace: [step, ...base.trace] };
     }
@@ -740,6 +864,36 @@ export class TaintResolver {
     }
     return null;
   }
+}
+
+/**
+ * Why a parameter holds client-supplied data, or null when it doesn't:
+ * a Server Action argument, a route handler's request, or the props Next
+ * passes a page/layout (`params`, `searchParams`).
+ */
+function clientInputSource(
+  fn: CallableNode,
+  parameter: ParameterDeclaration,
+): string | null {
+  if (!Node.isMethodDeclaration(fn) && isServerAction(fn)) {
+    return "server action argument";
+  }
+  const index = fn.getParameters().indexOf(parameter);
+  if (index === 0) {
+    const name = parameter.getName();
+    const type = parameter.getTypeNode()?.getText() ?? "";
+    if (/^req(?:uest)?$/.test(name) || /\b(?:Next)?Request\b/.test(type)) {
+      return "request";
+    }
+    const file = fn.getSourceFile();
+    const isDefaultExport =
+      (Node.isFunctionDeclaration(fn) && fn.isDefaultExport()) ||
+      Node.isExportAssignment(fn.getParent());
+    if (isDefaultExport && ROUTE_SEGMENT_FILE.test(file.getBaseName())) {
+      return "route params";
+    }
+  }
+  return null;
 }
 
 export interface JsxSinkAttribute {

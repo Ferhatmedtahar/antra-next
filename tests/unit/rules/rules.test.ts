@@ -212,3 +212,134 @@ describe("rules end to end (rules-app fixture)", () => {
     expect(result.findings).toEqual([]);
   });
 });
+
+describe("rules precision (false positives found on real apps)", () => {
+  let project: TempProject | undefined;
+
+  afterEach(() => {
+    project?.cleanup();
+    project = undefined;
+  });
+
+  const CLIENT_CARD = {
+    "components/ClientCard.tsx":
+      '"use client";\nexport const ClientCard = (props: any) => null;\n',
+  };
+
+  async function scanFiles(files: Record<string, string>, withSchema = false) {
+    const temp = makeTempProject({
+      ...NEXT_APP_FILES,
+      ...CLIENT_CARD,
+      ...files,
+    });
+    project = temp;
+    if (withSchema) await initFixture(temp);
+    const result = await runScan({ rootDir: temp.dir, store: false });
+    return result.findings.map((f) => brief(f, temp.dir));
+  }
+
+  it("ignores a NODE_ENV guard in a client error page", async () => {
+    const findings = await scanFiles({
+      "app/error.tsx": [
+        '"use client";',
+        "export default function Error({ error }: { error: Error }) {",
+        "  return (",
+        "    <div>",
+        '      {process.env.NODE_ENV === "development" && <pre>{error.stack}</pre>}',
+        "      <p>{process.env.SECRET_NAME}</p>",
+        "    </div>",
+        "  );",
+        "}",
+      ].join("\n"),
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it("doesn't flag keyword look-alikes rendered from fetched data", async () => {
+    const findings = await scanFiles({
+      "app/usage/page.tsx": [
+        "export default async function Page() {",
+        '  const usage = await fetch("https://api.test/usage").then((r) => r.json());',
+        "  return (",
+        "    <section>",
+        "      <span>{usage.totalTokens}</span>",
+        "      <a href={usage.commitHash}>commit</a>",
+        "      <p>{usage.secretaryName}</p>",
+        "      <p>{usage.accessToken}</p>",
+        "    </section>",
+        "  );",
+        "}",
+      ].join("\n"),
+    });
+    expect(findings).toEqual(["BG-004 app/usage/page.tsx:8 usage.accessToken"]);
+  });
+
+  it("doesn't flag a client login form or a page echoing its own search params", async () => {
+    const findings = await scanFiles(
+      {
+        "components/LoginForm.tsx": [
+          '"use client";',
+          'import { useState } from "react";',
+          "export function LoginForm() {",
+          '  const [values, setValues] = useState({ password_hash: "" });',
+          "  return <input value={values.password_hash} />;",
+          "}",
+        ].join("\n"),
+        "app/settings/page.tsx": [
+          'import { ClientCard } from "../../components/ClientCard";',
+          "export default function Page({ searchParams }: any) {",
+          "  return <ClientCard p={searchParams.password_hash} />;",
+          "}",
+        ].join("\n"),
+      },
+      true,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  it("BG-002: only the handler's own request body counts as input", async () => {
+    const findings = await scanFiles({
+      "app/api/proxy/route.ts": [
+        "export async function POST() {",
+        '  const r = await fetch("https://internal.test/x");',
+        "  const data = await r.json();",
+        "  return Response.json({ ok: !!data });",
+        "}",
+      ].join("\n"),
+      "app/api/wrapped/route.ts": [
+        "declare function withAuth<T>(fn: T): T;",
+        "export const POST = withAuth(async (req: Request) => {",
+        "  const body = await req.json();",
+        "  return Response.json({ id: body.id });",
+        "});",
+      ].join("\n"),
+    });
+    expect(findings).toEqual([
+      "BG-002 app/api/wrapped/route.ts:2 async (req: Request) => {",
+    ]);
+  });
+
+  it("BG-002: a parse call only validates when it actually receives the input", async () => {
+    const findings = await scanFiles({
+      "app/actions.ts": [
+        '"use server";',
+        'import { z } from "zod";',
+        "const schema = z.object({ name: z.string() });",
+        "export async function viaDate(name: string) {",
+        "  const at = Date.parse(name);",
+        "}",
+        "export async function viaUnrelated(name: string) {",
+        '  schema.parse({ name: "fixed" });',
+        "}",
+        "export async function viaSchema(formData: FormData) {",
+        "  const raw = Object.fromEntries(formData);",
+        "  const input = schema.safeParse(raw);",
+        "}",
+      ].join("\n"),
+    });
+    expect(findings).toEqual([
+      "BG-002 app/actions.ts:4 export async function viaDate(name: string) {",
+      "BG-002 app/actions.ts:7 export async function viaUnrelated(name: string) {",
+    ]);
+  });
+});

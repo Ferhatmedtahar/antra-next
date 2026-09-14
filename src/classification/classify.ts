@@ -31,27 +31,49 @@ function normalize(name: string): string {
 
 export const normalizeFieldName = normalize;
 
-/** `stripeCustomerId` / `stripe_customer_id` → ["stripe", "customer", "id"]. */
+/** `stripeCustomerId` / `stripe_customer_id` / `APIToken` → ["stripe", "customer", "id"] / ["api", "token"]. */
 function words(name: string): string[] {
   return name
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter(Boolean);
 }
 
 /**
- * Short keywords only match whole words, otherwise `ssn` fires on
- * `previou-ssn-apshot`. Longer ones match as substrings so `token` still
- * catches `accesstoken`.
+ * Keywords that are also ordinary English: as substrings they fire on
+ * `totalTokens`, `secretaryName`, `tokenizer`. These (and anything ≤3
+ * chars, where `ssn` would hit `previou-ssn-apshot`) must match whole
+ * words. Every other keyword matches as a normalized substring, so
+ * `password` still catches `passwordhash` and `motdepasse` catches
+ * `mot_de_passe`.
  */
+const WEAK_KEYWORDS = new Set([
+  "token",
+  "secret",
+  "salt",
+  "hash",
+  "key",
+  "pin",
+]);
 const WHOLE_WORD_MAX_LENGTH = 3;
+
+function containsRun(haystack: readonly string[], needle: readonly string[]) {
+  for (let start = 0; start + needle.length <= haystack.length; start++) {
+    if (needle.every((word, offset) => haystack[start + offset] === word)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function keywordMatches(name: string, keyword: string): boolean {
   const needle = normalize(keyword);
   if (needle.length === 0) return false;
-  if (needle.length <= WHOLE_WORD_MAX_LENGTH)
-    return words(name).includes(needle);
+  if (needle.length <= WHOLE_WORD_MAX_LENGTH || WEAK_KEYWORDS.has(needle)) {
+    return containsRun(words(name), words(keyword));
+  }
   return normalize(name).includes(needle);
 }
 

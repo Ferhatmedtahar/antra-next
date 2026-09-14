@@ -41,7 +41,7 @@ beforeAll(async () => {
       frameworkAdapter: "nextjs-app-router",
       providers: [],
       keywords: { include: [...DEFAULT_KEYWORDS] },
-      sensitiveFields: { include: [], exclude: ["source_hash"] },
+      sensitiveFields: { include: [], exclude: ["source_token"] },
       sanitizers: [...DEFAULT_SANITIZERS],
       rules: {},
     },
@@ -52,7 +52,7 @@ beforeAll(async () => {
     sources: [
       { field: "password_hash", origin: "prisma:User.password_hash" },
       { field: "email", origin: "prisma:User.email" },
-      { field: "source_hash", origin: "prisma:Doc.source_hash" },
+      { field: "source_token", origin: "prisma:Doc.source_token" },
     ],
   });
   await runScan({ rootDir: project.dir });
@@ -112,7 +112,7 @@ describe("studio api", () => {
       sensitive: false,
       keywordHit: false,
     });
-    expect(byField["source_hash"]).toMatchObject({
+    expect(byField["source_token"]).toMatchObject({
       sensitive: false,
       keywordHit: true,
       ignored: true,

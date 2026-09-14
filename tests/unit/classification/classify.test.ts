@@ -21,7 +21,27 @@ describe("isSensitiveName — keywords", () => {
     expect(isSensitiveName("ACCESS-TOKEN", defaults)).toBe(true);
     expect(isSensitiveName("refresh_token", defaults)).toBe(true);
     expect(isSensitiveName("apiKey", defaults)).toBe(true);
-    expect(isSensitiveName("code_hash", defaults)).toBe(true);
+    expect(isSensitiveName("passwordhash", defaults)).toBe(true);
+  });
+
+  it("matches weak keywords (token, secret, salt …) only as whole words", () => {
+    expect(isSensitiveName("accessToken", defaults)).toBe(true);
+    expect(isSensitiveName("APIToken", defaults)).toBe(true);
+    expect(isSensitiveName("client_secret", defaults)).toBe(true);
+    expect(isSensitiveName("password_salt", defaults)).toBe(true);
+    expect(isSensitiveName("totalTokens", defaults)).toBe(false);
+    expect(isSensitiveName("secretaryName", defaults)).toBe(false);
+    expect(isSensitiveName("tokenizer", defaults)).toBe(false);
+  });
+
+  it("no longer treats every hash as a secret by default", () => {
+    expect(isSensitiveName("commitHash", defaults)).toBe(false);
+    expect(isSensitiveName("content_hash", defaults)).toBe(false);
+    // …but a hash of a secret is still caught through the secret's own keyword.
+    expect(isSensitiveName("refresh_token_hash", defaults)).toBe(true);
+    const legacy = { ...defaults, keywords: [...DEFAULT_KEYWORDS, "hash"] };
+    expect(isSensitiveName("code_hash", legacy)).toBe(true);
+    expect(isSensitiveName("hashtag", legacy)).toBe(false);
   });
 
   it("matches short keywords (≤3 chars) only as whole words", () => {
