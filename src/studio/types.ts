@@ -4,6 +4,13 @@
  * server maps engine types onto these shapes and TypeScript verifies they fit.
  */
 
+/**
+ * Every state-changing API call must carry this header. A custom header
+ * forces a CORS preflight, which the server never answers, so a page on
+ * another origin can't drive the local Studio (CSRF).
+ */
+export const STUDIO_REQUEST_HEADER = "X-Antra-Studio";
+
 export type RuleId = "BG-001" | "BG-002" | "BG-003" | "BG-004";
 export type Severity = "error" | "warning";
 export type FindingStatus = "active" | "suppressed" | "baselined";

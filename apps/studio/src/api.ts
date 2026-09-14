@@ -1,13 +1,14 @@
-import type {
-  BaselineResponse,
-  GraphResponse,
-  ProjectInfo,
-  RuleInfo,
-  ScanDetail,
-  ScanRunResponse,
-  ScanSummary,
-  SourcesResponse,
-  StudioConfig,
+import {
+  STUDIO_REQUEST_HEADER,
+  type BaselineResponse,
+  type GraphResponse,
+  type ProjectInfo,
+  type RuleInfo,
+  type ScanDetail,
+  type ScanRunResponse,
+  type ScanSummary,
+  type SourcesResponse,
+  type StudioConfig,
 } from "../../../src/studio/types.js";
 
 export class ApiError extends Error {
@@ -24,7 +25,11 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      [STUDIO_REQUEST_HEADER]: "1",
+      ...init?.headers,
+    },
   });
   const text = await response.text();
   const contentType = response.headers.get("content-type") ?? "";
