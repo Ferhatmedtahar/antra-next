@@ -1,5 +1,5 @@
 {
-  "*.ts": ["eslint --fix --no-warn-ignored", "prettier --write"],
-  "*.js": ["eslint --fix --no-warn-ignored", "prettier --write"],
-  "*.{json,md,yml,yaml}": ["prettier --write"]
+  "*.{ts,tsx}": ["eslint --fix --no-warn-ignored", "prettier --write"],
+  "*.{js,jsx}": ["eslint --fix --no-warn-ignored", "prettier --write"],
+  "*.{json,md,mdx,yml,yaml,css}": ["prettier --write"]
 }
