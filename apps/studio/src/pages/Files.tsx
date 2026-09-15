@@ -1,4 +1,9 @@
-import { IconFiles, IconFolder, IconHierarchy } from "@tabler/icons-react";
+import {
+  IconChevronRight,
+  IconFiles,
+  IconFolder,
+  IconHierarchy,
+} from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 
@@ -52,6 +57,19 @@ export function Files() {
   const search = useSearch();
   const targetPath = new URLSearchParams(search).get("q");
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  /** Collapsed folders, by directory. Empty means every folder is open. */
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+
+  const toggle = (key: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  /** The folder a deep-linked row lives in — it must not render shut. */
+  const targetDir = targetPath ? splitPath(targetPath).dir : null;
 
   useEffect(() => {
     if (!targetPath || !detail.data) return;
@@ -175,64 +193,85 @@ export function Files() {
               />
             </div>
           ) : null}
-          {groups.map(([dir, entries]) => (
-            <div key={dir}>
-              <div className="bg-surface-soft flex items-center gap-2.5 px-6 py-3">
-                <IconFolder className="text-foreground size-4" />
-                <span className="font-mono text-sm font-medium text-foreground">
-                  {dir}
-                </span>
-                <span className="text-muted-foreground text-label-2-m">
-                  {entries.length} file{entries.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <ul className="divide-divider-subtle divide-y">
-                {entries.map(({ base, file }) => (
-                  <li
-                    key={file.path}
-                    id={fileRowId(file.path)}
+          {groups.map(([dir, entries]) => {
+            // A filter and a deep link are both a question about one file.
+            // Answer it rather than leaving that file inside a shut folder.
+            const open =
+              query.trim() !== "" || dir === targetDir || !collapsed.has(dir);
+            const listId = `files-${dir.replace(/[^a-zA-Z0-9_-]+/g, "-")}`;
+            return (
+              <div key={dir}>
+                <button
+                  type="button"
+                  onClick={() => toggle(dir)}
+                  aria-expanded={open}
+                  aria-controls={listId}
+                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-6 py-3 text-left transition-colors"
+                >
+                  <IconChevronRight
                     className={cn(
-                      "flex items-center gap-4 px-6 py-3 transition-colors duration-700 hover:bg-surface-soft/40",
-                      highlighted === file.path && "bg-primary/10",
+                      "text-muted-foreground size-4 shrink-0 transition-transform",
+                      open && "rotate-90",
                     )}
-                  >
-                    <ZoneTag zone={file.boundary} />
-                    <span className="min-w-0 flex-1 truncate font-mono text-sm">
-                      {base}
-                    </span>
-                    <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                      {file.isRouteHandler ? (
-                        <Badge variant="code" className="font-mono">
-                          route [{file.routeMethods.join(", ")}]
-                        </Badge>
-                      ) : null}
-                      {file.serverActions.map((action) => (
-                        <Badge
-                          key={`${action.name}:${action.line}`}
-                          variant="code"
-                          className="font-mono"
-                        >
-                          {action.name}:{action.line}
-                        </Badge>
-                      ))}
-                      {file.isServerActionModule ? (
-                        <Badge variant="code" className="font-mono">
-                          'use server' module
-                        </Badge>
-                      ) : null}
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link
-                          href={`/graph?focus=${encodeURIComponent(file.path)}`}
-                        >
-                          <IconHierarchy className="size-3.5" />
-                        </Link>
-                      </Button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                  />
+                  <IconFolder className="text-foreground size-4" />
+                  <span className="font-mono text-sm font-medium text-foreground">
+                    {dir}
+                  </span>
+                  <span className="text-muted-foreground text-label-2-m">
+                    {entries.length} file{entries.length === 1 ? "" : "s"}
+                  </span>
+                </button>
+                {open ? (
+                  <ul id={listId} className="divide-divider-subtle divide-y">
+                    {entries.map(({ base, file }) => (
+                      <li
+                        key={file.path}
+                        id={fileRowId(file.path)}
+                        className={cn(
+                          "flex items-center gap-4 px-6 py-3 transition-colors duration-700 hover:bg-surface-soft/40",
+                          highlighted === file.path && "bg-primary/10",
+                        )}
+                      >
+                        <ZoneTag zone={file.boundary} />
+                        <span className="min-w-0 flex-1 truncate font-mono text-sm">
+                          {base}
+                        </span>
+                        <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                          {file.isRouteHandler ? (
+                            <Badge variant="code" className="font-mono">
+                              route [{file.routeMethods.join(", ")}]
+                            </Badge>
+                          ) : null}
+                          {file.serverActions.map((action) => (
+                            <Badge
+                              key={`${action.name}:${action.line}`}
+                              variant="code"
+                              className="font-mono"
+                            >
+                              {action.name}:{action.line}
+                            </Badge>
+                          ))}
+                          {file.isServerActionModule ? (
+                            <Badge variant="code" className="font-mono">
+                              'use server' module
+                            </Badge>
+                          ) : null}
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/graph?focus=${encodeURIComponent(file.path)}`}
+                            >
+                              <IconHierarchy className="size-3.5" />
+                            </Link>
+                          </Button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            );
+          })}
         </ListPanel>
       )}
     </>

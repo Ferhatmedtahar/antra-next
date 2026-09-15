@@ -1,4 +1,9 @@
-import { IconDatabase, IconKey, IconTable } from "@tabler/icons-react";
+import {
+  IconChevronRight,
+  IconDatabase,
+  IconKey,
+  IconTable,
+} from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -37,6 +42,8 @@ export function Sources() {
   const [view, setView] = useState<View>("sensitive");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  /** Collapsed tables, by key. Empty means every table is open — the default. */
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
   const fields = sources.data?.fields ?? [];
   const groups = useMemo(() => {
@@ -60,6 +67,14 @@ export function Sources() {
     return [...byContainer.values()];
   }, [fields, view, query]);
   const sensitiveCount = fields.filter((f) => f.sensitive).length;
+
+  const toggle = (key: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const update = async (
     field: SourceField,
@@ -206,85 +221,108 @@ export function Sources() {
           {groups.length === 0 ? (
             <ListNote>Nothing matches that filter.</ListNote>
           ) : null}
-          {groups.map((group) => (
-            <div key={`${group.provider}:${group.container}`}>
-              <div className="bg-surface-soft flex items-center gap-2.5 px-5 py-2.5">
-                <IconTable className="text-muted-foreground size-4" />
-                <span className="font-mono text-sm font-semibold">
-                  {group.container}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {group.fields.length} field
-                  {group.fields.length === 1 ? "" : "s"} from {group.provider}
-                </span>
-              </div>
-              <ul className="divide-y divide-divider-subtle">
-                {group.fields.map((f) => (
-                  <li
-                    key={f.origin}
-                    className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-6 px-5 py-2.5"
-                  >
-                    <span className="flex min-w-0 items-center gap-2 font-mono text-sm">
-                      {f.sensitive ? (
-                        <IconKey className="text-destructive size-4 shrink-0" />
-                      ) : (
-                        <span className="size-4 shrink-0" />
-                      )}
-                      <span
-                        className={cn(
-                          "truncate",
-                          f.sensitive && "text-destructive font-medium",
-                        )}
+          {groups.map((group) => {
+            const key = `${group.provider}:${group.container}`;
+            // A filter is a question, so answer it fully rather than leaving a
+            // table shut with its matches hidden inside.
+            const open = query.trim() !== "" || !collapsed.has(key);
+            const listId = `fields-${key.replace(/[^a-zA-Z0-9_-]+/g, "-")}`;
+            return (
+              <div key={key}>
+                <button
+                  type="button"
+                  onClick={() => toggle(key)}
+                  aria-expanded={open}
+                  aria-controls={listId}
+                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-5 py-2.5 text-left transition-colors"
+                >
+                  <IconChevronRight
+                    className={cn(
+                      "text-muted-foreground size-4 shrink-0 transition-transform",
+                      open && "rotate-90",
+                    )}
+                  />
+                  <IconTable className="text-muted-foreground size-4" />
+                  <span className="font-mono text-sm font-semibold">
+                    {group.container}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {group.fields.length} field
+                    {group.fields.length === 1 ? "" : "s"} from {group.provider}
+                  </span>
+                </button>
+                {open ? (
+                  <ul id={listId} className="divide-y divide-divider-subtle">
+                    {group.fields.map((f) => (
+                      <li
+                        key={f.origin}
+                        className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-6 px-5 py-2.5"
                       >
-                        {f.field}
-                      </span>
-                    </span>
-                    <span className="flex justify-end gap-1">
-                      {f.ignored ? (
-                        <Badge variant="soft-muted">ignored</Badge>
-                      ) : null}
-                      {f.keywordHit ? (
-                        <Badge
-                          variant={
-                            f.ignored ? "soft-muted" : "soft-destructive"
-                          }
-                        >
-                          keyword
-                        </Badge>
-                      ) : null}
-                      {f.pinned ? (
-                        <Badge
-                          variant={
-                            f.ignored ? "soft-muted" : "soft-destructive"
-                          }
-                        >
-                          pinned
-                        </Badge>
-                      ) : null}
-                    </span>
-                    <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                      <Switch
-                        checked={f.pinned}
-                        disabled={saving === f.origin}
-                        onCheckedChange={(on) => void update(f, "pin", on)}
-                        aria-label={`Pin ${f.origin}`}
-                      />
-                      Pin
-                    </label>
-                    <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                      <Switch
-                        checked={f.ignored}
-                        disabled={saving === f.origin}
-                        onCheckedChange={(on) => void update(f, "ignore", on)}
-                        aria-label={`Ignore ${f.origin}`}
-                      />
-                      Ignore
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                        <span className="flex min-w-0 items-center gap-2 font-mono text-sm">
+                          {f.sensitive ? (
+                            <IconKey className="text-destructive size-4 shrink-0" />
+                          ) : (
+                            <span className="size-4 shrink-0" />
+                          )}
+                          <span
+                            className={cn(
+                              "truncate",
+                              f.sensitive && "text-destructive font-medium",
+                            )}
+                          >
+                            {f.field}
+                          </span>
+                        </span>
+                        <span className="flex justify-end gap-1">
+                          {f.ignored ? (
+                            <Badge variant="soft-muted">ignored</Badge>
+                          ) : null}
+                          {f.keywordHit ? (
+                            <Badge
+                              variant={
+                                f.ignored ? "soft-muted" : "soft-destructive"
+                              }
+                            >
+                              keyword
+                            </Badge>
+                          ) : null}
+                          {f.pinned ? (
+                            <Badge
+                              variant={
+                                f.ignored ? "soft-muted" : "soft-destructive"
+                              }
+                            >
+                              pinned
+                            </Badge>
+                          ) : null}
+                        </span>
+                        <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                          <Switch
+                            checked={f.pinned}
+                            disabled={saving === f.origin}
+                            onCheckedChange={(on) => void update(f, "pin", on)}
+                            aria-label={`Pin ${f.origin}`}
+                          />
+                          Pin
+                        </label>
+                        <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                          <Switch
+                            checked={f.ignored}
+                            disabled={saving === f.origin}
+                            onCheckedChange={(on) =>
+                              void update(f, "ignore", on)
+                            }
+                            aria-label={`Ignore ${f.origin}`}
+                          />
+                          Ignore
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            );
+          })}
         </ListPanel>
       )}
     </>

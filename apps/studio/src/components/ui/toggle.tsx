@@ -12,7 +12,11 @@ const toggleVariants = cva(
         default:
           "bg-surface-soft text-muted-foreground hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
         chips:
-          "bg-surface-soft text-muted-foreground hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
+          // A filter chip is a query term, not a call to action. Filling it
+          // with `primary` made a row of active filters read as a row of
+          // primary buttons, so on-state is the quiet surface fill the rest of
+          // the app uses for a selected-but-secondary thing.
+          "bg-transparent text-muted-foreground hover:bg-surface-soft hover:text-foreground data-[state=on]:bg-surface-soft data-[state=on]:text-foreground",
         outline:
           "bg-surface-soft text-muted-foreground hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
       },
