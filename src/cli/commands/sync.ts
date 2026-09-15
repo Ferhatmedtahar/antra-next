@@ -82,7 +82,7 @@ export function printSensitive(
       `\n  Missed one, or a false positive? Edit ${CONFIG_FILENAME}:\n` +
         `    sensitiveFields.include — the list above; add exact fields/origins the keywords missed\n` +
         `    sensitiveFields.exclude — never treat an exact field or origin as sensitive (wins)\n` +
-        `    keywords.include        — name patterns in your own language ("mot_de_passe", "iban")\n` +
+        `    keywords.include        — name patterns in your own language or domain ("mot_de_passe", "salary")\n` +
         `  Takes effect on the next scan — no sync needed; sync never rewrites your config.`,
     ),
   );

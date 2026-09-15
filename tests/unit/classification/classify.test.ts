@@ -53,6 +53,21 @@ describe("isSensitiveName — keywords", () => {
     expect(isSensitiveName("previous_snapshot", defaults)).toBe(false);
   });
 
+  it("flags payment and banking identifiers", () => {
+    expect(isSensitiveName("iban", defaults)).toBe(true);
+    expect(isSensitiveName("debtor_iban", defaults)).toBe(true);
+    expect(isSensitiveName("bank_account_number", defaults)).toBe(true);
+    expect(isSensitiveName("routing_number", defaults)).toBe(true);
+    expect(isSensitiveName("credit_card_number", defaults)).toBe(true);
+    expect(isSensitiveName("cvv_code", defaults)).toBe(true);
+    expect(isSensitiveName("mfa_recovery_code", defaults)).toBe(true);
+    // The three-character ones are whole-word, so this must not fire.
+    expect(isSensitiveName("cvcustomer", defaults)).toBe(false);
+    // `account` on its own is deliberately not a keyword — too many ordinary
+    // fields use it — so only the spelled-out identifiers match.
+    expect(isSensitiveName("account_type", defaults)).toBe(false);
+  });
+
   it("leaves ordinary fields alone", () => {
     expect(isSensitiveName("email", defaults)).toBe(false);
     expect(isSensitiveName("created_at", defaults)).toBe(false);

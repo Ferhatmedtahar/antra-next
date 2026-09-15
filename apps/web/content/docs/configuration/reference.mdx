@@ -27,17 +27,24 @@ half-applied.
 
 ```json
 "keywords": {
-  "include": ["password", "iban", "ssn"],
-  "exclude": ["password_reset_token"]
+  "include": ["mot_de_passe", "internal_risk_score"]
 }
 ```
 
 `include` holds name patterns, matched against names with case and separators
 ignored (`passwordHash`, `password_hash`, `PASSWORD-HASH`). Most patterns match as
 substrings, so `password` catches `passwordhash` and `motdepasse` catches
-`mot_de_passe`. Patterns of three characters or fewer, and the common English
-words `token`, `secret`, `salt`, `hash`, `key` and `pin`, match whole words
-only: `accessToken` matches `token`, `totalTokens` and `secretaryName` do not.
+`mot_de_passe`. Patterns of three characters or fewer, and any of the common
+English words `token`, `secret`, `salt`, `hash`, `key` or `pin` when you list
+them, match whole words only: `accessToken` matches `token`, `totalTokens` and
+`secretaryName` do not.
+
+The defaults cover credentials (`password`, `passwd`, `secret`, `token`,
+`api_key`, `apikey`, `private_key`, `credential`, `ssn`, `salt`, `otp`) and
+payment and banking identifiers (`iban`, `account_number`, `routing_number`,
+`bank_account`, `card_number`, `cvv`, `cvc`, `recovery_code`). Anything else —
+`salary`, `mot_de_passe`, your domain's own word — is yours to add here, or to
+pin exactly under `sensitiveFields`.
 
 The default list no longer contains `hash`, which matched commit and content
 hashes. A password or token hash is still caught through `password` or
