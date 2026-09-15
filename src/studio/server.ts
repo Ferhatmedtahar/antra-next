@@ -19,11 +19,13 @@ import { writeConfig } from "../config/write.js";
 import { runScan } from "../engine.js";
 import { VERSION } from "../index.js";
 import { rules } from "../rules/index.js";
+import { normalizeTraceStep } from "../rules/types.js";
 import {
   FindingsStore,
   type StoredFile,
   type StoredFinding,
 } from "../storage/db.js";
+import type { PackageManager } from "../utils/package-manager.js";
 import {
   STUDIO_REQUEST_HEADER,
   type BaselineResponse,
@@ -39,6 +41,7 @@ import {
   type ScanSummary,
   type SourcesResponse,
   type StudioConfig,
+  type TraceStep,
 } from "./types.js";
 
 const FRAME_CONTEXT = 2;
@@ -78,10 +81,16 @@ function withStore<T>(rootDir: string, fn: (store: FindingsStore) => T): T {
   }
 }
 
+/** The line and file a frame can be built around. Both callers below satisfy it. */
+interface FrameTarget {
+  file: string;
+  line: number;
+}
+
 function frameFor(
   rootDir: string,
   cache: Map<string, string[] | null>,
-  finding: StoredFinding,
+  finding: FrameTarget,
 ): CodeFrame | null {
   const absolute = path.join(rootDir, finding.file);
   if (!cache.has(absolute)) {
@@ -96,6 +105,31 @@ function frameFor(
   const startLine = Math.max(1, finding.line - FRAME_CONTEXT);
   const endLine = Math.min(lines.length, finding.line + FRAME_CONTEXT);
   return { startLine, lines: lines.slice(startLine - 1, endLine) };
+}
+
+/**
+ * A frame for one taint hop.
+ *
+ * Unlike the sink, a hop's location is optional — the engine records steps it
+ * cannot pin to a line — so this guards and returns null rather than
+ * fabricating a location. A missing frame degrades one hop in the prompt; it
+ * never fails the request.
+ */
+export function hopFrame(
+  rootDir: string,
+  cache: Map<string, string[] | null>,
+  step: TraceStep,
+): CodeFrame | null {
+  if (!step.file || !step.line) return null;
+  return frameFor(rootDir, cache, { file: step.file, line: step.line });
+}
+
+/** Lockfile order is precedence order; npm is the fallback. */
+export function detectPackageManager(rootDir: string): PackageManager {
+  if (fs.existsSync(path.join(rootDir, "pnpm-lock.yaml"))) return "pnpm";
+  if (fs.existsSync(path.join(rootDir, "yarn.lock"))) return "yarn";
+  if (fs.existsSync(path.join(rootDir, "bun.lockb"))) return "bun";
+  return "npm";
 }
 
 function listedIn(
@@ -157,6 +191,7 @@ export function createStudioApp(rootDir: string): Hono {
       configPresent: config !== null,
       version: VERSION,
       latest: latest ? toSummary(latest) : null,
+      packageManager: detectPackageManager(rootDir),
     };
     return c.json(info);
   });
@@ -188,6 +223,15 @@ export function createStudioApp(rootDir: string): Hono {
         .map((finding) => ({
           ...finding,
           frame: frameFor(rootDir, cache, finding),
+          // Each hop gets its own frame, so the prompt can show real code at
+          // every step rather than paraphrasing the engine's trace text.
+          trace: finding.trace.map((step) => {
+            const normalized = normalizeTraceStep(step);
+            return {
+              ...normalized,
+              frame: hopFrame(rootDir, cache, normalized),
+            };
+          }),
         }));
       return { scan: toSummary(scan), findings, files: store.filesForScan(id) };
     });

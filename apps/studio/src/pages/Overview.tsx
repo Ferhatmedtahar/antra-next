@@ -179,7 +179,11 @@ export function Overview() {
 
       {/* Opened by a dot on the seam — the full finding, the same sheet the
           Findings page and the graph's node panel use. */}
-      <FindingSheet finding={selected} onClose={() => setSelected(null)} />
+      <FindingSheet
+        finding={selected}
+        project={project.data}
+        onClose={() => setSelected(null)}
+      />
     </>
   );
 }
