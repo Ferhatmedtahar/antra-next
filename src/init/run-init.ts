@@ -26,6 +26,12 @@ import type { FrameworkAdapter } from "../framework/types.js";
 import { extractSources, type SkippedProvider } from "../schema/extract.js";
 import type { SchemaProvider } from "../schema/types.js";
 import { hasDependency, readPackageJson } from "../utils/package-json.js";
+import {
+  agentSectionBody,
+  CLAUDE_FILE_NAME,
+  writeAgentSection,
+  type AgentSectionStatus,
+} from "./agent-context.js";
 import type { Prompter } from "./prompter.js";
 
 export type { SkippedProvider } from "../schema/extract.js";
@@ -72,6 +78,12 @@ export type InitResult =
       skipped: SkippedProvider[];
       /** Things worth telling the human that don't fit InitResult's shape: declined/failed/succeeded codegen offers, skipped answers. */
       notes: string[];
+      /** What `antra init` did about agent guidance files, or null if declined. */
+      agentContext: {
+        agents: AgentSectionStatus;
+        agentsMd: boolean;
+        claudeMd: boolean;
+      } | null;
     };
 
 /**
@@ -149,6 +161,43 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
   const snapshotPath = await writeSnapshot(rootDir, snapshot);
   const gitignore = await ensureGitignore(rootDir);
 
+  // Agent guidance. Written to AGENTS.md always; additionally to CLAUDE.md
+  // when the repo already has one, because Claude Code reads CLAUDE.md and
+  // not AGENTS.md.
+  const wantsAgentContext = await prompter.confirm(
+    "Write Antra guidance into AGENTS.md so AI agents understand the security rules?",
+    true,
+  );
+
+  let agentContext: {
+    agents: AgentSectionStatus;
+    agentsMd: boolean;
+    claudeMd: boolean;
+  } | null = null;
+
+  if (wantsAgentContext) {
+    const body = agentSectionBody();
+    const hasClaudeMd = fs.existsSync(path.join(rootDir, CLAUDE_FILE_NAME));
+    try {
+      const agents = await writeAgentSection(rootDir, body);
+      // The same marked section, written to the second file by the same
+      // writer — so updating one never duplicates the other's surrounding
+      // content.
+      if (hasClaudeMd) {
+        await writeAgentSection(rootDir, body, CLAUDE_FILE_NAME);
+      }
+      agentContext = { agents, agentsMd: true, claudeMd: hasClaudeMd };
+    } catch (cause) {
+      // A failed agent-context write must not fail init — the config is
+      // already written and usable.
+      notes.push(
+        `Could not write AGENTS.md: ${
+          cause instanceof Error ? cause.message : String(cause)
+        }`,
+      );
+    }
+  }
+
   return {
     status: "completed",
     frameworkAdapter: adapter.id,
@@ -160,6 +209,7 @@ export async function runInit(options: InitOptions): Promise<InitResult> {
     detections,
     skipped,
     notes,
+    agentContext,
   };
 }
 
