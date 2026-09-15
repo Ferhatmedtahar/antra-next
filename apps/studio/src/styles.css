@@ -153,6 +153,11 @@
 }
 
 :root {
+  /* The navigation rail's width, in one place: the rail itself, the off-canvas
+     drawer it becomes below `lg`, and the Config save bar pinned beside it all
+     read this rather than repeating 16rem three times. */
+  --sidebar-w: 16rem;
+
   --background: #fbfaf8;
   --foreground: #1c1c1e;
   --card: #ffffff;

@@ -87,22 +87,28 @@ export function BoundaryStrip({
       >
         {/* Server slab: solid filled */}
         <div
-          className="bg-primary text-primary-foreground flex flex-col justify-between p-6 select-none"
+          className="bg-primary text-primary-foreground flex flex-col justify-between p-3 select-none sm:p-6"
           style={{ width: `${seam}%` }}
         >
+          {/* The seam can be as narrow as a fifth of a phone's width, and the
+              word does not fit in that. The icon and the solid-versus-hatched
+              material still say which side is which. */}
           <span className="inline-flex items-center gap-1.5 text-label-3-m opacity-90">
-            <IconServer className="size-4" /> Server
+            <IconServer className="size-4 shrink-0" />
+            <span className="hidden sm:inline">Server</span>
           </span>
           <span className="flex items-baseline gap-2">
-            <span className="text-stat leading-none font-semibold tabular-nums">
+            <span className="font-cal text-[24px] leading-none font-semibold tabular-nums sm:text-[40px]">
               {serverFiles}
             </span>
-            <span className="text-body-2-r opacity-80">files</span>
+            <span className="text-body-2-r hidden opacity-80 sm:inline">
+              files
+            </span>
           </span>
         </div>
 
         {/* Client side: surface soft + diagonal subtle hatch */}
-        <div className="bg-surface-soft relative flex flex-1 flex-col items-end justify-between p-6 text-right select-none overflow-hidden">
+        <div className="bg-surface-soft relative flex flex-1 flex-col items-end justify-between overflow-hidden p-3 text-right select-none sm:p-6">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -115,7 +121,7 @@ export function BoundaryStrip({
             Client <IconDeviceDesktop className="size-4" />
           </span>
           <span className="relative z-10 flex items-baseline gap-2">
-            <span className="text-stat text-foreground leading-none font-semibold tabular-nums">
+            <span className="font-cal text-foreground text-[24px] leading-none font-semibold tabular-nums sm:text-[40px]">
               {clientFiles}
             </span>
             <span className="text-muted-foreground text-body-2-r">files</span>

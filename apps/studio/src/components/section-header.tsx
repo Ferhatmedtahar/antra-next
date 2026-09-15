@@ -26,11 +26,15 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "flex flex-row flex-wrap items-start justify-between gap-4",
+        // Stacked on a phone: a `flex-1` description next to a `shrink-0` action
+        // does not wrap, it shrinks, so a full-width action — the Graph tabs, a
+        // Findings scan picker — squeezed the text into a one-word column. The
+        // row is restored from `sm` up, where there is width for both.
+        "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+      <div className="flex min-w-0 flex-col justify-center gap-1 sm:flex-1">
         {title ? (
           <div className="flex items-center gap-2">
             {!large && glyph ? (

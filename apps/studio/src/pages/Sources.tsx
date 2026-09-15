@@ -204,7 +204,7 @@ export function Sources() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="w-72">
+        <div className="w-full sm:w-72">
           <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -234,7 +234,7 @@ export function Sources() {
                   onClick={() => toggle(key)}
                   aria-expanded={open}
                   aria-controls={listId}
-                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-5 py-2.5 text-left transition-colors"
+                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left transition-colors sm:px-5"
                 >
                   <IconChevronRight
                     className={cn(
@@ -242,11 +242,11 @@ export function Sources() {
                       open && "rotate-90",
                     )}
                   />
-                  <IconTable className="text-muted-foreground size-4" />
-                  <span className="font-mono text-sm font-semibold">
+                  <IconTable className="text-muted-foreground size-4 shrink-0" />
+                  <span className="min-w-0 truncate font-mono text-sm font-semibold">
                     {group.container}
                   </span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground shrink-0 text-xs">
                     {group.fields.length} field
                     {group.fields.length === 1 ? "" : "s"} from {group.provider}
                   </span>
@@ -256,7 +256,10 @@ export function Sources() {
                     {group.fields.map((f) => (
                       <li
                         key={f.origin}
-                        className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-6 px-5 py-2.5"
+                        // Stacked on a phone — four columns of field, badges and
+                        // two switches do not survive a 360px screen — and the
+                        // original row from `sm` up.
+                        className="flex flex-col gap-2.5 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6 sm:px-5 sm:py-2.5"
                       >
                         <span className="flex min-w-0 items-center gap-2 font-mono text-sm">
                           {f.sensitive ? (
@@ -273,7 +276,7 @@ export function Sources() {
                             {f.field}
                           </span>
                         </span>
-                        <span className="flex justify-end gap-1">
+                        <span className="flex flex-wrap gap-1 sm:justify-end">
                           {f.ignored ? (
                             <Badge variant="soft-muted">ignored</Badge>
                           ) : null}
@@ -296,26 +299,30 @@ export function Sources() {
                             </Badge>
                           ) : null}
                         </span>
-                        <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                          <Switch
-                            checked={f.pinned}
-                            disabled={saving === f.origin}
-                            onCheckedChange={(on) => void update(f, "pin", on)}
-                            aria-label={`Pin ${f.origin}`}
-                          />
-                          Pin
-                        </label>
-                        <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                          <Switch
-                            checked={f.ignored}
-                            disabled={saving === f.origin}
-                            onCheckedChange={(on) =>
-                              void update(f, "ignore", on)
-                            }
-                            aria-label={`Ignore ${f.origin}`}
-                          />
-                          Ignore
-                        </label>
+                        <div className="flex items-center gap-4">
+                          <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                            <Switch
+                              checked={f.pinned}
+                              disabled={saving === f.origin}
+                              onCheckedChange={(on) =>
+                                void update(f, "pin", on)
+                              }
+                              aria-label={`Pin ${f.origin}`}
+                            />
+                            Pin
+                          </label>
+                          <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                            <Switch
+                              checked={f.ignored}
+                              disabled={saving === f.origin}
+                              onCheckedChange={(on) =>
+                                void update(f, "ignore", on)
+                              }
+                              aria-label={`Ignore ${f.origin}`}
+                            />
+                            Ignore
+                          </label>
+                        </div>
                       </li>
                     ))}
                   </ul>

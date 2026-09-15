@@ -268,8 +268,8 @@ export function Findings() {
       </div>
 
       {/* Row 2: Search input + Rule chips */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="w-80">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <div className="w-full sm:w-80">
           <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -284,7 +284,7 @@ export function Findings() {
           value={rules}
           onValueChange={(values) => setRules(values.filter(isRule))}
           aria-label="Rules"
-          className="ml-auto"
+          className="sm:ml-auto"
         >
           {RULES.map((rule) => (
             <ToggleGroupItem key={rule} value={rule}>
@@ -313,7 +313,7 @@ export function Findings() {
               key={f.id}
               type="button"
               onClick={() => setSelected(f)}
-              className="group hover:bg-surface-soft/60 focus-visible:bg-surface-soft/60 flex w-full items-stretch gap-4 px-6 py-4 text-left outline-none transition-colors cursor-pointer"
+              className="group hover:bg-surface-soft/60 focus-visible:bg-surface-soft/60 flex w-full items-stretch gap-3 px-4 py-4 text-left outline-none transition-colors cursor-pointer sm:gap-4 sm:px-6"
             >
               <span
                 aria-hidden

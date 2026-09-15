@@ -338,7 +338,7 @@ function BoundaryGraph({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <div className="w-64">
+        <div className="w-full sm:w-64">
           <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -380,7 +380,7 @@ function BoundaryGraph({
             }
           }}
           aria-label="Layout"
-          className="ml-auto"
+          className="sm:ml-auto"
         >
           <ToggleGroupItem
             value="force"
@@ -474,7 +474,9 @@ function BoundaryGraph({
                   }
                   nodeStrokeWidth={0}
                   maskColor="color-mix(in oklab, var(--background) 70%, transparent)"
-                  className="!bg-surface-elevated overflow-hidden rounded-mid !border-0"
+                  // Off on a phone: the canvas is barely wider than the map, and
+                  // the status chip already holds the bottom edge.
+                  className="!bg-surface-elevated hidden overflow-hidden rounded-mid !border-0 sm:block"
                   style={{ width: 150, height: 100 }}
                 />
                 <FitOnChange
@@ -484,7 +486,9 @@ function BoundaryGraph({
               </ReactFlow>
             </ReactFlowProvider>
           )}
-          <div className="bg-surface-elevated/90 text-muted-foreground absolute top-4 left-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-mid px-3 py-1.5 text-xs backdrop-blur">
+          {/* Full width along the bottom on a phone — the filter row has already
+              pushed the canvas down, and a chip that long has no room up here. */}
+          <div className="bg-surface-elevated/90 text-muted-foreground absolute right-4 bottom-4 left-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-mid px-3 py-1.5 text-xs backdrop-blur sm:top-4 sm:right-auto sm:bottom-auto sm:left-4">
             <span className="tabular-nums">
               {flow.nodes.length} files, {flow.edges.length} edges.{" "}
               {flow.crossings} cross the boundary, {flow.withFindings} carry a
@@ -492,18 +496,24 @@ function BoundaryGraph({
             </span>
           </div>
           {/* Steps aside for the panel rather than sitting under it — the panel
-              is an overlay, so nothing is hidden and nothing is covered. */}
+              is an overlay, so nothing is hidden and nothing is covered. On a
+              phone the panel takes the whole canvas, so there is nothing to
+              step aside for. */}
           <div
             className={cn(
               "absolute top-4 flex flex-col items-end gap-2 transition-[right] duration-200 motion-reduce:transition-none",
-              selectedNode ? "right-[21.5rem]" : "right-4",
+              selectedNode ? "right-4 sm:right-[21.5rem]" : "right-4",
             )}
           >
             <FullscreenButton
               fullscreen={fullscreen}
               onToggle={toggleFullscreen}
             />
-            <Legend />
+            {/* The legend is five lines of prose; over a phone-width canvas it
+                would cover the diagram it explains. */}
+            <div className="hidden sm:block">
+              <Legend />
+            </div>
           </div>
 
           {/* Overlaid on the canvas rather than a flex sibling: as a sibling the
@@ -666,11 +676,16 @@ function NodePanel({
   const incoming = edges.filter((edge) => edge.to === node.id);
   const { dir, base } = splitPath(node.path);
   return (
-    <aside className="bg-card absolute top-4 right-4 bottom-4 z-10 flex w-80 flex-col overflow-hidden rounded-huge">
-      <div className="p-5">
+    // On a phone a 20rem panel beside a canvas this narrow leaves a sliver of
+    // diagram behind it, so it takes the canvas instead of sharing it.
+    <aside className="bg-card absolute inset-3 z-10 flex flex-col overflow-hidden rounded-huge sm:inset-x-auto sm:top-4 sm:right-4 sm:bottom-4 sm:w-80">
+      <div className="p-4 sm:p-5">
         <SectionHeader
           title={base}
           description={style.label}
+          // Row regardless of width, unlike a page header: the action is the
+          // panel's close button, and below the title it reads as a footer.
+          className="flex-row items-start gap-3"
           action={
             <Button
               variant="ghost"
@@ -698,7 +713,7 @@ function NodePanel({
           ))}
         </div>
       </div>
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-2">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-2 sm:px-5">
         <PanelSection title="Findings" count={findings.length}>
           {findings.length === 0 ? (
             <p className="text-muted-foreground text-xs">None in this file.</p>
@@ -952,7 +967,7 @@ function RouteTree({ files }: { files: FileDetail[] }) {
             nodeStrokeWidth={0}
             nodeColor="var(--foreground)"
             maskColor="color-mix(in oklab, var(--background) 70%, transparent)"
-            className="!bg-surface-elevated overflow-hidden rounded-mid !border-0"
+            className="!bg-surface-elevated hidden overflow-hidden rounded-mid !border-0 sm:block"
             style={{ width: 150, height: 100 }}
           />
           {/* Keyed to the tree, not to the drawn node count. Expanding a
@@ -962,7 +977,7 @@ function RouteTree({ files }: { files: FileDetail[] }) {
           <FitOnChange signature={`routes:${segments.length}`} />
         </ReactFlow>
       </ReactFlowProvider>
-      <div className="bg-surface-elevated/90 text-muted-foreground absolute top-4 left-4 flex items-center gap-3 rounded-mid px-3 py-1.5 text-xs tabular-nums backdrop-blur">
+      <div className="bg-surface-elevated/90 text-muted-foreground absolute right-4 bottom-4 left-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-mid px-3 py-1.5 text-xs tabular-nums backdrop-blur sm:top-4 sm:right-auto sm:bottom-auto sm:left-4">
         <span>
           Showing {flow.visible} of {segments.length} segments. {pages} pages,{" "}
           {handlers} route handlers.

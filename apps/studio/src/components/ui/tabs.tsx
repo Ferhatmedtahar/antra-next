@@ -29,8 +29,10 @@ function TabsList({
       data-variant={variant}
       className={cn(
         variant === "underline"
-          ? "inline-flex h-10 w-fit items-center gap-6 bg-transparent p-0"
-          : "bg-surface-soft text-muted-foreground inline-flex h-10 w-fit items-center justify-center rounded-big p-1",
+          ? // Tighter gutters on a phone: four labels with counts at `gap-6`
+            // run past a 360px screen, and the row has no room to scroll.
+            "inline-flex h-10 w-fit max-w-full items-center gap-3 bg-transparent p-0 sm:gap-6"
+          : "bg-surface-soft text-muted-foreground inline-flex h-10 w-fit max-w-full items-center justify-center rounded-big p-1",
         className,
       )}
       {...props}

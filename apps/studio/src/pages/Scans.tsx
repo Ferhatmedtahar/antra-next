@@ -56,19 +56,19 @@ export function Scans() {
               key={scan.id}
               type="button"
               onClick={() => navigate(`/findings?scan=${scan.id}`)}
-              className="hover:bg-surface-soft focus-visible:bg-surface-soft flex w-full items-center gap-5 px-6 py-4 text-left transition-colors outline-none cursor-pointer"
+              className="hover:bg-surface-soft focus-visible:bg-surface-soft flex w-full flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 text-left transition-colors outline-none cursor-pointer sm:flex-nowrap sm:gap-5 sm:px-6"
             >
               <span className="bg-surface-soft text-foreground flex size-10 shrink-0 items-center justify-center rounded-mid font-mono text-sm font-semibold tabular-nums">
                 #{scan.id}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex items-center gap-2 text-sm font-medium">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                   {formatRelative(scan.startedAt)}
                   <span className="text-muted-foreground text-xs font-normal">
                     {formatAbsolute(scan.startedAt)}
                   </span>
                 </span>
-                <span className="text-muted-foreground flex items-center gap-4 text-xs">
+                <span className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <span className="inline-flex items-center gap-1">
                     <IconFiles className="size-3.5" /> {scan.files} files
                   </span>
@@ -79,7 +79,7 @@ export function Scans() {
                   <span className="font-mono">{scan.rules.join(" ")}</span>
                 </span>
               </span>
-              <span className="flex shrink-0 items-center gap-2">
+              <span className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                 {scan.findings > 0 ? (
                   <Badge variant="destructive">{scan.findings} new</Badge>
                 ) : (
