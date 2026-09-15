@@ -19,7 +19,7 @@ const DEFAULT_ORDER = 999;
 
 export type DocsFrontmatter = {
   title: string;
-  description?: string;
+  description?: string | undefined;
   order: number;
 };
 
@@ -29,6 +29,7 @@ export type DocsNavItem = {
   slug: string;
   href: string;
   order: number;
+  description?: string | undefined;
 };
 
 export type DocsNavGroup = {
@@ -114,7 +115,7 @@ export function getDocsNav(): DocsNavGroup[] {
     if (!doc) continue;
 
     const segments = doc.slug.split("/");
-    const groupSlug = segments.length > 1 ? segments[0] : "";
+    const groupSlug = segments.length > 1 ? (segments[0] ?? "") : "";
 
     let group = groups.get(groupSlug);
     if (!group) {
@@ -132,6 +133,7 @@ export function getDocsNav(): DocsNavGroup[] {
       slug: doc.slug,
       href: `/docs/${doc.slug}`,
       order: doc.meta.order,
+      description: doc.meta.description,
     });
   }
 

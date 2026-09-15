@@ -245,7 +245,7 @@ Here is an annotated configuration example:
 Configuration options explained:
 
 1. providers: Lists your schema sources, such as Prisma schemas, Supabase generated TypeScript definitions, or Drizzle schema files.
-2. keywords.include: Words that automatically flag a variable as sensitive. Words with four or more letters match substrings; words with three or fewer letters match exact names.
+2. keywords.include: Words that automatically flag a variable as sensitive. Words with four or more letters match substrings; words with three or fewer letters, and the common English words `token`, `secret`, `salt`, `hash`, `key` and `pin`, match whole words only.
 3. sensitiveFields.include: Explicit field identifiers that you want to always treat as sensitive.
 4. sensitiveFields.exclude: Specific fields that are safe to expose publicly. Exclude always overrides keyword matches.
 5. sanitizers: Function names or libraries that safely clean or validate data, stopping the taint tracking chain.

@@ -92,7 +92,7 @@ function listed(
 /**
  * Lexical sensitivity (ADR-002 Strategy D). Precedence: ignored → pinned →
  * keywords. Pinned/ignored exist because a keyword list can't know a
- * project's language or domain (`mot_de_passe`, `iban`, `salary`).
+ * project's language or domain (`mot_de_passe`, `salary`, `internal_risk_score`).
  */
 export function isSensitiveName(
   name: string,

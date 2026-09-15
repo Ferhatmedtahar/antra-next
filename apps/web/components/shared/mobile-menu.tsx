@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/shared/button";
-import { CloseIcon, MenuIcon } from "@/components/shared/icons";
+import { CloseIcon, MenuIcon, NpmIcon } from "@/components/shared/icons";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { site } from "@/config/site";
 
@@ -90,6 +90,16 @@ export function MobileMenu() {
           >
             How it works
           </Link>
+          <a
+            href={site.npmUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 py-3.5 text-sm hover:text-accent-text"
+          >
+            <NpmIcon className="size-4" />
+            npm package
+          </a>
           <div className="flex flex-wrap items-center gap-3 py-3.5">
             <ThemeToggle />
             <Button href={site.quickStart} variant="primary">

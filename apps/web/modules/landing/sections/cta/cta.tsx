@@ -36,6 +36,9 @@ export function Cta() {
             <Button href={site.githubUrl} external>
               View on GitHub
             </Button>
+            <Button href={site.npmUrl} external>
+              View on npm
+            </Button>
           </div>
         </div>
       </div>

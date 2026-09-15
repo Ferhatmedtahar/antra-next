@@ -84,6 +84,21 @@ function printResult(result: InitResult, rootDir: string): void {
     unchanged: "already has the antra block",
   }[result.gitignore];
   console.log(`  .gitignore: ${gitignoreNote}`);
+  // Printing nothing when the user declined is deliberate: agentContext is
+  // null in that case precisely so this block cannot claim a file was written
+  // when it was not.
+  if (result.agentContext) {
+    const agentNote = {
+      created: "created with the antra guidance",
+      updated: "antra guidance updated",
+      appended: "antra guidance appended",
+      unchanged: "already has the antra guidance",
+    }[result.agentContext.agents];
+    console.log(`  AGENTS.md: ${agentNote}`);
+    if (result.agentContext.claudeMd) {
+      console.log("  CLAUDE.md:  antra guidance written");
+    }
+  }
   if (result.snapshot.sources.length > 0) {
     printSensitive(sensitive, { seeded: true });
   }

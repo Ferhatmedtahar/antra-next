@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +20,10 @@ import {
   NEXT_APP_FILES,
   type TempProject,
 } from "../../helpers/fixture.js";
+
+/** The last question `init` asks, once the config is written. */
+const AGENT_CONTEXT_CONFIRM =
+  "Write Antra guidance into AGENTS.md so AI agents understand the security rules?";
 
 interface Script {
   /** A fixed answer, or one decided per message when a flow asks twice. */
@@ -110,6 +115,7 @@ describe("runInit", () => {
     expect(outcome.frameworkAdapter).toBe("nextjs-app-router");
     expect(seen.confirms).toEqual([
       "Nothing selected. Continue with zero-schema heuristics only?",
+      AGENT_CONTEXT_CONFIRM,
     ]);
     expect(outcome.config.providers).toEqual([]);
     expect(outcome.config.sensitiveFields).toEqual({
@@ -191,6 +197,7 @@ describe("runInit", () => {
     expect(attempts).toBe(2);
     expect(seen.confirms).toEqual([
       "Nothing selected. Continue with zero-schema heuristics only?",
+      AGENT_CONTEXT_CONFIRM,
     ]);
     expect(outcome.status).toBe("completed");
     if (outcome.status !== "completed") return;
@@ -289,6 +296,7 @@ describe("runInit", () => {
     if (outcome.status !== "completed") return;
     expect(seen.confirms).toEqual([
       "No Prisma (schema.prisma) schema file was found. Generate one now using its CLI?",
+      AGENT_CONTEXT_CONFIRM,
     ]);
     expect(outcome.config.providers).toEqual([
       { id: "prisma", schemaPath: "prisma/schema.prisma" },
@@ -318,6 +326,7 @@ describe("runInit", () => {
     expect(seen.confirms).toEqual([
       "No Prisma (schema.prisma) schema file was found. Generate one now using its CLI?",
       "Prisma (schema.prisma) has no usable source yet. Continue with zero-schema heuristics only?",
+      AGENT_CONTEXT_CONFIRM,
     ]);
     // The generate offer was declined, so the conventional path is no longer
     // re-suggested as a default: it would only invite an answer extract()
@@ -417,6 +426,7 @@ describe("runInit with Supabase and no schema file", () => {
     if (outcome.status !== "completed") return;
     expect(seen.confirms).toEqual([
       "No Supabase (generated types, or your project's API) schema file was found. Generate one now using its CLI?",
+      AGENT_CONTEXT_CONFIRM,
     ]);
     expect(outcome.config.providers).toEqual([
       {
@@ -521,5 +531,68 @@ describe("runInit with Supabase and no schema file", () => {
     if (outcome.status !== "completed") return;
     expect(outcome.config.providers).toEqual([]);
     expect(outcome.notes.join("\n")).toContain("not configured for this run");
+  });
+});
+
+describe("runInit agent context", () => {
+  let project: TempProject | undefined;
+
+  afterEach(() => {
+    project?.cleanup();
+    project = undefined;
+  });
+
+  it("writes the agent section into AGENTS.md when confirmed", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    const { result } = run(project.dir, { confirm: true });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.agentContext).toEqual({
+      agents: "created",
+      agentsMd: true,
+      claudeMd: false,
+    });
+    await expect(
+      fs.promises.readFile(path.join(project.dir, "AGENTS.md"), "utf8"),
+    ).resolves.toContain("BG-003");
+  });
+
+  it("leaves no AGENTS.md and reports none when declined", async () => {
+    project = makeTempProject(NEXT_APP_FILES);
+
+    // Yes to everything except the agent question — declining it must not
+    // leave the zero-schema fallback question unanswered, or init never
+    // reaches its return.
+    const { result } = run(project.dir, {
+      confirm: (message) => !message.startsWith("Write Antra guidance"),
+    });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.agentContext).toBeNull();
+    await expect(
+      fs.promises.access(path.join(project.dir, "AGENTS.md")),
+    ).rejects.toThrow();
+  });
+
+  it("writes the same section into an existing CLAUDE.md", async () => {
+    project = makeTempProject({
+      ...NEXT_APP_FILES,
+      "CLAUDE.md": "# Claude\n\nExisting house rules.\n",
+    });
+
+    const { result } = run(project.dir, { confirm: true });
+    const outcome = await result;
+
+    expect(outcome.status).toBe("completed");
+    if (outcome.status !== "completed") return;
+    expect(outcome.agentContext?.claudeMd).toBe(true);
+    const claude = fs.readFileSync(path.join(project.dir, "CLAUDE.md"), "utf8");
+    expect(claude).toContain("Existing house rules.");
+    expect(claude).toContain("BG-003");
   });
 });

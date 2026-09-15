@@ -27,6 +27,7 @@ import type {
   GraphEdge,
   GraphNode,
   GraphResponse,
+  ProjectInfo,
 } from "../../../../src/studio/types.js";
 
 import { api } from "@/api";
@@ -166,6 +167,7 @@ export function Graph() {
         <BoundaryGraph
           graph={graph.data}
           findings={detail.data.findings}
+          project={project.data}
           focus={focus}
         />
       ) : (
@@ -178,10 +180,12 @@ export function Graph() {
 function BoundaryGraph({
   graph,
   findings,
+  project,
   focus,
 }: {
   graph: GraphResponse;
   findings: FindingDetail[];
+  project: ProjectInfo | null;
   focus: string | null;
 }) {
   const { theme } = useTheme();
@@ -524,6 +528,7 @@ function BoundaryGraph({
 
       <FindingSheet
         finding={openFinding}
+        project={project}
         onClose={() => setOpenFinding(null)}
       />
     </>

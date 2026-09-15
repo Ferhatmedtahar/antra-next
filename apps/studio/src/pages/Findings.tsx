@@ -2,10 +2,13 @@ import {
   IconAlertTriangle,
   IconChevronRight,
   IconSearch,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useLocation, useSearch } from "wouter";
 
+import { renderPlanPrompt } from "../../../../src/studio/prompt.js";
 import type {
   FindingDetail,
   FindingStatus,
@@ -85,6 +88,34 @@ export function Findings() {
     active: findings.filter((f) => f.status === "active").length,
     baselined: findings.filter((f) => f.status === "baselined").length,
     suppressed: findings.filter((f) => f.status === "suppressed").length,
+  };
+
+  // Only active findings are worth handing to an agent: baselined ones are
+  // already accepted and suppressed ones are deliberately ignored.
+  const fixable = useMemo(
+    () => findings.filter((f) => f.status === "active"),
+    [findings],
+  );
+
+  const copyFindings = async (findings: FindingDetail[], label: string) => {
+    const { data } = detail;
+    if (!project.data || !data || findings.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(
+        renderPlanPrompt({
+          project: project.data,
+          scan: data.scan,
+          findings,
+        }),
+      );
+      toast.success(`${label} copied`, {
+        description: `${findings.length} finding${findings.length === 1 ? "" : "s"} — paste into your AI agent.`,
+      });
+    } catch {
+      toast.error("Could not copy", {
+        description: "Your browser blocked clipboard access.",
+      });
+    }
   };
 
   if (project.error) {
@@ -261,6 +292,14 @@ export function Findings() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        {project.data && detail.data && fixable.length > 0 ? (
+          <Button
+            variant="secondary"
+            onClick={() => void copyFindings(fixable, "Remediation plan")}
+          >
+            <IconSparkles /> Copy plan for AI ({fixable.length})
+          </Button>
+        ) : null}
       </div>
 
       {detail.error ? <ErrorNote message={detail.error} /> : null}
@@ -303,7 +342,11 @@ export function Findings() {
         </ListPanel>
       ) : null}
 
-      <FindingSheet finding={selected} onClose={() => setSelected(null)} />
+      <FindingSheet
+        finding={selected}
+        project={project.data}
+        onClose={() => setSelected(null)}
+      />
     </>
   );
 }

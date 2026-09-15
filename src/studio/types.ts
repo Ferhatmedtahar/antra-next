@@ -2,7 +2,11 @@
  * The Studio API contract. Deliberately standalone (no imports from the
  * engine) so the browser bundle type-checks against this file alone; the
  * server maps engine types onto these shapes and TypeScript verifies they fit.
+ * The one import below is type-only and erased at compile time, so it adds no
+ * runtime dependency to the browser bundle.
  */
+
+import type { PackageManager } from "../utils/package-manager.js";
 
 /**
  * Every state-changing API call must carry this header. A custom header
@@ -38,6 +42,12 @@ export interface TraceStep {
   text: string;
   file?: string;
   line?: number;
+  /**
+   * Source frame at this hop, when the file could be read. Absent on hops the
+   * engine recorded without a location, and on rows stored before frames
+   * existed — both render as text plus a location, no code block.
+   */
+  frame?: CodeFrame | null;
 }
 
 export interface FindingDetail {
@@ -77,6 +87,8 @@ export interface ProjectInfo {
   configPresent: boolean;
   version: string;
   latest: ScanSummary | null;
+  /** Detected from lockfiles in rootDir; "npm" when nothing matches. */
+  packageManager: PackageManager;
 }
 
 export interface SourceField {
