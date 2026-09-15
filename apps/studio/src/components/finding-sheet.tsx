@@ -106,14 +106,14 @@ export function RemediationGuide({ ruleId }: { ruleId: string }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between text-left focus:outline-none"
+        className="flex w-full items-center justify-between gap-3 text-left focus:outline-none"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-icon bg-amber-500/15 text-amber-600 dark:text-amber-400">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-icon bg-amber-500/15 text-amber-600 dark:text-amber-400">
             <IconBulb className="size-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-heading text-title-3 font-semibold text-foreground">
                 How to fix this &amp; What it means
               </span>
@@ -127,7 +127,7 @@ export function RemediationGuide({ ruleId }: { ruleId: string }) {
             <p className="text-xs text-muted-foreground">{guide.tagline}</p>
           </div>
         </div>
-        <div className="text-muted-foreground hover:text-foreground">
+        <div className="text-muted-foreground hover:text-foreground ml-2 shrink-0">
           {isOpen ? (
             <IconChevronUp className="size-5" />
           ) : (
@@ -223,10 +223,10 @@ export function FindingSheet({
         if (!open) onClose();
       }}
     >
-      <SheetContent className="w-full gap-0 sm:max-w-2xl bg-card border-none rounded-l-huge">
+      <SheetContent className="w-full gap-0 rounded-none border-none bg-card sm:max-w-2xl sm:rounded-l-huge">
         {finding ? (
           <>
-            <SheetHeader className="px-6 py-5 pr-12">
+            <SheetHeader className="px-4 py-5 pr-12 sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
                 <RuleTag id={finding.ruleId} />
                 <SeverityPill severity={finding.severity} />
@@ -239,7 +239,7 @@ export function FindingSheet({
                 {finding.file}:{finding.line}:{finding.column}
               </SheetDescription>
             </SheetHeader>
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
               {finding.frame ? (
                 <CodeFrame
                   frame={finding.frame}
@@ -275,7 +275,7 @@ export function FindingSheet({
                 </p>
               ) : null}
             </div>
-            <SheetFooter className="px-6 py-4">
+            <SheetFooter className="px-4 py-4 sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="ghost"

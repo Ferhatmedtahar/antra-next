@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import type { StudioConfig } from "../../../../src/studio/types.js";
 
 import { api, ApiError } from "@/api";
-import { SIDEBAR_WIDTH } from "@/layout";
 import { SectionHeader } from "@/components/section-header";
 import {
   ChipEditor,
@@ -123,11 +122,11 @@ export function Config() {
               {(rules.data ?? []).map((rule) => (
                 <li
                   key={rule.id}
-                  className="flex items-center justify-between gap-6 px-5 py-3.5"
+                  className="flex items-center justify-between gap-3 px-4 py-3.5 sm:gap-6 sm:px-5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <RuleTag id={rule.id} />
-                    <span className="truncate text-body-2-m text-foreground">
+                    <span className="truncate text-body-2-m text-foreground min-w-0">
                       {rule.description}
                     </span>
                     <SeverityPill severity={rule.severity} />
@@ -246,12 +245,12 @@ export function Config() {
                 {draft.providers.map((provider) => (
                   <li
                     key={provider.id}
-                    className="flex items-baseline gap-4 px-5 py-3.5"
+                    className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3.5 sm:px-5"
                   >
                     <span className="text-body-2-m font-medium">
                       {provider.id}
                     </span>
-                    <span className="text-muted-foreground font-mono text-code">
+                    <span className="text-muted-foreground min-w-0 font-mono text-code break-all">
                       {Object.entries(provider)
                         .filter(([key]) => key !== "id")
                         .map(([key, value]) => `${key}=${String(value)}`)
@@ -267,14 +266,15 @@ export function Config() {
 
       <div
         className={cn(
-          "bg-card/95 fixed right-0 bottom-0 z-10 px-10 py-4 backdrop-blur transition-transform",
+          // Pinned beside the rail at `lg` up. Below that the rail is a drawer
+          // rather than a column, so the bar has the width to itself.
+          "bg-card/95 fixed right-0 bottom-0 left-0 z-10 px-4 py-4 backdrop-blur transition-transform sm:px-6 lg:left-(--sidebar-w) lg:px-10",
           dirty ? "translate-y-0" : "translate-y-full",
         )}
-        style={{ left: SIDEBAR_WIDTH }}
       >
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4">
           <span className="text-sm font-medium">Unsaved changes</span>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             <Button
               variant="ghost"
               onClick={() => setDraft(structuredClone(loaded.data))}

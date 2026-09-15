@@ -12,7 +12,15 @@ import { Button } from "@/components/ui/button";
  * graph had a fullscreen button and the Route tree silently did not, and the
  * two had drifted into separate copies of the same state and key handler.
  */
-export const CANVAS = "h-[calc(100vh-19rem)] min-h-[520px]";
+/**
+ * `dvh` rather than `vh`, so a phone browser's retracting toolbar does not leave
+ * the canvas a toolbar's height short of the screen. Under `sm` the chrome the
+ * viewport is measured against is taller — the top bar, a header that has
+ * wrapped, a filter row that has wrapped again — so the subtraction grows and the
+ * floor drops with it.
+ */
+export const CANVAS =
+  "h-[calc(100dvh-21rem)] min-h-[26rem] sm:h-[calc(100dvh-19rem)] sm:min-h-[520px]";
 
 /**
  * Fullscreen replaces that fixed height with the viewport. Callers put this on

@@ -123,7 +123,7 @@ export function Overview() {
       )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(280px,340px)_1fr]">
-        <div className="bg-card rounded-huge self-start p-6">
+        <div className="bg-card rounded-huge self-start p-4 sm:p-6">
           <h3 className="text-title text-foreground mb-6">Triage</h3>
           <TallyList>
             <TallyRow

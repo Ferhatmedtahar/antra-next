@@ -131,7 +131,7 @@ export function Files() {
         title="Files"
         description={`${files.length} files across the codebase. ${counts.client} client boundaries, ${counts.actions} server actions, and ${counts.routes} route handlers.`}
       />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <Tabs
           value={view}
           onValueChange={(value) => {
@@ -160,7 +160,7 @@ export function Files() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="w-80 ml-auto">
+        <div className="w-full sm:ml-auto sm:w-80">
           <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -206,7 +206,7 @@ export function Files() {
                   onClick={() => toggle(dir)}
                   aria-expanded={open}
                   aria-controls={listId}
-                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-6 py-3 text-left transition-colors"
+                  className="bg-surface-soft hover:bg-surface-soft/80 focus-ring flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left transition-colors sm:px-6"
                 >
                   <IconChevronRight
                     className={cn(
@@ -214,11 +214,11 @@ export function Files() {
                       open && "rotate-90",
                     )}
                   />
-                  <IconFolder className="text-foreground size-4" />
-                  <span className="font-mono text-sm font-medium text-foreground">
+                  <IconFolder className="text-foreground size-4 shrink-0" />
+                  <span className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
                     {dir}
                   </span>
-                  <span className="text-muted-foreground text-label-2-m">
+                  <span className="text-muted-foreground shrink-0 text-label-2-m">
                     {entries.length} file{entries.length === 1 ? "" : "s"}
                   </span>
                 </button>
@@ -228,16 +228,21 @@ export function Files() {
                       <li
                         key={file.path}
                         id={fileRowId(file.path)}
+                        // The badges are the widest part of the row by far, so on
+                        // a phone they drop to their own line under the name
+                        // rather than crushing it to nothing.
                         className={cn(
-                          "flex items-center gap-4 px-6 py-3 transition-colors duration-700 hover:bg-surface-soft/40",
+                          "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors duration-700 hover:bg-surface-soft/40 sm:flex-nowrap sm:px-6",
                           highlighted === file.path && "bg-primary/10",
                         )}
                       >
-                        <ZoneTag zone={file.boundary} />
-                        <span className="min-w-0 flex-1 truncate font-mono text-sm">
-                          {base}
+                        <span className="flex min-w-0 flex-1 items-center gap-3">
+                          <ZoneTag zone={file.boundary} />
+                          <span className="min-w-0 truncate font-mono text-sm">
+                            {base}
+                          </span>
                         </span>
-                        <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                        <span className="flex w-full flex-wrap gap-1.5 sm:w-auto sm:shrink-0 sm:justify-end">
                           {file.isRouteHandler ? (
                             <Badge variant="code" className="font-mono">
                               route [{file.routeMethods.join(", ")}]
