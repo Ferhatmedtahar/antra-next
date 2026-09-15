@@ -253,9 +253,7 @@ export function FindingSheet({
                 </pre>
               )}
               {project && finding.status === "active" ? (
-                <CopyForAgent
-                  prompt={renderFindingPrompt(finding, project)}
-                />
+                <CopyForAgent prompt={renderFindingPrompt(finding, project)} />
               ) : null}
               <RemediationGuide ruleId={finding.ruleId} />
               {finding.trace.length > 0 ? (

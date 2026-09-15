@@ -42,7 +42,6 @@ export function NpmIcon({ className }: { className?: string }) {
   );
 }
 
-
 export function StarIcon({ className }: { className?: string }) {
   return (
     <svg
