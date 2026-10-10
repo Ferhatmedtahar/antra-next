@@ -13,8 +13,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Ferhatmedtahar/antra-sec/actions/workflows/ci.yml">
-    <img src="https://github.com/Ferhatmedtahar/antra-sec/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  <a href="https://github.com/Ferhatmedtahar/antra-next/actions/workflows/ci.yml">
+    <img src="https://github.com/Ferhatmedtahar/antra-next/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />
@@ -79,22 +79,22 @@ You can install and run Antra in your project in less than two minutes.
 ### Step 1: Install Antra as a Development Dependency
 
 ```bash
-npm install --save-dev antra-sec
+npm install --save-dev @ferhattahar/antra-next
 ```
 
 If you use pnpm:
 
 ```bash
-pnpm add -D antra-sec
+pnpm add -D @ferhattahar/antra-next
 ```
 
 If you use yarn:
 
 ```bash
-yarn add -D antra-sec
+yarn add -D @ferhattahar/antra-next
 ```
 
-The package is named `antra-sec`; the command it installs is `antra`. Install it
+The package is named `@ferhattahar/antra-next`; the command it installs is `antra`. Install it
 first: running `npx antra` without installing would fetch an unrelated package
 that already owns that name on npm.
 

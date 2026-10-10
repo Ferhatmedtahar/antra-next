@@ -88,7 +88,7 @@ export const sarifReporter: Reporter = {
             driver: {
               name: "antra",
               version: VERSION,
-              informationUri: "https://github.com/Ferhatmedtahar/antra-sec",
+              informationUri: "https://github.com/Ferhatmedtahar/antra-next",
               rules: rules.map((rule) => ({
                 id: rule.id,
                 name: rule.id.replace("-", ""),
@@ -96,7 +96,7 @@ export const sarifReporter: Reporter = {
                 fullDescription: { text: rule.description },
                 defaultConfiguration: { level: rule.severity },
                 helpUri:
-                  "https://github.com/Ferhatmedtahar/antra-sec/tree/main/docs",
+                  "https://github.com/Ferhatmedtahar/antra-next/tree/main/docs",
               })),
             },
           },

@@ -1,6 +1,6 @@
 {
-  "name": "antra-sec",
-  "version": "0.2.1",
+  "name": "@ferhattahar/antra-next",
+  "version": "0.2.2",
   "description": "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
   "keywords": [
     "nextjs",
@@ -13,13 +13,13 @@
     "supabase",
     "sarif"
   ],
-  "homepage": "https://github.com/Ferhatmedtahar/antra-sec#readme",
+  "homepage": "https://github.com/Ferhatmedtahar/antra-next#readme",
   "bugs": {
-    "url": "https://github.com/Ferhatmedtahar/antra-sec/issues"
+    "url": "https://github.com/Ferhatmedtahar/antra-next/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ferhatmedtahar/antra-sec.git"
+    "url": "git+https://github.com/Ferhatmedtahar/antra-next.git"
   },
   "author": "Ferhat Mohamed Tahar",
   "type": "module",
@@ -39,6 +39,9 @@
     "dist",
     "bin"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -46,7 +49,7 @@
     "packageManager": {
       "name": "pnpm",
       "version": "11.24.0",
-      "onFail": "download"
+      "onFail": "warn"
     }
   },
   "packageManager": "pnpm@11.24.0",

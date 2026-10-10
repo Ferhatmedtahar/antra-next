@@ -68,7 +68,7 @@ export function agentSectionBody(): string {
   return [
     "## Security: React Server Components trust boundaries",
     "",
-    "This project is scanned by [Antra](https://github.com/Ferhatmedtahar/antra-sec).",
+    "This project is scanned by [Antra](https://github.com/Ferhatmedtahar/antra-next).",
     "It checks one thing: whether sensitive server-side data crosses into the",
     "client without validation.",
     "",
