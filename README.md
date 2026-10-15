@@ -114,7 +114,9 @@ pnpm approve-builds   # select better-sqlite3
 Run the initialization wizard in your project root:
 
 ```bash
-npx antra init
+npx antra-next init
+# or if installed locally:
+antra init
 ```
 
 The init command performs three tasks:
@@ -128,7 +130,9 @@ The init command performs three tasks:
 Execute the scanner:
 
 ```bash
-npx antra scan
+npx antra-next scan
+# or if installed locally:
+antra scan
 ```
 
 Antra will scan your project and display any boundary leaks directly in your terminal with code snippets, line numbers, and the complete origin to sink data flow path.
@@ -138,7 +142,9 @@ Antra will scan your project and display any boundary leaks directly in your ter
 Launch the interactive local web dashboard:
 
 ```bash
-npx antra studio
+npx antra-next studio
+# or if installed locally:
+antra studio
 ```
 
 Your browser will open `http://127.0.0.1:8080`, giving you an overview of all findings, visual dependency graphs, and configuration controls.
