@@ -13,6 +13,8 @@ import { syncCommand } from "./commands/sync.js";
 import { traceCommand } from "./commands/trace.js";
 import { watchCommand } from "./commands/watch.js";
 
+import { VERSION } from "../index.js";
+
 export const program = new Command();
 
 program
@@ -20,7 +22,7 @@ program
   .description(
     "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
   )
-  .version("0.1.0");
+  .version(VERSION);
 
 program
   .command("init")

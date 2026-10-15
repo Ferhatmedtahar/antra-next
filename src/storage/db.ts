@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import Database from "better-sqlite3";
+import { openSqliteDatabase, type SqliteDatabase } from "./sqlite.js";
 
 import { SNAPSHOT_DIR } from "../config/write.js";
 import type { EdgeKind } from "../ast/boundary-graph.js";
@@ -245,11 +245,11 @@ function toFinding(row: FindingRow): StoredFinding {
  * else in the pipeline depends on it.
  */
 export class FindingsStore {
-  private readonly db: Database.Database;
+  private readonly db: SqliteDatabase;
 
   constructor(filePath: string) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    this.db = new Database(filePath);
+    this.db = openSqliteDatabase(filePath);
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.db.exec(SCHEMA);
@@ -262,61 +262,28 @@ export class FindingsStore {
   /** Records a scan with its files, taint sources and every finding (any status). Returns the scan id. */
   saveScan(result: ScanResult, rootDir: string): number {
     const relative = (filePath: string) => path.relative(rootDir, filePath);
-    const insertScan = this.db.prepare<
-      [
-        string,
-        number,
-        string,
-        string,
-        string,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-      ]
-    >(
+    const insertScan = this.db.prepare(
       `INSERT INTO scans (started_at, duration_ms, root_dir, framework, rules, files, schema_fields, taint_sources, findings, suppressed, baselined)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    const insertFile = this.db.prepare<
-      [number, string, string, number, number, string, string]
-    >(
+    const insertFile = this.db.prepare(
       `INSERT INTO files (scan_id, path, boundary, is_action_module, is_route_handler, route_methods, server_actions)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
-    const insertSource = this.db.prepare<[number, string, string, number]>(
+    const insertSource = this.db.prepare(
       `INSERT INTO taint_sources (scan_id, field, origin, sensitive) VALUES (?, ?, ?, ?)`,
     );
-    const insertFinding = this.db.prepare<
-      [
-        number,
-        string,
-        string,
-        string,
-        number,
-        number,
-        string,
-        string,
-        string,
-        string,
-        string,
-        string | null,
-      ]
-    >(
+    const insertFinding = this.db.prepare(
       `INSERT INTO findings (scan_id, rule_id, severity, file, line, column, message, snippet, trace, fingerprint, status, suppress_reason)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
-    const insertEdge = this.db.prepare<
-      [number, string, string, string, string, number]
-    >(
+    const insertEdge = this.db.prepare(
       `INSERT INTO edges (scan_id, from_path, to_path, kind, names, count) VALUES (?, ?, ?, ?, ?, ?)`,
     );
 
     const sensitiveOrigins = new Set(result.taintSources.map((s) => s.origin));
-    const write = this.db.transaction((): number => {
+    return this.db.transaction((): number => {
       const scanId = Number(
         insertScan.run(
           result.startedAt,
@@ -390,14 +357,11 @@ export class FindingsStore {
       }
       return scanId;
     });
-    return write();
   }
 
   listScans(limit = 20): StoredScan[] {
     return this.db
-      .prepare<[number], ScanRow>(
-        `SELECT * FROM scans ORDER BY id DESC LIMIT ?`,
-      )
+      .prepare<ScanRow>(`SELECT * FROM scans ORDER BY id DESC LIMIT ?`)
       .all(limit)
       .map(toScan);
   }
@@ -408,7 +372,7 @@ export class FindingsStore {
 
   findingsForScan(scanId: number): StoredFinding[] {
     return this.db
-      .prepare<[number], FindingRow>(
+      .prepare<FindingRow>(
         `SELECT * FROM findings WHERE scan_id = ? ORDER BY file, line, column, rule_id`,
       )
       .all(scanId)
@@ -417,7 +381,7 @@ export class FindingsStore {
 
   filesForScan(scanId: number): StoredFile[] {
     return this.db
-      .prepare<[number], FileRow>(
+      .prepare<FileRow>(
         `SELECT path, boundary, is_action_module, is_route_handler, route_methods, server_actions
          FROM files WHERE scan_id = ? ORDER BY path`,
       )
@@ -426,13 +390,12 @@ export class FindingsStore {
   }
 
   edgesForScan(scanId: number): StoredEdge[] {
-    return (
-      this.db
-        .prepare<[number]>(
-          "SELECT from_path, to_path, kind, names, count FROM edges WHERE scan_id = ? ORDER BY from_path, to_path, kind",
-        )
-        .all(scanId) as EdgeRow[]
-    ).map(toEdge);
+    return this.db
+      .prepare<EdgeRow>(
+        "SELECT from_path, to_path, kind, names, count FROM edges WHERE scan_id = ? ORDER BY from_path, to_path, kind",
+      )
+      .all(scanId)
+      .map(toEdge);
   }
 
   close(): void {

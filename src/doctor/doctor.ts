@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import Database from "better-sqlite3";
+import { openSqliteDatabase } from "../storage/sqlite.js";
 
 import { loadProject } from "../ast/project.js";
 import { loadBaseline } from "../baseline/baseline.js";
@@ -312,7 +312,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     });
   } else {
     try {
-      const db = new Database(database, {
+      const db = openSqliteDatabase(database, {
         readonly: true,
         fileMustExist: true,
       });

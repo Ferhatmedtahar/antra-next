@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import Database from "better-sqlite3";
+import { openSqliteDatabase, type SqliteDatabase } from "./sqlite.js";
 
 import { dbPath } from "./db.js";
 
@@ -23,10 +23,10 @@ export interface TableInfo {
   columns: string[];
 }
 
-function openReadonly(rootDir: string): Database.Database {
+function openReadonly(rootDir: string): SqliteDatabase {
   const file = dbPath(rootDir);
   if (!fs.existsSync(file)) throw new DatabaseNotFoundError(file);
-  return new Database(file, { readonly: true, fileMustExist: true });
+  return openSqliteDatabase(file, { readonly: true, fileMustExist: true });
 }
 
 /** Ad-hoc SQL over antra-findings.sqlite. Read-only connection: writes throw. */
@@ -34,11 +34,11 @@ export function runQuery(rootDir: string, sql: string): QueryResult {
   const db = openReadonly(rootDir);
   try {
     const statement = db.prepare(sql);
-    if (!statement.reader) {
+    const columns = statement.columns().map((column) => column.name);
+    if (columns.length === 0) {
       throw new Error("Only read queries are allowed (SELECT, WITH, PRAGMA).");
     }
-    const columns = statement.columns().map((column) => column.name);
-    const rows = statement.raw(true).all() as unknown[][];
+    const rows = statement.allRaw();
     return { columns, rows };
   } finally {
     db.close();

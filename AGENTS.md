@@ -3,7 +3,7 @@
 Antra is an open source static analysis security scanner for React Server
 Components and the Next.js App Router. It finds the point where sensitive
 server-side data crosses into the client without validation. Published as
-`@ferhattahar/antra-next` on npm; the binary is `antra`.
+`antra-next` on npm; the binary is `antra`.
 
 ## Layout
 

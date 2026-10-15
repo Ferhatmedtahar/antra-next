@@ -79,40 +79,35 @@ You can install and run Antra in your project in less than two minutes.
 ### Step 1: Install Antra as a Development Dependency
 
 ```bash
-npm install --save-dev @ferhattahar/antra-next
+npm install --save-dev antra-next
 ```
 
 If you use pnpm:
 
 ```bash
-pnpm add -D @ferhattahar/antra-next
+pnpm add -D antra-next
 ```
 
 If you use yarn:
 
 ```bash
-yarn add -D @ferhattahar/antra-next
+yarn add -D antra-next
 ```
 
-The package is named `@ferhattahar/antra-next`; the command it installs is `antra`. Install it
-first: running `npx antra` without installing would fetch an unrelated package
-that already owns that name on npm.
+You can also run commands directly with `npx` or `pnpm dlx`:
 
-With pnpm 10 or newer, allow the SQLite dependency to build once, or `antra`
-will refuse to start:
+```bash
+npx antra-next studio
+# or
+pnpm dlx antra-next studio
+```
+
+The package is named `antra-next`; both `antra` and `antra-next` commands are available.
+Node.js 22.5+ uses built-in SQLite automatically. On Node 20, if using pnpm, allow `better-sqlite3` native bindings:
 
 ```bash
 pnpm approve-builds   # select better-sqlite3
 ```
-
-or add it to `pnpm-workspace.yaml`:
-
-```yaml
-allowBuilds:
-  better-sqlite3: true
-```
-
-npm needs no extra step.
 
 ### Step 2: Initialize Your Project
 

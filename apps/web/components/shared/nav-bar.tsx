@@ -40,7 +40,7 @@ export function NavBar() {
           href={site.npmUrl}
           target="_blank"
           rel="noreferrer"
-          aria-label="npm package @ferhattahar/antra-next"
+          aria-label="npm package antra-next"
           className={buttonClass()}
         >
           <NpmIcon className="size-4" />

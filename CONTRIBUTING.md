@@ -18,7 +18,7 @@ To clone the repository and install all workspace dependencies, execute the foll
 
 ```bash
 git clone https://github.com/Ferhatmedtahar/antra-next.git
-cd antra-sec
+cd antra-next
 pnpm install
 pnpm test
 ```

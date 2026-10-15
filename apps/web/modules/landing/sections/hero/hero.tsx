@@ -68,7 +68,7 @@ export function Hero() {
             className="inline-flex items-center gap-1.5 border border-[var(--color-divider)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-mono text-[var(--color-ink)]/75 hover:border-[var(--color-ink)]/40 hover:text-accent-text transition-colors"
           >
             <NpmIcon className="size-3.5" />
-            <span>@ferhattahar/antra-next</span>
+            <span>antra-next</span>
           </a>
         </div>
         <h1 className="mb-6 max-w-[19ch] text-[clamp(50px,7vw,88px)] leading-[1.05] tracking-tight md:mb-8">

@@ -15,12 +15,10 @@ Antra is a CLI. There is nothing to host and nothing to install on a server.
 ## Add it to a project
 
 ```bash
-pnpm add -D @ferhattahar/antra-next
+pnpm add -D antra-next
 ```
 
-The package is named [`@ferhattahar/antra-next`](https://www.npmjs.com/package/@ferhattahar/antra-next); the command it installs is `antra`. Install it
-first: running `npx antra` without installing would fetch an unrelated package
-that already owns that name on npm.
+The package is named [`antra-next`](https://www.npmjs.com/package/antra-next); both `antra` and `antra-next` commands are available. You can also run it directly without installing via `pnpm dlx antra-next` or `npx antra-next`.
 
 With pnpm 10 or newer, allow the SQLite dependency to build once, or `antra`
 will refuse to start:

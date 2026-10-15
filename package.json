@@ -1,6 +1,6 @@
 {
-  "name": "@ferhattahar/antra-next",
-  "version": "0.2.2",
+  "name": "antra-next",
+  "version": "0.2.3",
   "description": "AST-based static analysis security linter for React Server Components and the Next.js App Router.",
   "keywords": [
     "nextjs",
@@ -25,7 +25,8 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "antra": "./bin/antra.js"
+    "antra": "./bin/antra.js",
+    "antra-next": "./bin/antra.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
